@@ -9,7 +9,7 @@ export class ResearchLogger {
   private logger: winston.Logger;
 
   constructor(private configService: ConfigService) {
-    const logDir = this.configService.get<string>('LOG_DIR');
+    const logDir = this.configService.get<string>('LOG_DIR') || './logs';
 
     // Ensure log directory exists
     if (!fs.existsSync(logDir)) {
@@ -17,7 +17,7 @@ export class ResearchLogger {
     }
 
     this.logger = winston.createLogger({
-      level: this.configService.get<string>('LOG_LEVEL'),
+      level: this.configService.get<string>('LOG_LEVEL') || 'info',
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.json()

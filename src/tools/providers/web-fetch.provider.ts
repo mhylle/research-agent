@@ -35,8 +35,8 @@ export class WebFetchProvider implements ITool {
   private readonly maxSize: number;
 
   constructor(private configService: ConfigService) {
-    this.timeout = this.configService.get<number>('WEB_FETCH_TIMEOUT');
-    this.maxSize = this.configService.get<number>('WEB_FETCH_MAX_SIZE');
+    this.timeout = this.configService.get<number>('WEB_FETCH_TIMEOUT') || 10000;
+    this.maxSize = this.configService.get<number>('WEB_FETCH_MAX_SIZE') || 1048576;
   }
 
   async execute(args: Record<string, any>): Promise<WebFetchResult> {

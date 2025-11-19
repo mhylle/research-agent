@@ -33,7 +33,7 @@ export class TavilySearchProvider implements ITool {
   private readonly apiUrl = 'https://api.tavily.com/search';
 
   constructor(private configService: ConfigService) {
-    this.apiKey = this.configService.get<string>('TAVILY_API_KEY');
+    this.apiKey = this.configService.get<string>('TAVILY_API_KEY') || '';
   }
 
   async execute(args: Record<string, any>): Promise<SearchResult[]> {

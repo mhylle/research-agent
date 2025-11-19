@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ToolRegistry } from '../../src/tools/registry/tool-registry.service';
-import { ITool } from '../../src/tools/interfaces/tool.interface';
-import { ToolDefinition } from '../../src/tools/interfaces/tool-definition.interface';
+import { ToolRegistry } from './tool-registry.service';
+import { ITool } from '../interfaces/tool.interface';
+import { ToolDefinition } from '../interfaces/tool-definition.interface';
 
 describe('ToolRegistry', () => {
   let registry: ToolRegistry;

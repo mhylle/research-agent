@@ -58,4 +58,26 @@ export class PipelineExecutor {
       throw error;
     }
   }
+
+  async executeToolCalls(toolCalls: any[], logId: string): Promise<any[]> {
+    const results = [];
+
+    for (const toolCall of toolCalls) {
+      const startTime = Date.now();
+      const { name, arguments: args } = toolCall.function;
+
+      try {
+        const result = await this.toolRegistry.execute(name, args);
+        const executionTime = Date.now() - startTime;
+
+        this.logger.logToolExecution(logId, name, args, result, executionTime);
+        results.push(result);
+      } catch (error) {
+        this.logger.logStageError(0, logId, error);
+        throw error;
+      }
+    }
+
+    return results;
+  }
 }

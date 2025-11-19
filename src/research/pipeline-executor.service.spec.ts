@@ -69,4 +69,19 @@ describe('PipelineExecutor', () => {
     expect(logger.logStageInput).toHaveBeenCalled();
     expect(logger.logStageOutput).toHaveBeenCalled();
   });
+
+  it('should execute tool calls', async () => {
+    const mockToolResult = { results: ['result1'] };
+    toolRegistry.execute.mockResolvedValue(mockToolResult);
+
+    const toolCalls = [
+      { function: { name: 'test_tool', arguments: { query: 'test' } } }
+    ];
+
+    const results = await executor.executeToolCalls(toolCalls, 'test-log-id');
+
+    expect(results).toHaveLength(1);
+    expect(toolRegistry.execute).toHaveBeenCalledWith('test_tool', { query: 'test' });
+    expect(logger.logToolExecution).toHaveBeenCalled();
+  });
 });

@@ -84,4 +84,56 @@ describe('PipelineExecutor', () => {
     expect(toolRegistry.execute).toHaveBeenCalledWith('test_tool', { query: 'test' });
     expect(logger.logToolExecution).toHaveBeenCalled();
   });
+
+  it('should retry on failure with exponential backoff', async () => {
+    ollamaService.chat
+      .mockRejectedValueOnce(new Error('Temporary failure'))
+      .mockResolvedValueOnce({
+        message: { role: 'assistant', content: 'Success' },
+      } as any);
+
+    const context = {
+      stageNumber: 1 as const,
+      messages: [{ role: 'user' as const, content: 'Test' }],
+      tools: [],
+      systemPrompt: 'Test',
+      logId: 'test-id',
+    };
+
+    const result = await executor.executeStage(context);
+
+    expect(result.message.content).toBe('Success');
+    expect(ollamaService.chat).toHaveBeenCalledTimes(2);
+  });
+
+  it('should fail after max retries', async () => {
+    ollamaService.chat.mockRejectedValue(new Error('Persistent failure'));
+
+    const context = {
+      stageNumber: 1 as const,
+      messages: [{ role: 'user' as const, content: 'Test' }],
+      tools: [],
+      systemPrompt: 'Test',
+      logId: 'test-id',
+    };
+
+    await expect(executor.executeStage(context)).rejects.toThrow('Persistent failure');
+    expect(ollamaService.chat).toHaveBeenCalledTimes(3); // Initial + 2 retries
+  });
+
+  it('should retry tool calls on failure', async () => {
+    toolRegistry.execute
+      .mockRejectedValueOnce(new Error('Temporary tool failure'))
+      .mockResolvedValueOnce({ result: 'success' });
+
+    const toolCalls = [
+      { function: { name: 'test_tool', arguments: { query: 'test' } } }
+    ];
+
+    const results = await executor.executeToolCalls(toolCalls, 'test-log-id');
+
+    expect(results).toHaveLength(1);
+    expect(results[0]).toEqual({ result: 'success' });
+    expect(toolRegistry.execute).toHaveBeenCalledTimes(2);
+  });
 });

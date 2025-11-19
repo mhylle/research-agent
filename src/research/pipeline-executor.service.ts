@@ -60,7 +60,7 @@ export class PipelineExecutor {
   }
 
   async executeToolCalls(toolCalls: any[], logId: string): Promise<any[]> {
-    const results = [];
+    const results: any[] = [];
 
     for (const toolCall of toolCalls) {
       const startTime = Date.now();

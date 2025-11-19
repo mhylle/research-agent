@@ -25,7 +25,7 @@ export class ResearchService implements OnModuleInit {
   async executeResearch(query: string, options?: any): Promise<ResearchResult> {
     const logId = randomUUID();
     const startTime = Date.now();
-    const stageMetrics = [];
+    const stageMetrics: Array<{ stage: number; executionTime: number }> = [];
 
     const messages: ChatMessage[] = [
       { role: 'user', content: query }

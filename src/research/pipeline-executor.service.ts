@@ -29,9 +29,11 @@ export class PipelineExecutor {
         ...context.messages,
       ];
 
-      const response = await this.ollamaService.chat(
-        messages,
-        context.tools.length > 0 ? context.tools : undefined
+      const response = await this.executeWithRetry(() =>
+        this.ollamaService.chat(
+          messages,
+          context.tools.length > 0 ? context.tools : undefined
+        )
       );
 
       const executionTime = Date.now() - startTime;
@@ -67,7 +69,9 @@ export class PipelineExecutor {
       const { name, arguments: args } = toolCall.function;
 
       try {
-        const result = await this.toolRegistry.execute(name, args);
+        const result = await this.executeWithRetry(() =>
+          this.toolRegistry.execute(name, args)
+        );
         const executionTime = Date.now() - startTime;
 
         this.logger.logToolExecution(logId, name, args, result, executionTime);
@@ -79,5 +83,27 @@ export class PipelineExecutor {
     }
 
     return results;
+  }
+
+  private async executeWithRetry<T>(
+    fn: () => Promise<T>,
+    maxRetries = 3,
+    backoffMs = 1000
+  ): Promise<T> {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await fn();
+      } catch (error) {
+        if (i === maxRetries - 1) throw error;
+        await this.delay(backoffMs * Math.pow(2, i));
+        this.logger.logStageError(0, 'retry', { attempt: i + 1, error: error.message });
+      }
+    }
+    // This should never be reached due to throw in the loop
+    throw new Error('executeWithRetry: Maximum retries exceeded');
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

@@ -6,6 +6,7 @@ import { LoggingModule } from './logging/logging.module';
 import { ToolsModule } from './tools/tools.module';
 import { LLMModule } from './llm/llm.module';
 import { ResearchModule } from './research/research.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ResearchModule } from './research/research.module';
     ToolsModule,
     LLMModule,
     ResearchModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

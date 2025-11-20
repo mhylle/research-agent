@@ -4,7 +4,7 @@ export interface ResearchResult {
   answer: string;
   sources: Source[];
   metadata: ResultMetadata;
-  timestamp: string;          // Added by frontend
+  timestamp: Date;            // Added by frontend
 }
 
 export interface Source {

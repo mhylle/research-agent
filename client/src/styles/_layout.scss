@@ -1,0 +1,17 @@
+.container {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 $spacing-md;
+
+  @include sm {
+    padding: 0 $spacing-lg;
+  }
+}
+
+.section {
+  padding: $spacing-lg 0;
+
+  @include md {
+    padding: $spacing-2xl 0;
+  }
+}

@@ -1,0 +1,84 @@
+@import '../../../../../styles/variables';
+@import '../../../../../styles/mixins';
+
+.sources-list {
+  margin-top: $spacing-md;
+  border-top: 1px solid $border;
+  padding-top: $spacing-md;
+
+  &__toggle {
+    @include button-reset;
+    @include flex-between;
+    width: 100%;
+    padding: $spacing-sm;
+    background: $bg-secondary;
+    border-radius: $border-radius-sm;
+    font-weight: $font-medium;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: $bg-tertiary;
+    }
+  }
+
+  &__icon {
+    font-size: $font-size-xs;
+    color: $text-secondary;
+  }
+
+  &__content {
+    margin-top: $spacing-sm;
+  }
+
+  &__item {
+    padding: $spacing-sm;
+    border-bottom: 1px solid $border;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__header {
+    @include flex-between;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__title {
+    font-weight: $font-medium;
+    color: $primary;
+
+    &:hover {
+      color: $primary-hover;
+    }
+  }
+
+  &__badge {
+    padding: 2px 8px;
+    font-size: $font-size-xs;
+    font-weight: $font-medium;
+    border-radius: $border-radius-sm;
+
+    &--high {
+      background-color: lighten($success, 40%);
+      color: darken($success, 20%);
+    }
+
+    &--medium {
+      background-color: lighten($warning, 40%);
+      color: darken($warning, 20%);
+    }
+
+    &--low {
+      background-color: $bg-tertiary;
+      color: $text-secondary;
+    }
+  }
+
+  &__url {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    margin: 0;
+    @include truncate;
+  }
+}

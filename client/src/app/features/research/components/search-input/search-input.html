@@ -1,0 +1,43 @@
+<div class="search-input">
+  <div class="search-input__wrapper">
+    <textarea
+      [(ngModel)]="query"
+      [disabled]="disabled"
+      class="search-input__textarea"
+      placeholder="Ask a research question..."
+      rows="3"
+      (keydown.control.enter)="onSubmit()"
+      (keydown.meta.enter)="onSubmit()"
+    ></textarea>
+
+    <div class="search-input__footer">
+      <span class="search-input__counter" [class.search-input__counter--warning]="characterCount > 500">
+        {{ characterCount }} characters
+      </span>
+
+      <div class="search-input__actions">
+        <button
+          *ngIf="query.length > 0"
+          type="button"
+          class="search-input__clear"
+          (click)="clearQuery()"
+        >
+          Clear
+        </button>
+
+        <button
+          type="submit"
+          class="search-input__submit"
+          [disabled]="!isValid || disabled"
+          (click)="onSubmit()"
+        >
+          Research
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <p class="search-input__hint">
+    Tip: Press Ctrl+Enter (⌘+Enter on Mac) to submit
+  </p>
+</div>

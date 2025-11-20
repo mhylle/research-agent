@@ -1,0 +1,67 @@
+@import '../../../../../styles/variables';
+@import '../../../../../styles/mixins';
+
+.result-card {
+  @include card;
+  margin-bottom: $spacing-md;
+  transition: box-shadow $transition-base;
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+
+  &__header {
+    @include flex-between;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__query {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    font-weight: $font-medium;
+    @include truncate;
+    max-width: 70%;
+    margin: 0;
+  }
+
+  &__timestamp {
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+
+  &__answer {
+    color: $text-primary;
+    line-height: $line-height-loose;
+    margin-bottom: $spacing-md;
+    white-space: pre-wrap;
+  }
+
+  &__meta {
+    @include flex-between;
+    padding-top: $spacing-sm;
+    border-top: 1px solid $border;
+  }
+
+  &__execution-time {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-xs;
+  }
+
+  &__action {
+    @include button-reset;
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-sm;
+    color: $primary;
+    border-radius: $border-radius-sm;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: $bg-secondary;
+    }
+  }
+}

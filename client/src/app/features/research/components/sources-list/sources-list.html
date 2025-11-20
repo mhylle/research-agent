@@ -1,0 +1,32 @@
+<div class="sources-list">
+  <button
+    type="button"
+    class="sources-list__toggle"
+    (click)="toggleExpanded()"
+  >
+    <span>{{ sources.length }} Sources</span>
+    <span class="sources-list__icon">{{ isExpanded ? '▼' : '▶' }}</span>
+  </button>
+
+  <div class="sources-list__content" *ngIf="isExpanded">
+    <div class="sources-list__item" *ngFor="let source of sources">
+      <div class="sources-list__header">
+        <a
+          [href]="source.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="sources-list__title"
+        >
+          {{ source.title }}
+        </a>
+        <span
+          class="sources-list__badge"
+          [ngClass]="getRelevanceClass(source.relevance)"
+        >
+          {{ source.relevance }}
+        </span>
+      </div>
+      <p class="sources-list__url">{{ truncateUrl(source.url) }}</p>
+    </div>
+  </div>
+</div>

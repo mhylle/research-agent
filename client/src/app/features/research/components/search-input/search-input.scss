@@ -1,0 +1,96 @@
+@import '../../../../../styles/variables';
+@import '../../../../../styles/mixins';
+
+.search-input {
+  width: 100%;
+  margin-bottom: $spacing-lg;
+
+  &__wrapper {
+    @include card;
+  }
+
+  &__textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-family: $font-family;
+    font-size: $font-size-base;
+    line-height: $line-height;
+    resize: vertical;
+    min-height: 80px;
+    margin-bottom: $spacing-sm;
+
+    &:focus {
+      outline: 2px solid $border-focus;
+      outline-offset: -2px;
+      border-radius: $border-radius-sm;
+    }
+
+    &::placeholder {
+      color: $text-muted;
+    }
+
+    &:disabled {
+      background: $bg-tertiary;
+      cursor: not-allowed;
+    }
+  }
+
+  &__footer {
+    @include flex-between;
+  }
+
+  &__counter {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+
+    &--warning {
+      color: $warning;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-xs;
+  }
+
+  &__clear {
+    @include button-reset;
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    border-radius: $border-radius-sm;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: $bg-secondary;
+    }
+  }
+
+  &__submit {
+    @include button-reset;
+    padding: $spacing-xs $spacing-md;
+    background-color: $primary;
+    color: white;
+    font-weight: $font-medium;
+    border-radius: $border-radius-sm;
+    transition: background-color $transition-fast;
+
+    &:hover:not(:disabled) {
+      background-color: $primary-hover;
+    }
+
+    &:disabled {
+      background-color: $border;
+      color: $text-muted;
+      cursor: not-allowed;
+    }
+  }
+
+  &__hint {
+    margin-top: $spacing-xs;
+    font-size: $font-size-xs;
+    color: $text-muted;
+    text-align: center;
+  }
+}

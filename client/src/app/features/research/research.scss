@@ -1,0 +1,51 @@
+@import '../../../styles/variables';
+@import '../../../styles/mixins';
+
+.research {
+  padding: $spacing-xl 0;
+  min-height: 100vh;
+
+  &__header {
+    text-align: center;
+    margin-bottom: $spacing-2xl;
+  }
+
+  &__title {
+    font-size: $font-size-3xl;
+    font-weight: $font-bold;
+    color: $text-primary;
+    margin-bottom: $spacing-sm;
+
+    @include md {
+      font-size: calc($font-size-3xl * 1.5);
+    }
+  }
+
+  &__subtitle {
+    font-size: $font-size-lg;
+    color: $text-secondary;
+    margin: 0;
+  }
+
+  &__results {
+    margin-top: $spacing-xl;
+  }
+
+  &__results-title {
+    font-size: $font-size-xl;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    margin-bottom: $spacing-md;
+  }
+
+  &__empty {
+    @include card;
+    text-align: center;
+    padding: $spacing-xl;
+    color: $text-secondary;
+
+    p {
+      margin: 0;
+    }
+  }
+}

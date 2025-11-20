@@ -1,0 +1,27 @@
+<div class="error-message" *ngIf="error">
+  <div class="error-message__icon">⚠️</div>
+
+  <div class="error-message__content">
+    <h4 class="error-message__title">Error</h4>
+    <p class="error-message__text">{{ error }}</p>
+  </div>
+
+  <div class="error-message__actions">
+    <button
+      *ngIf="canRetry"
+      type="button"
+      class="error-message__retry"
+      (click)="onRetry()"
+    >
+      Retry
+    </button>
+
+    <button
+      type="button"
+      class="error-message__dismiss"
+      (click)="onDismiss()"
+    >
+      Dismiss
+    </button>
+  </div>
+</div>

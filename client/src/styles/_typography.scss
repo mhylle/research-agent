@@ -1,0 +1,26 @@
+h1, h2, h3, h4, h5, h6 {
+  font-weight: $font-semibold;
+  line-height: $line-height-tight;
+  margin-bottom: $spacing-sm;
+}
+
+h1 {
+  font-size: $font-size-3xl;
+}
+
+h2 {
+  font-size: $font-size-2xl;
+}
+
+h3 {
+  font-size: $font-size-xl;
+}
+
+p {
+  margin-bottom: $spacing-sm;
+}
+
+small {
+  font-size: $font-size-sm;
+  color: $text-secondary;
+}

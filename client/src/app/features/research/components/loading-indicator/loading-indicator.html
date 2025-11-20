@@ -1,0 +1,29 @@
+<div class="loading-indicator" *ngIf="currentStage">
+  <div class="loading-indicator__progress">
+    <div class="loading-indicator__bar">
+      <div
+        class="loading-indicator__fill"
+        [style.width.%]="progressPercentage"
+      ></div>
+    </div>
+
+    <div class="loading-indicator__stage-number">
+      Stage {{ currentStage }} of 3
+    </div>
+  </div>
+
+  <div class="loading-indicator__content" *ngIf="currentStageInfo">
+    <div class="loading-indicator__spinner">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="loading-indicator__text">
+      <h3 class="loading-indicator__label">{{ currentStageInfo.label }}</h3>
+      <p class="loading-indicator__description">{{ currentStageInfo.description }}</p>
+    </div>
+  </div>
+
+  <div class="loading-indicator__estimate">
+    Estimated time: ~60 seconds
+  </div>
+</div>

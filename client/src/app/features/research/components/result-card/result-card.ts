@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ResearchResult } from '../../../../models';
+import type { ResearchResult } from '../../../../models';
 import { SourcesListComponent } from '../sources-list/sources-list';
 
 @Component({

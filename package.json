@@ -11,7 +11,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -21,13 +21,16 @@
     "client:dev": "cd client && ng serve",
     "client:build": "cd client && ng build --configuration production",
     "client:test": "cd client && ng test",
-    "dev": "concurrently \"npm run start:dev\" \"npm run client:dev\""
+    "dev": "concurrently \"npm run start:dev\" \"npm run client:dev\"",
+    "build:all": "npm run build && npm run client:build",
+    "postinstall": "cd client && npm install"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/serve-static": "^5.0.4",
     "axios": "^1.13.2",
     "cheerio": "^1.1.2",
     "class-transformer": "^0.5.1",

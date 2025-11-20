@@ -4,13 +4,13 @@ export interface ResearchResult {
   answer: string;
   sources: Source[];
   metadata: ResultMetadata;
-  timestamp: Date;            // Added by frontend
+  timestamp: string;          // Added by frontend
 }
 
 export interface Source {
   url: string;
   title: string;
-  relevance: 'high' | 'medium' | 'low';
+  relevance?: 'high' | 'medium' | 'low';
 }
 
 export interface ResultMetadata {

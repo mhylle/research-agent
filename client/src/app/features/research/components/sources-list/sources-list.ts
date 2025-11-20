@@ -18,8 +18,8 @@ export class SourcesListComponent {
     this.isExpanded = !this.isExpanded;
   }
 
-  getRelevanceClass(relevance: string): string {
-    return `sources-list__badge--${relevance}`;
+  getRelevanceClass(relevance: string | undefined): string {
+    return `sources-list__badge--${relevance || 'low'}`;
   }
 
   truncateUrl(url: string, maxLength: number = 50): string {

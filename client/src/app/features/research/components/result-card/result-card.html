@@ -1,0 +1,28 @@
+<div class="result-card">
+  <div class="result-card__header">
+    <p class="result-card__query">{{ result.query }}</p>
+    <span class="result-card__timestamp">{{ formatTimestamp(result.timestamp) }}</span>
+  </div>
+
+  <div class="result-card__answer">
+    {{ result.answer }}
+  </div>
+
+  <div class="result-card__meta">
+    <span class="result-card__execution-time">
+      Execution time: {{ formatExecutionTime(result.metadata.totalExecutionTime) }}
+    </span>
+
+    <div class="result-card__actions">
+      <button
+        type="button"
+        class="result-card__action"
+        (click)="copyAnswer()"
+      >
+        📋 Copy
+      </button>
+    </div>
+  </div>
+
+  <app-sources-list [sources]="result.sources"></app-sources-list>
+</div>

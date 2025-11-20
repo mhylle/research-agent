@@ -1,5 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { ResearchQuery, ResearchResult } from '../../models';
 import { environment } from '../../../environments/environment';
 
@@ -31,10 +32,10 @@ export class ResearchService {
 
     try {
       const requestBody: ResearchQuery = { query };
-      const result = await this.http.post<Omit<ResearchResult, 'query' | 'timestamp'>>(
+      const result = await firstValueFrom(this.http.post<Omit<ResearchResult, 'query' | 'timestamp'>>(
         `${environment.apiUrl}/research/query`,
         requestBody
-      ).toPromise();
+      ));
 
       if (result) {
         const fullResult: ResearchResult = {

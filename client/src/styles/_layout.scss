@@ -1,3 +1,6 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
 .container {
   max-width: 1024px;
   margin: 0 auto;

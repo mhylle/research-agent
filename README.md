@@ -176,6 +176,85 @@ Check the health status of the application and its dependencies.
 curl http://localhost:3000/api/health
 ```
 
+## Frontend (Angular UI)
+
+### Development
+
+**Run both backend and frontend:**
+```bash
+npm run dev
+```
+
+This starts:
+- Backend API on `http://localhost:3000`
+- Angular UI on `http://localhost:4200`
+
+**Run frontend only:**
+```bash
+npm run client:dev
+```
+
+**Run tests:**
+```bash
+npm run client:test
+```
+
+### Production Build
+
+**Build for production:**
+```bash
+npm run build:all
+```
+
+This creates:
+- Backend build in `dist/`
+- Frontend build copied to `dist/client/`
+
+**Start production server:**
+```bash
+NODE_ENV=production npm run start:prod
+```
+
+The Angular UI will be served at `http://localhost:3000`
+
+### Architecture
+
+**Technology Stack:**
+- Angular 18+ (standalone components)
+- TypeScript 5+
+- SCSS (BEM methodology)
+- Angular Signals (state management)
+
+**Directory Structure:**
+```
+client/
+├── src/
+│   ├── app/
+│   │   ├── core/           # Services, interceptors
+│   │   ├── features/       # Feature components
+│   │   ├── models/         # TypeScript interfaces
+│   │   └── shared/         # Shared components
+│   ├── styles/             # Global SCSS
+│   └── environments/       # Environment configs
+```
+
+**Features:**
+- Single-page chat-style interface
+- Real-time loading indicators
+- LocalStorage-based history (last 20 queries)
+- Error handling with retry
+- Responsive design (mobile, tablet, desktop)
+
+### API Integration
+
+The Angular UI calls the existing NestJS API:
+- `POST /api/research/query` - Submit research queries
+- `GET /api/health` - Health check
+
+In development, requests are proxied to `http://localhost:3000` via `proxy.conf.json`.
+
+In production, the Angular build is served by NestJS using `@nestjs/serve-static`, so API calls use relative URLs.
+
 ## Testing
 
 ### Run All Tests

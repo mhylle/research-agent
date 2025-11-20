@@ -1,0 +1,56 @@
+@import 'variables';
+
+// Responsive breakpoints
+@mixin sm {
+  @media (min-width: $breakpoint-sm) { @content; }
+}
+
+@mixin md {
+  @media (min-width: $breakpoint-md) { @content; }
+}
+
+@mixin lg {
+  @media (min-width: $breakpoint-lg) { @content; }
+}
+
+@mixin xl {
+  @media (min-width: $breakpoint-xl) { @content; }
+}
+
+// Flexbox utilities
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// Truncate text
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Card style
+@mixin card {
+  background: $bg-primary;
+  border: 1px solid $border;
+  border-radius: $border-radius;
+  padding: $spacing-md;
+  box-shadow: $shadow-sm;
+}
+
+// Button reset
+@mixin button-reset {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}

@@ -1,0 +1,68 @@
+@import "../../../../../styles/variables";
+@import "../../../../../styles/mixins";
+
+.error-message {
+  @include card;
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+  background-color: lighten($error, 45%);
+  border-color: $error;
+
+  &__icon {
+    font-size: $font-size-2xl;
+    flex-shrink: 0;
+  }
+
+  &__content {
+    flex: 1;
+  }
+
+  &__title {
+    font-size: $font-size-lg;
+    font-weight: $font-semibold;
+    color: darken($error, 10%);
+    margin-bottom: $spacing-xs;
+  }
+
+  &__text {
+    font-size: $font-size-sm;
+    color: $text-primary;
+    margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-xs;
+    flex-shrink: 0;
+  }
+
+  &__retry {
+    @include button-reset;
+    padding: $spacing-xs $spacing-sm;
+    background-color: $error;
+    color: white;
+    font-weight: $font-medium;
+    font-size: $font-size-sm;
+    border-radius: $border-radius-sm;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: darken($error, 10%);
+    }
+  }
+
+  &__dismiss {
+    @include button-reset;
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    border-radius: $border-radius-sm;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+  }
+}

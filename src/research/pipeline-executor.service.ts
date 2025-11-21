@@ -16,12 +16,16 @@ export class PipelineExecutor {
 
   async executeStage(context: StageContext): Promise<StageResult> {
     const startTime = Date.now();
+    const startTimestamp = new Date().toISOString();
 
     try {
       this.logger.logStageInput(context.stageNumber, context.logId, {
         messages: context.messages,
         tools: context.tools,
         systemPrompt: context.systemPrompt,
+        startTimestamp,
+        messagesCount: context.messages.length,
+        toolsCount: context.tools.length,
       });
 
       // Add system prompt to messages
@@ -51,6 +55,11 @@ export class PipelineExecutor {
         {
           message: result.message,
           tool_calls: result.tool_calls,
+          endTimestamp: new Date().toISOString(),
+          hasToolCalls: result.tool_calls.length > 0,
+          toolCallsCount: result.tool_calls.length,
+          messageRole: result.message.role,
+          messageContentLength: result.message.content?.length || 0,
         },
         executionTime
       );

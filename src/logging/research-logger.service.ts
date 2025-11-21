@@ -96,10 +96,8 @@ export class ResearchLogger {
   }
 
   private sanitize(data: any): any {
-    const str = JSON.stringify(data);
-    if (str.length > 10000) {  // Increased from 1000 to 10000
-      return str.substring(0, 10000) + '... [truncated]';
-    }
+    // NO truncation - log everything for complete debugging visibility
+    // Disk space is not a concern, complete data is critical
     return data;
   }
 }

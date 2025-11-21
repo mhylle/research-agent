@@ -1,0 +1,19 @@
+<div class="tool-node">
+  <div class="tool-node__header" (click)="toggleExpand()">
+    <div class="tool-node__info">
+      <span class="tool-node__icon">{{ node.icon }}</span>
+      <span class="tool-node__name">{{ node.name }}</span>
+    </div>
+    <div class="tool-node__meta">
+      <span class="tool-node__duration">{{ formatDuration(node.duration) }}</span>
+      <span class="tool-node__expand-icon" [class.tool-node__expand-icon--expanded]="node.isExpanded">
+        ▶
+      </span>
+    </div>
+  </div>
+
+  <div class="tool-node__content" *ngIf="node.isExpanded">
+    <app-json-viewer title="Input" [data]="node.input" />
+    <app-json-viewer title="Output" [data]="node.output" *ngIf="node.output" />
+  </div>
+</div>

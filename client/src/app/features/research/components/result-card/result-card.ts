@@ -1,12 +1,13 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import type { ResearchResult } from '../../../../models';
 import { SourcesListComponent } from '../sources-list/sources-list';
 
 @Component({
   selector: 'app-result-card',
   standalone: true,
-  imports: [CommonModule, SourcesListComponent],
+  imports: [CommonModule, SourcesListComponent, RouterModule],
   templateUrl: './result-card.html',
   styleUrls: ['./result-card.scss']
 })

@@ -53,7 +53,7 @@ export class LogsListComponent {
   }
 
   getStatusIcon(status: string): string {
-    const icons = {
+    const icons: Record<string, string> = {
       'completed': '✅',
       'error': '❌',
       'incomplete': '⏳'

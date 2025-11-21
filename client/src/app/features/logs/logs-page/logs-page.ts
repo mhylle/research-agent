@@ -1,9 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { LogsService } from '../../core/services/logs.service';
-import { LogsListComponent } from './components/logs-list/logs-list';
-import { LogTimelineComponent } from './components/log-timeline/log-timeline';
+import { LogsService } from '../../../core/services/logs.service';
+import { LogsListComponent } from '../components/logs-list/logs-list';
+import { LogTimelineComponent } from '../components/log-timeline/log-timeline';
 
 @Component({
   selector: 'app-logs-page',
@@ -13,16 +13,17 @@ import { LogTimelineComponent } from './components/log-timeline/log-timeline';
   styleUrls: ['./logs-page.scss']
 })
 export class LogsPageComponent implements OnInit {
-  logsService = inject(LogsService);
-  route = inject(ActivatedRoute);
+  logsService: LogsService = inject(LogsService);
+  route: ActivatedRoute = inject(ActivatedRoute);
 
   ngOnInit() {
     this.logsService.loadSessions();
 
     // Handle route parameter for direct logId access
     this.route.params.subscribe(params => {
-      if (params['logId']) {
-        this.logsService.selectSession(params['logId']);
+      const logId = params['logId'];
+      if (logId && typeof logId === 'string') {
+        this.logsService.selectSession(logId);
       }
     });
   }

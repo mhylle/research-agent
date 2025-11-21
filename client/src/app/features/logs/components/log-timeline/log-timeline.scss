@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
@@ -61,18 +62,18 @@
     text-transform: uppercase;
 
     &--completed {
-      background: lighten($success, 45%);
-      color: darken($success, 10%);
+      background: color.adjust($success, $lightness: 45%);
+      color: color.adjust($success, $lightness: -10%);
     }
 
     &--error {
-      background: lighten($error, 45%);
-      color: darken($error, 10%);
+      background: color.adjust($error, $lightness: 45%);
+      color: color.adjust($error, $lightness: -10%);
     }
 
     &--incomplete {
-      background: lighten($warning, 45%);
-      color: darken($warning, 10%);
+      background: color.adjust($warning, $lightness: 45%);
+      color: color.adjust($warning, $lightness: -10%);
     }
   }
 

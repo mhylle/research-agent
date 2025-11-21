@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '../../../../styles/variables' as *;
 @use '../../../../styles/mixins' as *;
 
@@ -43,7 +44,7 @@
 
     &--active {
       color: $primary;
-      background: lighten($primary, 45%);
+      background: color.adjust($primary, $lightness: 45%);
     }
   }
 }

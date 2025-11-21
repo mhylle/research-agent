@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TimelineNode } from '../../../../models';
+import type { TimelineNode } from '../../../../models';
 import { JsonViewerComponent } from '../json-viewer/json-viewer';
 import { ToolNodeComponent } from '../tool-node/tool-node';
 

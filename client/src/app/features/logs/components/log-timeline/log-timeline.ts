@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TimelineNode, LogSession } from '../../../../models';
+import type { TimelineNode, LogSession } from '../../../../models';
 import { StageNodeComponent } from '../stage-node/stage-node';
 
 @Component({

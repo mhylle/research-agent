@@ -1,0 +1,49 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.app-header {
+  @include flex-between;
+  padding: $spacing-md $spacing-lg;
+  background: $bg-primary;
+  border-bottom: 1px solid $border;
+  box-shadow: $shadow-sm;
+
+  &__title {
+    margin: 0;
+    font-size: $font-size-xl;
+    font-weight: $font-bold;
+  }
+
+  &__logo {
+    color: $text-primary;
+    text-decoration: none;
+
+    &:hover {
+      color: $primary;
+    }
+  }
+
+  &__nav {
+    display: flex;
+    gap: $spacing-md;
+  }
+
+  &__link {
+    padding: $spacing-xs $spacing-md;
+    color: $text-secondary;
+    text-decoration: none;
+    font-weight: $font-medium;
+    border-radius: $border-radius-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: $primary;
+      background: $bg-secondary;
+    }
+
+    &--active {
+      color: $primary;
+      background: lighten($primary, 45%);
+    }
+  }
+}

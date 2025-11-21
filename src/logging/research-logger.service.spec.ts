@@ -48,9 +48,9 @@ describe('ResearchLogger', () => {
   });
 
   it('should sanitize large outputs', () => {
-    const largeData = 'a'.repeat(2000);
+    const largeData = 'a'.repeat(15000);
     const result = service['sanitize'](largeData);
-    expect(result.length).toBeLessThan(1100);
-    expect(result).toContain('...');
+    expect(result.length).toBeLessThan(10100);
+    expect(result).toContain('[truncated]');
   });
 });

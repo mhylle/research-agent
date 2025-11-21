@@ -19,8 +19,9 @@ export class PipelineExecutor {
 
     try {
       this.logger.logStageInput(context.stageNumber, context.logId, {
-        messagesCount: context.messages.length,
-        toolsCount: context.tools.length,
+        messages: context.messages,
+        tools: context.tools,
+        systemPrompt: context.systemPrompt,
       });
 
       // Add system prompt to messages
@@ -48,8 +49,8 @@ export class PipelineExecutor {
         context.stageNumber,
         context.logId,
         {
-          hasToolCalls: result.tool_calls.length > 0,
-          toolCallsCount: result.tool_calls.length,
+          message: result.message,
+          tool_calls: result.tool_calls,
         },
         executionTime
       );

@@ -7,7 +7,7 @@ import { LogSessionDto } from './dto/log-session.dto';
 import { LogDetailDto } from './dto/log-detail.dto';
 import { QuerySessionsDto } from './dto/query-sessions.dto';
 
-interface SessionsResult {
+export interface SessionsResult {
   sessions: LogSessionDto[];
   total: number;
 }
@@ -48,7 +48,7 @@ export class LogsService {
       if (!sessionsMap.has(entry.logId)) {
         sessionsMap.set(entry.logId, []);
       }
-      sessionsMap.get(entry.logId).push(entry);
+      sessionsMap.get(entry.logId)!.push(entry);
     });
 
     // Build session summaries
@@ -135,7 +135,7 @@ export class LogsService {
       const searchLower = options.search.toLowerCase();
       filtered = filtered.filter(s =>
         s.query.toLowerCase().includes(searchLower) ||
-        s.logId.includes(options.search)
+        s.logId.toLowerCase().includes(searchLower)
       );
     }
 

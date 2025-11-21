@@ -1,0 +1,88 @@
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as *;
+
+.json-viewer {
+  background: #1e1e1e;
+  border-radius: $border-radius-sm;
+  overflow: hidden;
+  margin: $spacing-sm 0;
+
+  &__header {
+    @include flex-between;
+    background: #2d2d2d;
+    padding: $spacing-xs $spacing-sm;
+    border-bottom: 1px solid #3d3d3d;
+  }
+
+  &__title {
+    font-size: $font-size-sm;
+    color: #9cdcfe;
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-xs;
+  }
+
+  &__copy-btn {
+    @include button-reset;
+    font-size: $font-size-xs;
+    color: #858585;
+    padding: 2px 8px;
+    border-radius: $border-radius-sm;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: #d4d4d4;
+      background: rgba(255,255,255,0.1);
+    }
+  }
+
+  &__content {
+    padding: $spacing-sm;
+    max-height: 300px;
+    overflow: auto;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: $font-size-sm;
+    line-height: 1.5;
+    color: #d4d4d4;
+
+    &--expanded {
+      max-height: none;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  }
+
+  &__expand {
+    text-align: center;
+    padding: $spacing-xs;
+    background: #2d2d2d;
+    border-top: 1px solid #3d3d3d;
+
+    button {
+      @include button-reset;
+      color: #9cdcfe;
+      font-size: $font-size-xs;
+      padding: $spacing-xs;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+// JSON syntax highlighting
+:host ::ng-deep {
+  .json-key { color: #9cdcfe; }
+  .json-string { color: #ce9178; }
+  .json-number { color: #b5cea8; }
+  .json-boolean { color: #569cd6; }
+  .json-null { color: #569cd6; }
+}

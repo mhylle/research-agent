@@ -1,0 +1,25 @@
+<div class="json-viewer" *ngIf="hasData">
+  <div class="json-viewer__header">
+    <span class="json-viewer__title">{{ title }}</span>
+    <div class="json-viewer__actions">
+      <button class="json-viewer__copy-btn" (click)="copyJson()">
+        📋 Copy
+      </button>
+      <button class="json-viewer__copy-btn" (click)="toggleRaw()">
+        {{ showRaw ? 'Formatted' : 'Raw' }}
+      </button>
+    </div>
+  </div>
+
+  <div
+    class="json-viewer__content"
+    [class.json-viewer__content--expanded]="isExpanded"
+  >
+    <pre *ngIf="!showRaw" [innerHTML]="formattedJson"></pre>
+    <pre *ngIf="showRaw">{{ rawJson }}</pre>
+  </div>
+
+  <div class="json-viewer__expand" *ngIf="needsExpansion && !isExpanded">
+    <button (click)="expand()">Show More</button>
+  </div>
+</div>

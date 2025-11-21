@@ -1,0 +1,22 @@
+<header class="app-header">
+  <h1 class="app-header__title">
+    <a routerLink="/" class="app-header__logo">Research Agent</a>
+  </h1>
+  <nav class="app-header__nav">
+    <a
+      routerLink="/"
+      routerLinkActive="app-header__link--active"
+      [routerLinkActiveOptions]="{exact: true}"
+      class="app-header__link"
+    >
+      Research
+    </a>
+    <a
+      routerLink="/logs"
+      routerLinkActive="app-header__link--active"
+      class="app-header__link"
+    >
+      Logs
+    </a>
+  </nav>
+</header>

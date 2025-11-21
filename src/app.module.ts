@@ -9,6 +9,7 @@ import { ToolsModule } from './tools/tools.module';
 import { LLMModule } from './llm/llm.module';
 import { ResearchModule } from './research/research.module';
 import { HealthModule } from './health/health.module';
+import { LogsModule } from './logs/logs.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { HealthModule } from './health/health.module';
     LLMModule,
     ResearchModule,
     HealthModule,
+    LogsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

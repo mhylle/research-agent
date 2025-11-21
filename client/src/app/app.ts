@@ -1,11 +1,15 @@
 import { Component } from '@angular/core';
-import { ResearchComponent } from './features/research/research';
+import { RouterOutlet } from '@angular/router';
+import { AppHeaderComponent } from './shared/components/app-header/app-header';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ResearchComponent],
-  template: '<app-research></app-research>',
+  imports: [RouterOutlet, AppHeaderComponent],
+  template: `
+    <app-header />
+    <router-outlet />
+  `,
   styles: []
 })
 export class AppComponent {}

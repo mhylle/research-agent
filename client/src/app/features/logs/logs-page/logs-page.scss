@@ -1,0 +1,48 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.logs-page {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  height: calc(100vh - 60px);  // Account for header height
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+  }
+
+  &__sidebar {
+    overflow: hidden;
+
+    @media (max-width: $breakpoint-md) {
+      height: 50vh;
+      border-bottom: 1px solid $border;
+    }
+  }
+
+  &__content {
+    background: $bg-secondary;
+    overflow-y: auto;
+  }
+
+  &__empty {
+    @include flex-center;
+    height: 100%;
+    padding: $spacing-xl;
+
+    .empty-state {
+      text-align: center;
+      max-width: 400px;
+
+      h3 {
+        font-size: $font-size-xl;
+        color: $text-primary;
+        margin-bottom: $spacing-sm;
+      }
+
+      p {
+        color: $text-secondary;
+        margin: 0;
+      }
+    }
+  }
+}

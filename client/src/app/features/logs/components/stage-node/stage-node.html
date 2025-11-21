@@ -1,0 +1,31 @@
+<div class="stage-node" [style.--stage-color]="node.color">
+  <div class="stage-node__header" (click)="toggleExpand()">
+    <div class="stage-node__title">
+      <span class="stage-node__icon">{{ node.icon }}</span>
+      <span class="stage-node__name">{{ node.name }}</span>
+    </div>
+    <div class="stage-node__meta">
+      <span class="stage-node__duration">{{ formatDuration(node.duration) }}</span>
+      <span class="stage-node__expand-icon" [class.stage-node__expand-icon--expanded]="node.isExpanded">
+        ▶
+      </span>
+    </div>
+  </div>
+
+  <div class="stage-node__content" *ngIf="node.isExpanded">
+    <div class="stage-node__io">
+      <app-json-viewer title="Input" [data]="node.input" />
+      <app-json-viewer title="Output" [data]="node.output" *ngIf="node.output" />
+    </div>
+
+    <div class="stage-node__children" *ngIf="node.children && node.children.length > 0">
+      <h4 class="stage-node__children-title">Tool Calls ({{ node.children.length }})</h4>
+      <app-tool-node
+        *ngFor="let tool of node.children"
+        [node]="tool"
+      />
+    </div>
+  </div>
+
+  <div class="stage-node__connector" *ngIf="!isLast"></div>
+</div>

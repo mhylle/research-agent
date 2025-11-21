@@ -62,3 +62,11 @@ $breakpoint-sm: 640px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 1024px;
 $breakpoint-xl: 1280px;
+
+// Timeline colors (for log visualization)
+$timeline-stage1: #3b82f6;   // Blue - Query Analysis
+$timeline-stage2: #8b5cf6;   // Purple - Content Fetch
+$timeline-stage3: #10b981;   // Green - Synthesis
+$timeline-tool: #f59e0b;     // Orange - Tool calls
+$timeline-line: #e5e7eb;     // Gray - Connector lines
+$timeline-bg: #f9fafb;       // Light background

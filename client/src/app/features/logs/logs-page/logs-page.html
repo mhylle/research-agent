@@ -1,0 +1,27 @@
+<div class="logs-page">
+  <aside class="logs-page__sidebar">
+    <app-logs-list
+      [sessions]="logsService.filteredSessions()"
+      [selectedLogId]="logsService.selectedLogId()"
+      [isLoading]="logsService.isLoadingSessions()"
+      (sessionSelected)="onSessionSelected($event)"
+      (searchChanged)="onSearchChanged($event)"
+    />
+  </aside>
+
+  <main class="logs-page__content">
+    <app-log-timeline
+      *ngIf="logsService.selectedSession()"
+      [session]="logsService.selectedSession()!"
+      [timelineNodes]="logsService.timelineNodes()"
+      [isLoading]="logsService.isLoadingDetails()"
+    />
+
+    <div class="logs-page__empty" *ngIf="!logsService.selectedSession() && !logsService.isLoadingSessions()">
+      <div class="empty-state">
+        <h3>Select a Research Session</h3>
+        <p>Choose a session from the list to view its timeline and debug the research pipeline</p>
+      </div>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,139 @@
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as *;
+
+.logs-list {
+  background: $bg-primary;
+  border-right: 1px solid $border;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &__search {
+    padding: $spacing-md;
+    border-bottom: 1px solid $border;
+    flex-shrink: 0;
+  }
+
+  &__search-input {
+    width: 100%;
+    padding: $spacing-sm;
+    border: 1px solid $border;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-family: $font-family;
+
+    &:focus {
+      outline: 2px solid $primary;
+      border-color: $primary;
+    }
+  }
+
+  &__count {
+    display: block;
+    margin-top: $spacing-xs;
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+
+  &__loading {
+    padding: $spacing-md;
+  }
+
+  &__sessions {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  &__session-item {
+    padding: $spacing-sm $spacing-md;
+    border-bottom: 1px solid $border;
+    cursor: pointer;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: $bg-secondary;
+    }
+
+    &--active {
+      background-color: lighten($primary, 45%);
+      border-left: 3px solid $primary;
+    }
+  }
+
+  &__query {
+    font-weight: $font-medium;
+    color: $text-primary;
+    margin-bottom: $spacing-xs;
+    word-wrap: break-word;
+    line-height: $line-height-tight;
+    font-size: $font-size-sm;
+  }
+
+  &__meta {
+    @include flex-between;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__logid {
+    font-family: 'Monaco', monospace;
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+
+  &__status-icon {
+    font-size: $font-size-sm;
+  }
+
+  &__footer {
+    @include flex-between;
+    font-size: $font-size-xs;
+    color: $text-secondary;
+  }
+
+  &__timestamp {
+    color: $text-secondary;
+  }
+
+  &__duration {
+    padding: 2px 6px;
+    background: $bg-tertiary;
+    border-radius: $border-radius-sm;
+    font-weight: $font-medium;
+    font-family: 'Monaco', monospace;
+  }
+
+  &__empty {
+    padding: $spacing-xl;
+    text-align: center;
+    color: $text-muted;
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+// Loading skeletons
+.skeleton-item {
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $border;
+}
+
+.skeleton-line {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: $border-radius-sm;
+
+  &--title {
+    height: 18px;
+    width: 85%;
+    margin-bottom: $spacing-xs;
+  }
+
+  &--meta {
+    height: 14px;
+    width: 60%;
+  }
+}

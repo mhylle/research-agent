@@ -1,0 +1,91 @@
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as *;
+
+.stage-node {
+  @include card;
+  border-left: 4px solid var(--stage-color);
+  margin-bottom: $spacing-lg;
+  position: relative;
+  transition: box-shadow $transition-base;
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+
+  &__header {
+    @include flex-between;
+    cursor: pointer;
+    padding: $spacing-md;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__icon {
+    font-size: $font-size-xl;
+  }
+
+  &__name {
+    font-weight: $font-semibold;
+    color: $text-primary;
+    font-size: $font-size-lg;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  &__duration {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    padding: 4px 8px;
+    background: $bg-tertiary;
+    border-radius: $border-radius-sm;
+    font-family: 'Monaco', monospace;
+  }
+
+  &__expand-icon {
+    color: $text-muted;
+    transition: transform $transition-fast;
+
+    &--expanded {
+      transform: rotate(90deg);
+    }
+  }
+
+  &__content {
+    padding: 0 $spacing-md $spacing-md;
+    border-top: 1px solid $border;
+  }
+
+  &__io {
+    margin: $spacing-md 0;
+  }
+
+  &__children {
+    margin-top: $spacing-md;
+    padding-left: $spacing-md;
+    border-left: 2px dashed $timeline-line;
+  }
+
+  &__children-title {
+    font-size: $font-size-sm;
+    font-weight: $font-semibold;
+    color: $text-secondary;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__connector {
+    position: absolute;
+    left: 20px;
+    bottom: -$spacing-lg;
+    width: 2px;
+    height: $spacing-lg;
+    background: $timeline-line;
+  }
+}

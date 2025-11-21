@@ -1,0 +1,108 @@
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as *;
+
+.log-timeline {
+  padding: $spacing-lg;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  &__header {
+    margin-bottom: $spacing-xl;
+  }
+
+  &__query {
+    font-size: $font-size-2xl;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    margin-bottom: $spacing-md;
+    word-wrap: break-word;
+    line-height: $line-height-tight;
+  }
+
+  &__meta {
+    display: flex;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  &__logid {
+    font-family: 'Monaco', monospace;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &__copy-btn {
+    @include button-reset;
+    color: $primary;
+    padding: 2px 4px;
+    border-radius: $border-radius-sm;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $bg-secondary;
+    }
+  }
+
+  &__duration {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    font-weight: $font-medium;
+  }
+
+  &__status {
+    padding: 4px 8px;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-xs;
+    font-weight: $font-semibold;
+    text-transform: uppercase;
+
+    &--completed {
+      background: lighten($success, 45%);
+      color: darken($success, 10%);
+    }
+
+    &--error {
+      background: lighten($error, 45%);
+      color: darken($error, 10%);
+    }
+
+    &--incomplete {
+      background: lighten($warning, 45%);
+      color: darken($warning, 10%);
+    }
+  }
+
+  &__stages {
+    position: relative;
+  }
+
+  &__empty {
+    @include card;
+    text-align: center;
+    padding: $spacing-xl;
+    color: $text-secondary;
+
+    p {
+      margin: 0;
+    }
+  }
+
+  &__loading {
+    .skeleton-stage {
+      @include card;
+      margin-bottom: $spacing-lg;
+
+      &__header {
+        height: 60px;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: $border-radius-sm;
+      }
+    }
+  }
+}

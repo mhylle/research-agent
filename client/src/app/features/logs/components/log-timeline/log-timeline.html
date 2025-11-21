@@ -1,0 +1,35 @@
+<div class="log-timeline">
+  <div class="log-timeline__header">
+    <h2 class="log-timeline__query">{{ session.query }}</h2>
+    <div class="log-timeline__meta">
+      <span class="log-timeline__logid">
+        LogID: {{ session.logId }}
+        <button class="log-timeline__copy-btn" (click)="copyLogId()">📋</button>
+      </span>
+      <span class="log-timeline__duration">
+        Total: {{ formatDuration(session.totalDuration) }}
+      </span>
+      <span class="log-timeline__status" [class]="'log-timeline__status--' + session.status">
+        {{ session.status }}
+      </span>
+    </div>
+  </div>
+
+  <div class="log-timeline__loading" *ngIf="isLoading">
+    <div class="skeleton-stage" *ngFor="let i of [1,2,3]">
+      <div class="skeleton-stage__header"></div>
+    </div>
+  </div>
+
+  <div class="log-timeline__stages" *ngIf="!isLoading">
+    <app-stage-node
+      *ngFor="let stage of timelineNodes; let i = index; let last = last"
+      [node]="stage"
+      [isLast]="last"
+    />
+  </div>
+
+  <div class="log-timeline__empty" *ngIf="!isLoading && timelineNodes.length === 0">
+    <p>No timeline data available for this session</p>
+  </div>
+</div>

@@ -1,0 +1,42 @@
+<div class="logs-list">
+  <div class="logs-list__search">
+    <input
+      type="text"
+      class="logs-list__search-input"
+      placeholder="Search queries or logId..."
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="onSearchChange()"
+    />
+    <span class="logs-list__count">{{ sessions.length }} session(s)</span>
+  </div>
+
+  <div class="logs-list__loading" *ngIf="isLoading">
+    <div class="skeleton-item" *ngFor="let i of [1,2,3,4,5]">
+      <div class="skeleton-line skeleton-line--title"></div>
+      <div class="skeleton-line skeleton-line--meta"></div>
+    </div>
+  </div>
+
+  <div class="logs-list__sessions" *ngIf="!isLoading">
+    <div
+      *ngFor="let session of sessions"
+      class="logs-list__session-item"
+      [class.logs-list__session-item--active]="session.logId === selectedLogId"
+      (click)="selectSession(session.logId)"
+    >
+      <div class="logs-list__query">{{ session.query }}</div>
+      <div class="logs-list__meta">
+        <span class="logs-list__logid">{{ truncateLogId(session.logId) }}</span>
+        <span class="logs-list__status-icon">{{ getStatusIcon(session.status) }}</span>
+      </div>
+      <div class="logs-list__footer">
+        <span class="logs-list__timestamp">{{ formatTimestamp(session.timestamp) }}</span>
+        <span class="logs-list__duration">{{ formatDuration(session.totalDuration) }}</span>
+      </div>
+    </div>
+
+    <div class="logs-list__empty" *ngIf="sessions.length === 0">
+      <p>No sessions found</p>
+    </div>
+  </div>
+</div>

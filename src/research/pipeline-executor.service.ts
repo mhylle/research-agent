@@ -17,8 +17,12 @@ export class PipelineExecutor {
   async executeStage(context: StageContext): Promise<StageResult> {
     const startTime = Date.now();
     const startTimestamp = new Date().toISOString();
+    const stageNodeId = `stage-${context.stageNumber}`;
 
     try {
+      // Node lifecycle: stage start
+      this.logger.nodeStart(stageNodeId, context.logId, 'stage');
+
       this.logger.logStageInput(context.stageNumber, context.logId, {
         messages: context.messages,
         tools: context.tools,
@@ -43,6 +47,26 @@ export class PipelineExecutor {
 
       const executionTime = Date.now() - startTime;
 
+      // Log LLM token usage
+      const promptTokens = response.prompt_eval_count || 0;
+      const completionTokens = response.eval_count || 0;
+      const totalTokens = promptTokens + completionTokens;
+
+      this.logger.logLLMCall(
+        context.logId,
+        context.stageNumber,
+        'qwen2.5', // TODO: Get model name from config
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        executionTime,
+        {
+          loadDuration: response.load_duration,
+          promptEvalDuration: response.prompt_eval_duration,
+          evalDuration: response.eval_duration,
+        }
+      );
+
       const result: StageResult = {
         message: response.message as ChatMessage,
         tool_calls: response.message.tool_calls || [],
@@ -64,29 +88,44 @@ export class PipelineExecutor {
         executionTime
       );
 
+      // Node lifecycle: stage complete
+      this.logger.nodeComplete(stageNodeId, context.logId, result);
+
       return result;
     } catch (error) {
+      // Node lifecycle: stage error
+      this.logger.nodeError(stageNodeId, context.logId, error);
       this.logger.logStageError(context.stageNumber, context.logId, error);
       throw error;
     }
   }
 
-  async executeToolCalls(toolCalls: any[], logId: string): Promise<any[]> {
+  async executeToolCalls(toolCalls: any[], logId: string, parentNodeId?: string): Promise<any[]> {
     const results: any[] = [];
 
     for (const toolCall of toolCalls) {
       const startTime = Date.now();
       const { name, arguments: args } = toolCall.function;
+      const toolNodeId = `tool-${name}-${Date.now()}`;
 
       try {
+        // Node lifecycle: tool start
+        this.logger.nodeStart(toolNodeId, logId, 'tool', parentNodeId);
+
         const result = await this.executeWithRetry(() =>
           this.toolRegistry.execute(name, args)
         );
         const executionTime = Date.now() - startTime;
 
         this.logger.logToolExecution(logId, name, args, result, executionTime);
+
+        // Node lifecycle: tool complete
+        this.logger.nodeComplete(toolNodeId, logId, result);
+
         results.push(result);
       } catch (error) {
+        // Node lifecycle: tool error
+        this.logger.nodeError(toolNodeId, logId, error);
         this.logger.logStageError(0, logId, error);
         throw error;
       }

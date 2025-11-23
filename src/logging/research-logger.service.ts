@@ -3,10 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import * as winston from 'winston';
 import * as fs from 'fs';
 import * as path from 'path';
+import { EventEmitter } from 'events';
+import { NodeLifecycleEvent } from './interfaces/enhanced-log-entry.interface';
 
 @Injectable()
 export class ResearchLogger {
   private logger: winston.Logger;
+  private eventEmitter: EventEmitter;
+  private activeNodes = new Map<string, NodeLifecycleEvent>();
 
   constructor(private configService: ConfigService) {
     const logDir: string = this.configService.get<string>('LOG_DIR') || './logs';
@@ -41,6 +45,10 @@ export class ResearchLogger {
         })
       );
     }
+
+    // Initialize event emitter for real-time streaming
+    this.eventEmitter = new EventEmitter();
+    this.eventEmitter.setMaxListeners(100); // Support multiple concurrent sessions
   }
 
   logStageInput(stage: number, logId: string, input: any) {
@@ -80,6 +88,44 @@ export class ResearchLogger {
       input: this.sanitize(args),
       output: this.sanitize(result),
       executionTime,
+      metadata: {
+        toolLatency: executionTime,
+        toolName: toolName,
+        inputSize: JSON.stringify(args).length,
+        outputSize: JSON.stringify(result).length,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  logLLMCall(
+    logId: string,
+    stage: number,
+    model: string,
+    promptTokens: number,
+    completionTokens: number,
+    totalTokens: number,
+    executionTime: number,
+    durationDetails?: {
+      loadDuration?: number;
+      promptEvalDuration?: number;
+      evalDuration?: number;
+    }
+  ) {
+    this.logger.info('LLM call', {
+      logId,
+      stage,
+      component: 'llm',
+      operation: 'chat',
+      metadata: {
+        model,
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        tokensUsed: totalTokens,
+        ...durationDetails,
+      },
+      executionTime,
       timestamp: new Date().toISOString(),
     });
   }
@@ -99,5 +145,105 @@ export class ResearchLogger {
     // NO truncation - log everything for complete debugging visibility
     // Disk space is not a concern, complete data is critical
     return data;
+  }
+
+  // Node lifecycle methods for real-time graph visualization
+  nodeStart(nodeId: string, logId: string, nodeType: 'stage' | 'tool' | 'llm' | 'retry', parentId?: string): void {
+    const event: NodeLifecycleEvent = {
+      logId,
+      nodeId,
+      parentNodeId: parentId,
+      nodeType,
+      event: 'start',
+      timestamp: new Date().toISOString(),
+      status: 'running',
+    };
+
+    this.activeNodes.set(nodeId, event);
+    this.emitEvent(event);
+
+    this.logger.info('Node started', {
+      logId,
+      nodeId,
+      nodeType,
+      parentNodeId: parentId,
+      timestamp: event.timestamp,
+    });
+  }
+
+  nodeProgress(nodeId: string, logId: string, progress: any): void {
+    const event: NodeLifecycleEvent = {
+      logId,
+      nodeId,
+      nodeType: this.activeNodes.get(nodeId)?.nodeType || 'stage',
+      event: 'progress',
+      timestamp: new Date().toISOString(),
+      data: progress,
+      status: 'running',
+    };
+
+    this.emitEvent(event);
+  }
+
+  nodeComplete(nodeId: string, logId: string, result: any): void {
+    const startEvent = this.activeNodes.get(nodeId);
+    const event: NodeLifecycleEvent = {
+      logId,
+      nodeId,
+      nodeType: startEvent?.nodeType || 'stage',
+      event: 'complete',
+      timestamp: new Date().toISOString(),
+      data: result,
+      status: 'completed',
+    };
+
+    this.activeNodes.delete(nodeId);
+    this.emitEvent(event);
+
+    this.logger.info('Node completed', {
+      logId,
+      nodeId,
+      nodeType: event.nodeType,
+      timestamp: event.timestamp,
+    });
+  }
+
+  nodeError(nodeId: string, logId: string, error: any): void {
+    const startEvent = this.activeNodes.get(nodeId);
+    const event: NodeLifecycleEvent = {
+      logId,
+      nodeId,
+      nodeType: startEvent?.nodeType || 'stage',
+      event: 'error',
+      timestamp: new Date().toISOString(),
+      data: { error: error.message || error },
+      status: 'error',
+    };
+
+    this.activeNodes.delete(nodeId);
+    this.emitEvent(event);
+
+    this.logger.error('Node error', {
+      logId,
+      nodeId,
+      nodeType: event.nodeType,
+      error: error.message || error,
+      timestamp: event.timestamp,
+    });
+  }
+
+  private emitEvent(event: NodeLifecycleEvent): void {
+    // Emit to all listeners for this logId
+    this.eventEmitter.emit(`event:${event.logId}`, event);
+    // Also emit to global listener
+    this.eventEmitter.emit('event:*', event);
+  }
+
+  getEventEmitter(): EventEmitter {
+    return this.eventEmitter;
+  }
+
+  getActiveNodes(): Map<string, NodeLifecycleEvent> {
+    return this.activeNodes;
   }
 }

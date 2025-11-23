@@ -26,6 +26,7 @@
     "postinstall": "cd client && npm install"
   },
   "dependencies": {
+    "@mozilla/readability": "^0.6.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -35,7 +36,9 @@
     "cheerio": "^1.1.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "jsdom": "^27.2.0",
     "ollama": "^0.6.3",
+    "playwright": "^1.56.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "winston": "^3.18.3"
@@ -48,6 +51,7 @@
     "@nestjs/testing": "^11.0.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^22.19.1",
     "@types/supertest": "^6.0.2",
     "concurrently": "^9.2.1",

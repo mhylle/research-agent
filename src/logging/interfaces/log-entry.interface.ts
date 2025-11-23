@@ -11,6 +11,11 @@ export interface LogEntry {
     model?: string;
     toolCalls?: number;
     tokensUsed?: number;
+    toolLatency?: number;
+    modelLatency?: number;
+    toolName?: string;
+    inputSize?: number;
+    outputSize?: number;
     error?: string;
   };
 }

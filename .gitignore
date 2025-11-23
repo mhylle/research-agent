@@ -6,3 +6,17 @@ dist/
 
 # Angular build output
 client/dist/
+
+# Test scripts
+test-*.ts
+test-*.js
+test-*.sh
+
+# Playwright test artifacts
+.playwright-mcp/
+
+# Documentation drafts
+LOGGING_ENHANCEMENT_PLAN.md
+docs/CONTENT_EXTRACTION_STRATEGY.md
+docs/IMPLEMENTATION_PLAN.md
+docs/VISUALIZATION_FEATURES.md

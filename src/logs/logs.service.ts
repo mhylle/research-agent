@@ -6,6 +6,7 @@ import { LogEntry } from '../logging/interfaces/log-entry.interface';
 import { LogSessionDto } from './dto/log-session.dto';
 import { LogDetailDto } from './dto/log-detail.dto';
 import { QuerySessionsDto } from './dto/query-sessions.dto';
+import { GraphData, GraphNode, GraphEdge } from '../research/interfaces/graph-node.interface';
 
 export interface SessionsResult {
   sessions: LogSessionDto[];
@@ -125,6 +126,161 @@ export class LogsService {
       toolCallCount,
       status,
     };
+  }
+
+  async getGraphData(logId: string): Promise<GraphData> {
+    const detail = await this.getSessionDetails(logId);
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+    const nodeMap = new Map<string, GraphNode>();
+
+    // Process entries to build nodes
+    detail.entries.forEach((entry, index) => {
+      const nodeId = `${entry.component}-${entry.stage || index}`;
+
+      let nodeType: 'stage' | 'tool' | 'llm' | 'retry' = 'stage';
+      if (entry.component === 'llm') {
+        nodeType = 'llm';
+      } else if (entry.component === 'pipeline') {
+        nodeType = 'stage';
+      } else {
+        nodeType = 'tool';
+      }
+
+      // Check if we need to create/update the node
+      if (entry.operation === 'stage_input' || entry.operation === 'execute' || entry.operation === 'chat') {
+        const node: GraphNode = {
+          id: nodeId,
+          type: nodeType,
+          name: entry.component === 'pipeline' ? `Stage ${entry.stage}` : entry.component,
+          icon: this.getNodeIcon(nodeType),
+          color: this.getNodeColor(nodeType),
+          size: 'medium',
+          startTime: new Date(entry.timestamp),
+          status: 'running',
+          parentId: entry.stage ? `pipeline-${entry.stage}` : undefined,
+          childrenIds: [],
+          dependsOn: [],
+          input: entry.input,
+        };
+
+        nodeMap.set(nodeId, node);
+        nodes.push(node);
+      }
+
+      // Update node on completion
+      if (entry.operation === 'stage_output' || entry.operation === 'execute' || entry.operation === 'chat') {
+        const node = nodeMap.get(nodeId);
+        console.log(`Update node: nodeId=${nodeId}, found=${!!node}, operation=${entry.operation}, component=${entry.component}`);
+        if (node) {
+          node.endTime = new Date(entry.timestamp);
+          node.duration = entry.executionTime || 0;
+          node.status = 'completed';
+          node.output = entry.output;
+
+          console.log(`Node ${nodeId}: has metadata=${!!entry.metadata}, has toolLatency=${!!entry.metadata?.toolLatency}`);
+
+          // Extract metrics from LLM calls
+          if (entry.metadata?.tokensUsed) {
+            node.metrics = {
+              tokensUsed: entry.metadata.tokensUsed,
+              modelLatency: entry.executionTime || 0,
+              retryCount: 0,
+            };
+          }
+
+          // Extract metrics from tool calls
+          if (entry.metadata?.toolLatency) {
+            console.log(`Setting tool metrics for ${node.id}: toolLatency=${entry.metadata.toolLatency}`);
+            node.metrics = {
+              ...node.metrics,
+              toolLatency: entry.metadata.toolLatency,
+              latency: entry.metadata.toolLatency,
+            };
+            console.log(`Tool metrics set:`, node.metrics);
+          }
+
+          // Extract web_fetch extraction metadata (from output)
+          if (entry.output?.extractionMetadata) {
+            console.log(`Setting extraction metadata for ${node.id}`);
+            node.metrics = {
+              ...node.metrics,
+              extractionMetadata: entry.output.extractionMetadata,
+              screenshotPath: entry.output.screenshotPath,
+            };
+            console.log(`Extraction metadata set for ${node.id}:`, {
+              hasReadability: !!entry.output.extractionMetadata.readability,
+              hasVision: !!entry.output.extractionMetadata.vision,
+              hasCheerio: !!entry.output.extractionMetadata.cheerio,
+              selectionReason: entry.output.extractionMetadata.selectionReason,
+            });
+          }
+        } else {
+          console.log(`WARNING: Node not found in nodeMap for nodeId=${nodeId}`);
+        }
+      }
+
+      // Handle errors
+      if (entry.operation === 'stage_error') {
+        const node = nodeMap.get(nodeId);
+        if (node) {
+          node.status = 'error';
+          node.error = entry.metadata?.error || 'Unknown error';
+        }
+      }
+    });
+
+    // Build edges between nodes
+    nodes.forEach(node => {
+      if (node.parentId) {
+        edges.push({
+          id: `${node.parentId}-${node.id}`,
+          source: node.parentId,
+          target: node.id,
+          type: 'parent-child',
+        });
+
+        // Update parent's children list
+        const parent = nodeMap.get(node.parentId);
+        if (parent) {
+          parent.childrenIds.push(node.id);
+        }
+      }
+    });
+
+    // Calculate metadata
+    const times = nodes.map(n => n.startTime.getTime());
+    const endTimes = nodes.filter(n => n.endTime).map(n => n.endTime!.getTime());
+
+    return {
+      nodes,
+      edges,
+      metadata: {
+        startTime: times.length > 0 ? new Date(Math.min(...times)) : undefined,
+        endTime: endTimes.length > 0 ? new Date(Math.max(...endTimes)) : undefined,
+        totalDuration: detail.totalDuration,
+      },
+    };
+  }
+
+  private getNodeIcon(type: string): string {
+    const iconMap = {
+      'stage': '⚙️',
+      'tool': '🔧',
+      'llm': '🤖',
+      'retry': '🔄'
+    };
+    return iconMap[type] || '●';
+  }
+
+  private getNodeColor(type: string): string {
+    const colorMap = {
+      'stage': '#3b82f6',  // blue
+      'tool': '#10b981',   // green
+      'llm': '#8b5cf6',    // purple
+      'retry': '#f59e0b'   // amber
+    };
+    return colorMap[type] || '#6b7280';
   }
 
   private filterAndPaginate(sessions: LogSessionDto[], options: QuerySessionsDto): SessionsResult {

@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { LogSession, LogDetail, LogEntry, TimelineNode } from '../../models';
+import { LogSession, LogDetail, LogEntry, TimelineNode, GraphData } from '../../models';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -12,8 +12,10 @@ export class LogsService {
   sessions = signal<LogSession[]>([]);
   selectedLogId = signal<string | null>(null);
   logDetail = signal<LogDetail | null>(null);
+  graphData = signal<GraphData | null>(null);
   isLoadingSessions = signal<boolean>(false);
   isLoadingDetails = signal<boolean>(false);
+  isLoadingGraph = signal<boolean>(false);
   searchTerm = signal<string>('');
   statusFilter = signal<'all' | 'completed' | 'error'>('all');
   error = signal<string | null>(null);
@@ -83,10 +85,45 @@ export class LogsService {
       );
 
       this.logDetail.set(detail);
+
+      // Also load graph data
+      await this.loadGraphData(logId);
     } catch (err: any) {
       this.error.set(err.message || 'Failed to load log details');
     } finally {
       this.isLoadingDetails.set(false);
+    }
+  }
+
+  async loadGraphData(logId: string): Promise<void> {
+    this.isLoadingGraph.set(true);
+
+    try {
+      const response = await firstValueFrom(
+        this.http.get<any>(`${environment.apiUrl}/logs/graph/${logId}`)
+      );
+
+      // Convert date strings to Date objects
+      const graphData: GraphData = {
+        nodes: response.nodes.map((node: any) => ({
+          ...node,
+          startTime: new Date(node.startTime),
+          endTime: node.endTime ? new Date(node.endTime) : undefined,
+        })),
+        edges: response.edges,
+        metadata: {
+          ...response.metadata,
+          startTime: response.metadata.startTime ? new Date(response.metadata.startTime) : undefined,
+          endTime: response.metadata.endTime ? new Date(response.metadata.endTime) : undefined,
+        },
+      };
+
+      this.graphData.set(graphData);
+    } catch (err: any) {
+      console.error('Failed to load graph data:', err);
+      // Don't set error signal, graph is optional
+    } finally {
+      this.isLoadingGraph.set(false);
     }
   }
 

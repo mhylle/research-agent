@@ -10,12 +10,43 @@
   </aside>
 
   <main class="logs-page__content">
-    <app-log-timeline
-      *ngIf="logsService.selectedSession()"
-      [session]="logsService.selectedSession()!"
-      [timelineNodes]="logsService.timelineNodes()"
-      [isLoading]="logsService.isLoadingDetails()"
-    />
+    <div class="view-tabs" *ngIf="logsService.selectedSession()">
+      <button
+        class="tab-button"
+        [class.active]="activeView === 'timeline'"
+        (click)="activeView = 'timeline'"
+      >
+        📋 Timeline View
+      </button>
+      <button
+        class="tab-button"
+        [class.active]="activeView === 'graph'"
+        (click)="activeView = 'graph'"
+      >
+        📊 Graph View
+      </button>
+    </div>
+
+    <div class="view-content" *ngIf="logsService.selectedSession()">
+      <app-log-timeline
+        *ngIf="activeView === 'timeline'"
+        [session]="logsService.selectedSession()!"
+        [timelineNodes]="logsService.timelineNodes()"
+        [isLoading]="logsService.isLoadingDetails()"
+      />
+
+      <app-timeline-graph
+        *ngIf="activeView === 'graph' && logsService.graphData()"
+        [graphData]="logsService.graphData()!"
+        [width]="1400"
+        [height]="700"
+      />
+
+      <div class="loading-graph" *ngIf="activeView === 'graph' && logsService.isLoadingGraph()">
+        <div class="spinner"></div>
+        <p>Loading graph visualization...</p>
+      </div>
+    </div>
 
     <div class="logs-page__empty" *ngIf="!logsService.selectedSession() && !logsService.isLoadingSessions()">
       <div class="empty-state">

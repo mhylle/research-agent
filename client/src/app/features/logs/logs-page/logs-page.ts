@@ -4,17 +4,19 @@ import { ActivatedRoute } from '@angular/router';
 import { LogsService } from '../../../core/services/logs.service';
 import { LogsListComponent } from '../components/logs-list/logs-list';
 import { LogTimelineComponent } from '../components/log-timeline/log-timeline';
+import { TimelineGraphComponent } from '../components/timeline-graph/timeline-graph';
 
 @Component({
   selector: 'app-logs-page',
-  standalone: true,
-  imports: [CommonModule, LogsListComponent, LogTimelineComponent],
+  imports: [CommonModule, LogsListComponent, LogTimelineComponent, TimelineGraphComponent],
   templateUrl: './logs-page.html',
   styleUrls: ['./logs-page.scss']
 })
 export class LogsPageComponent implements OnInit {
   logsService: LogsService = inject(LogsService);
   route: ActivatedRoute = inject(ActivatedRoute);
+
+  activeView: 'timeline' | 'graph' = 'timeline';
 
   ngOnInit() {
     this.logsService.loadSessions();

@@ -43,7 +43,8 @@ export class ResearchService implements OnModuleInit {
 
     const searchResults = await this.pipelineExecutor.executeToolCalls(
       stage1.tool_calls,
-      logId
+      logId,
+      `stage-1`
     );
 
     messages.push(stage1.message);
@@ -57,14 +58,25 @@ export class ResearchService implements OnModuleInit {
       stageNumber: 2,
       messages,
       tools: [this.webFetchProvider.definition],
-      systemPrompt: `You have search results. Select 3-5 most relevant sources and use web_fetch to retrieve their full content for deeper analysis.`,
+      systemPrompt: `IMPORTANT: You MUST use the web_fetch tool to retrieve full content from sources.
+
+Your task:
+1. Analyze the search results from Stage 1
+2. Identify the 3-5 most relevant and authoritative URLs
+3. For EACH selected URL, you MUST call the web_fetch tool with that URL
+4. DO NOT provide analysis yet - only make tool calls to fetch content
+
+Example: If you select URLs A, B, C - you must make 3 web_fetch tool calls.
+
+You must respond ONLY with tool calls. Do not write analysis or summaries at this stage.`,
       logId,
     });
     stageMetrics.push({ stage: 2, executionTime: stage2.executionTime });
 
     const fetchedContent = await this.pipelineExecutor.executeToolCalls(
       stage2.tool_calls,
-      logId
+      logId,
+      `stage-2`
     );
 
     messages.push(stage2.message);

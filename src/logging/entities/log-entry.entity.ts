@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Entity, Column, PrimaryColumn, Index } from 'typeorm';
-import { LogEntryData } from '../interfaces/log-entry.interface';
+import type { LogEntryData } from '../interfaces/log-entry.interface';
 
 @Entity('log_entries')
 export class LogEntryEntity {

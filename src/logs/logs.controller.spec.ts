@@ -30,7 +30,17 @@ describe('LogsController', () => {
 
   it('should return sessions', async () => {
     const mockResult = {
-      sessions: [{ logId: 'test', query: 'test query', timestamp: '', totalDuration: 1000, stageCount: 3, toolCallCount: 2, status: 'completed' as const }],
+      sessions: [
+        {
+          logId: 'test',
+          query: 'test query',
+          timestamp: '',
+          totalDuration: 1000,
+          stageCount: 3,
+          toolCallCount: 2,
+          status: 'completed' as const,
+        },
+      ],
       total: 1,
     };
 

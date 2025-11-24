@@ -1,4 +1,11 @@
-import { Injectable, OnModuleInit, HttpException, HttpStatus, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PipelineExecutor } from './pipeline-executor.service';
 import { ToolRegistry } from '../tools/registry/tool-registry.service';
 import { TavilySearchProvider } from '../tools/providers/tavily-search.provider';
@@ -35,9 +42,7 @@ export class ResearchService implements OnModuleInit {
     const startTime = Date.now();
     const stageMetrics: Array<{ stage: number; executionTime: number }> = [];
 
-    const messages: ChatMessage[] = [
-      { role: 'user', content: query }
-    ];
+    const messages: ChatMessage[] = [{ role: 'user', content: query }];
 
     // Stage 1: Query Analysis & Search
     const stage1 = await this.pipelineExecutor.executeStage({
@@ -52,13 +57,13 @@ export class ResearchService implements OnModuleInit {
     const searchResults = await this.pipelineExecutor.executeToolCalls(
       stage1.tool_calls,
       logId,
-      `stage-1`
+      `stage-1`,
     );
 
     messages.push(stage1.message);
     messages.push({
       role: 'tool',
-      content: JSON.stringify(searchResults)
+      content: JSON.stringify(searchResults),
     });
 
     // Stage 2: Source Selection & Fetch
@@ -84,13 +89,13 @@ You must respond ONLY with tool calls. Do not write analysis or summaries at thi
     const fetchedContent = await this.pipelineExecutor.executeToolCalls(
       stage2.tool_calls,
       logId,
-      `stage-2`
+      `stage-2`,
     );
 
     messages.push(stage2.message);
     messages.push({
       role: 'tool',
-      content: JSON.stringify(fetchedContent)
+      content: JSON.stringify(fetchedContent),
     });
 
     // Stage 3: Synthesis
@@ -134,16 +139,18 @@ You must respond ONLY with tool calls. Do not write analysis or summaries at thi
 
     // 2. Get graph data to find the node
     const graphData = await this.logsService.getGraphData(logId);
-    const node = graphData.nodes.find(n => n.id === nodeId);
+    const node = graphData.nodes.find((n) => n.id === nodeId);
 
     if (!node) {
-      throw new NotFoundException(`Node not found: ${nodeId} in session ${logId}`);
+      throw new NotFoundException(
+        `Node not found: ${nodeId} in session ${logId}`,
+      );
     }
 
     // 3. Validate that the node is in error state
     if (node.status !== 'error') {
       throw new BadRequestException(
-        `Node ${nodeId} is not in error state (current status: ${node.status}). Only failed nodes can be retried.`
+        `Node ${nodeId} is not in error state (current status: ${node.status}). Only failed nodes can be retried.`,
       );
     }
 
@@ -153,7 +160,7 @@ You must respond ONLY with tool calls. Do not write analysis or summaries at thi
 
     if (currentRetryCount >= this.MAX_RETRIES) {
       throw new BadRequestException(
-        `Maximum retry attempts (${this.MAX_RETRIES}) exceeded for node ${nodeId}`
+        `Maximum retry attempts (${this.MAX_RETRIES}) exceeded for node ${nodeId}`,
       );
     }
 
@@ -165,18 +172,23 @@ You must respond ONLY with tool calls. Do not write analysis or summaries at thi
       `${nodeId}-retry-${currentRetryCount + 1}`,
       logId,
       'retry',
-      nodeId
+      nodeId,
     );
 
     try {
       // 7. Re-execute the node based on its type
       if (node.type === 'stage') {
-        await this.retryStage(logId, node, sessionDetails, currentRetryCount + 1);
+        await this.retryStage(
+          logId,
+          node,
+          sessionDetails,
+          currentRetryCount + 1,
+        );
       } else if (node.type === 'tool') {
         await this.retryTool(logId, node, currentRetryCount + 1);
       } else {
         throw new BadRequestException(
-          `Retry not supported for node type: ${node.type}`
+          `Retry not supported for node type: ${node.type}`,
         );
       }
 
@@ -184,18 +196,18 @@ You must respond ONLY with tool calls. Do not write analysis or summaries at thi
       this.logger.nodeComplete(
         `${nodeId}-retry-${currentRetryCount + 1}`,
         logId,
-        { retryCount: currentRetryCount + 1 }
+        { retryCount: currentRetryCount + 1 },
       );
     } catch (error) {
       // 9. Log retry failure
       this.logger.nodeError(
         `${nodeId}-retry-${currentRetryCount + 1}`,
         logId,
-        error
+        error,
       );
       throw new HttpException(
         `Retry failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -204,7 +216,7 @@ You must respond ONLY with tool calls. Do not write analysis or summaries at thi
     logId: string,
     node: any,
     sessionDetails: any,
-    retryCount: number
+    retryCount: number,
   ): Promise<void> {
     // Extract stage number from node ID (e.g., "pipeline-1" -> 1)
     const stageMatch = node.id.match(/stage-(\d+)/);
@@ -218,7 +230,7 @@ You must respond ONLY with tool calls. Do not write analysis or summaries at thi
     // This is a simplified retry - in production, you'd need to reconstruct
     // the full message history and context from the log entries
     const messages: ChatMessage[] = [
-      { role: 'user', content: sessionDetails.query }
+      { role: 'user', content: sessionDetails.query },
     ];
 
     // Determine which tools and system prompt to use based on stage
@@ -265,26 +277,28 @@ You must respond ONLY with tool calls. Do not write analysis or summaries at thi
   private async retryTool(
     logId: string,
     node: any,
-    retryCount: number
+    retryCount: number,
   ): Promise<void> {
     // Extract tool name from node
     if (!node.input) {
-      throw new BadRequestException(`No input data found for tool node: ${node.id}`);
+      throw new BadRequestException(
+        `No input data found for tool node: ${node.id}`,
+      );
     }
 
     // Reconstruct tool call from node data
     const toolCall = {
       function: {
         name: node.name,
-        arguments: node.input
-      }
+        arguments: node.input,
+      },
     };
 
     // Execute the tool with retry
     await this.pipelineExecutor.executeToolCalls(
       [toolCall],
       logId,
-      node.parentId
+      node.parentId,
     );
   }
 }

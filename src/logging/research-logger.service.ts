@@ -17,7 +17,8 @@ export class ResearchLogger {
   private activeNodes = new Map<string, NodeLifecycleEvent>();
 
   constructor(private configService: ConfigService) {
-    const logDir: string = this.configService.get<string>('LOG_DIR') || './logs';
+    const logDir: string =
+      this.configService.get<string>('LOG_DIR') || './logs';
 
     // Ensure log directory exists
     if (!fs.existsSync(logDir)) {
@@ -28,7 +29,7 @@ export class ResearchLogger {
       level: this.configService.get<string>('LOG_LEVEL') || 'info',
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.json()
+        winston.format.json(),
       ),
       transports: [
         new winston.transports.File({
@@ -46,7 +47,7 @@ export class ResearchLogger {
       this.logger.add(
         new winston.transports.Console({
           format: winston.format.simple(),
-        })
+        }),
       );
     }
 
@@ -66,7 +67,12 @@ export class ResearchLogger {
     });
   }
 
-  logStageOutput(stage: number, logId: string, output: any, executionTime: number) {
+  logStageOutput(
+    stage: number,
+    logId: string,
+    output: any,
+    executionTime: number,
+  ) {
     this.logger.info('Stage output', {
       logId,
       stage,
@@ -83,7 +89,7 @@ export class ResearchLogger {
     toolName: string,
     args: any,
     result: any,
-    executionTime: number
+    executionTime: number,
   ) {
     this.logger.info('Tool executed', {
       logId,
@@ -114,7 +120,7 @@ export class ResearchLogger {
       loadDuration?: number;
       promptEvalDuration?: number;
       evalDuration?: number;
-    }
+    },
   ) {
     this.logger.info('LLM call', {
       logId,
@@ -152,7 +158,12 @@ export class ResearchLogger {
   }
 
   // Node lifecycle methods for real-time graph visualization
-  nodeStart(nodeId: string, logId: string, nodeType: 'stage' | 'tool' | 'llm' | 'retry', parentId?: string): void {
+  nodeStart(
+    nodeId: string,
+    logId: string,
+    nodeType: 'stage' | 'tool' | 'llm' | 'retry',
+    parentId?: string,
+  ): void {
     const event: NodeLifecycleEvent = {
       logId,
       nodeId,

@@ -6,10 +6,13 @@ export interface ToolDefinition {
     parameters: {
       type: 'object';
       required: string[];
-      properties: Record<string, {
-        type: string;
-        description: string;
-      }>;
+      properties: Record<
+        string,
+        {
+          type: string;
+          description: string;
+        }
+      >;
     };
   };
 }

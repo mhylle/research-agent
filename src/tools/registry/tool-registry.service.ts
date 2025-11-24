@@ -11,7 +11,7 @@ export class ToolRegistry {
   }
 
   getDefinitions(): ToolDefinition[] {
-    return Array.from(this.tools.values()).map(t => t.definition);
+    return Array.from(this.tools.values()).map((t) => t.definition);
   }
 
   async execute(name: string, args: Record<string, any>): Promise<any> {

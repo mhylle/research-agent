@@ -49,12 +49,21 @@ describe('ResearchService', () => {
     pipelineExecutor.executeStage
       .mockResolvedValueOnce({
         message: { role: 'assistant', content: 'Search results' },
-        tool_calls: [{ function: { name: 'tavily_search', arguments: { query: 'test' } } }],
+        tool_calls: [
+          { function: { name: 'tavily_search', arguments: { query: 'test' } } },
+        ],
         executionTime: 1000,
       })
       .mockResolvedValueOnce({
         message: { role: 'assistant', content: 'Fetch results' },
-        tool_calls: [{ function: { name: 'web_fetch', arguments: { url: 'https://test.com' } } }],
+        tool_calls: [
+          {
+            function: {
+              name: 'web_fetch',
+              arguments: { url: 'https://test.com' },
+            },
+          },
+        ],
         executionTime: 2000,
       })
       .mockResolvedValueOnce({
@@ -64,8 +73,12 @@ describe('ResearchService', () => {
       });
 
     pipelineExecutor.executeToolCalls
-      .mockResolvedValueOnce([{ title: 'Test', url: 'https://test.com', content: 'Content' }])
-      .mockResolvedValueOnce([{ url: 'https://test.com', title: 'Test', content: 'Full content' }]);
+      .mockResolvedValueOnce([
+        { title: 'Test', url: 'https://test.com', content: 'Content' },
+      ])
+      .mockResolvedValueOnce([
+        { url: 'https://test.com', title: 'Test', content: 'Full content' },
+      ]);
 
     const result = await service.executeResearch('What is AI?');
 

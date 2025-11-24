@@ -1,4 +1,12 @@
-import { Controller, Post, Body, ValidationPipe, Param, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  ValidationPipe,
+  Param,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { ResearchService } from './research.service';
 import { ResearchQueryDto } from './dto/research-query.dto';
 import { ResearchResponseDto } from './dto/research-response.dto';
@@ -9,7 +17,7 @@ export class ResearchController {
 
   @Post('query')
   async query(
-    @Body(new ValidationPipe({ transform: true })) dto: ResearchQueryDto
+    @Body(new ValidationPipe({ transform: true })) dto: ResearchQueryDto,
   ): Promise<ResearchResponseDto> {
     return this.researchService.executeResearch(dto.query, dto);
   }

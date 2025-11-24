@@ -46,7 +46,8 @@ describe('Research Pipeline (e2e)', () => {
     await app.init();
 
     ollamaService = moduleFixture.get<OllamaService>(OllamaService);
-    tavilyProvider = moduleFixture.get<TavilySearchProvider>(TavilySearchProvider);
+    tavilyProvider =
+      moduleFixture.get<TavilySearchProvider>(TavilySearchProvider);
   });
 
   afterAll(async () => {
@@ -153,7 +154,9 @@ describe('Research Pipeline (e2e)', () => {
       expect(response.body).toHaveProperty('metadata');
 
       // Validate answer
-      expect(response.body.answer).toBe('Final synthesized answer based on research');
+      expect(response.body.answer).toBe(
+        'Final synthesized answer based on research',
+      );
 
       // Validate sources
       expect(Array.isArray(response.body.sources)).toBe(true);

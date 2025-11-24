@@ -11,7 +11,9 @@ export class OllamaService {
   private model: string;
 
   constructor(private configService: ConfigService) {
-    const baseUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434';
+    const baseUrl =
+      this.configService.get<string>('OLLAMA_BASE_URL') ||
+      'http://localhost:11434';
     this.model = this.configService.get<string>('OLLAMA_MODEL') || 'qwen2.5';
 
     this.ollama = new Ollama({ host: baseUrl });
@@ -19,7 +21,7 @@ export class OllamaService {
 
   async chat(
     messages: ChatMessage[],
-    tools?: ToolDefinition[]
+    tools?: ToolDefinition[],
   ): Promise<ChatResponse> {
     const response = await this.ollama.chat({
       model: this.model,

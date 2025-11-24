@@ -11,14 +11,11 @@ export class ResearchStreamController {
   streamEvents(@Param('logId') logId: string): Observable<MessageEvent> {
     const eventEmitter = this.researchLogger.getEventEmitter();
 
-    return fromEvent<NodeLifecycleEvent>(
-      eventEmitter,
-      `event:${logId}`
-    ).pipe(
+    return fromEvent<NodeLifecycleEvent>(eventEmitter, `event:${logId}`).pipe(
       map((event: NodeLifecycleEvent) => ({
         data: event,
         type: `node-${event.event}`,
-      }))
+      })),
     );
   }
 
@@ -26,14 +23,11 @@ export class ResearchStreamController {
   streamAllEvents(): Observable<MessageEvent> {
     const eventEmitter = this.researchLogger.getEventEmitter();
 
-    return fromEvent<NodeLifecycleEvent>(
-      eventEmitter,
-      'event:*'
-    ).pipe(
+    return fromEvent<NodeLifecycleEvent>(eventEmitter, 'event:*').pipe(
       map((event: NodeLifecycleEvent) => ({
         data: event,
         type: `node-${event.event}`,
-      }))
+      })),
     );
   }
 }

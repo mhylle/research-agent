@@ -35,7 +35,9 @@ describe('HealthController', () => {
   });
 
   it('should return healthy status when services are up', async () => {
-    ollamaService.chat.mockResolvedValue({ message: { role: 'assistant', content: 'test' } } as any);
+    ollamaService.chat.mockResolvedValue({
+      message: { role: 'assistant', content: 'test' },
+    } as any);
 
     const result = await controller.check();
 

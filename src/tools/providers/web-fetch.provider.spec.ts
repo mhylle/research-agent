@@ -53,8 +53,8 @@ describe('WebFetchProvider', () => {
   it('should handle fetch errors', async () => {
     mockedAxios.get.mockRejectedValue(new Error('Network error'));
 
-    await expect(
-      provider.execute({ url: 'https://test.com' })
-    ).rejects.toThrow('Web fetch failed');
+    await expect(provider.execute({ url: 'https://test.com' })).rejects.toThrow(
+      'Web fetch failed',
+    );
   });
 });

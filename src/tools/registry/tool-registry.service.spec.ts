@@ -16,12 +16,12 @@ describe('ToolRegistry', () => {
           type: 'object',
           required: ['input'],
           properties: {
-            input: { type: 'string', description: 'Test input' }
-          }
-        }
-      }
+            input: { type: 'string', description: 'Test input' },
+          },
+        },
+      },
     },
-    execute: jest.fn().mockResolvedValue({ result: 'test' })
+    execute: jest.fn().mockResolvedValue({ result: 'test' }),
   };
 
   beforeEach(async () => {
@@ -51,8 +51,8 @@ describe('ToolRegistry', () => {
   });
 
   it('should throw error for unregistered tool', async () => {
-    await expect(
-      registry.execute('unknown_tool', {})
-    ).rejects.toThrow('Tool not found: unknown_tool');
+    await expect(registry.execute('unknown_tool', {})).rejects.toThrow(
+      'Tool not found: unknown_tool',
+    );
   });
 });

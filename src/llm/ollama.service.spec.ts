@@ -14,7 +14,9 @@ describe('OllamaService', () => {
       chat: jest.fn(),
     } as any;
 
-    (Ollama as jest.MockedClass<typeof Ollama>).mockImplementation(() => mockOllama);
+    (Ollama as jest.MockedClass<typeof Ollama>).mockImplementation(
+      () => mockOllama,
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -71,10 +73,16 @@ describe('OllamaService', () => {
     };
     mockOllama.chat.mockResolvedValue(mockResponse as any);
 
-    const tools = [{
-      type: 'function' as const,
-      function: { name: 'test_tool', description: 'Test', parameters: { type: 'object' as const, required: [], properties: {} } }
-    }];
+    const tools = [
+      {
+        type: 'function' as const,
+        function: {
+          name: 'test_tool',
+          description: 'Test',
+          parameters: { type: 'object' as const, required: [], properties: {} },
+        },
+      },
+    ];
     const result = await service.chat([], tools as any);
 
     expect(result.message.tool_calls).toHaveLength(1);

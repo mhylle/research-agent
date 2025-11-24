@@ -24,7 +24,9 @@ export class HealthController {
       tavily: this.checkTavily(),
     };
 
-    const status = Object.values(services).every(s => s) ? 'healthy' : 'degraded';
+    const status = Object.values(services).every((s) => s)
+      ? 'healthy'
+      : 'degraded';
 
     return { status, services };
   }
@@ -32,7 +34,7 @@ export class HealthController {
   private async checkOllama(): Promise<boolean> {
     try {
       await this.ollamaService.chat([
-        { role: 'user', content: 'health check' }
+        { role: 'user', content: 'health check' },
       ]);
       return true;
     } catch {

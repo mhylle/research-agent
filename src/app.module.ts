@@ -14,7 +14,15 @@ import { LogsModule } from './logs/logs.module';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'client', 'dist', 'client', 'browser'),
+      rootPath: join(
+        __dirname,
+        '..',
+        '..',
+        'client',
+        'dist',
+        'client',
+        'browser',
+      ),
       exclude: ['/api*'],
     }),
     ConfigModule,

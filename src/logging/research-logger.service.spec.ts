@@ -43,7 +43,7 @@ describe('ResearchLogger', () => {
         stage: 1,
         component: 'pipeline',
         operation: 'stage_input',
-      })
+      }),
     );
   });
 

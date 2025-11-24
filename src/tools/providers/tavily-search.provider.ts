@@ -18,15 +18,15 @@ export class TavilySearchProvider implements ITool {
         properties: {
           query: {
             type: 'string',
-            description: 'The search query'
+            description: 'The search query',
           },
           max_results: {
             type: 'number',
-            description: 'Maximum number of results to return (default: 5)'
-          }
-        }
-      }
-    }
+            description: 'Maximum number of results to return (default: 5)',
+          },
+        },
+      },
+    },
   };
 
   private readonly apiKey: string;
@@ -52,7 +52,7 @@ export class TavilySearchProvider implements ITool {
         {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000,
-        }
+        },
       );
 
       return response.data.results.map((result: any) => ({

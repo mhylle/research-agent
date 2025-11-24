@@ -35,11 +35,11 @@ export class PipelineExecutor {
 
       // Emit stage-specific milestones
       if (context.stageNumber === 1) {
-        await this.emitStage1Milestones(context);
+        this.emitStage1Milestones(context);
       } else if (context.stageNumber === 2) {
-        await this.emitStage2Milestones(context);
+        this.emitStage2Milestones(context);
       } else if (context.stageNumber === 3) {
-        await this.emitStage3Milestones(context);
+        this.emitStage3Milestones(context);
       }
 
       // Add system prompt to messages
@@ -51,8 +51,8 @@ export class PipelineExecutor {
       const response = await this.executeWithRetry(() =>
         this.ollamaService.chat(
           messages,
-          context.tools.length > 0 ? context.tools : undefined
-        )
+          context.tools.length > 0 ? context.tools : undefined,
+        ),
       );
 
       const executionTime = Date.now() - startTime;
@@ -74,7 +74,7 @@ export class PipelineExecutor {
           loadDuration: response.load_duration,
           promptEvalDuration: response.prompt_eval_duration,
           evalDuration: response.eval_duration,
-        }
+        },
       );
 
       const result: StageResult = {
@@ -95,7 +95,7 @@ export class PipelineExecutor {
           messageRole: result.message.role,
           messageContentLength: result.message.content?.length || 0,
         },
-        executionTime
+        executionTime,
       );
 
       // Emit final milestone for Stage 1 (filtering)
@@ -149,7 +149,11 @@ export class PipelineExecutor {
     }
   }
 
-  async executeToolCalls(toolCalls: any[], logId: string, parentNodeId?: string): Promise<any[]> {
+  async executeToolCalls(
+    toolCalls: any[],
+    logId: string,
+    parentNodeId?: string,
+  ): Promise<any[]> {
     const results: any[] = [];
 
     for (const toolCall of toolCalls) {
@@ -162,7 +166,7 @@ export class PipelineExecutor {
         this.logger.nodeStart(toolNodeId, logId, 'tool', parentNodeId);
 
         const result = await this.executeWithRetry(() =>
-          this.toolRegistry.execute(name, args)
+          this.toolRegistry.execute(name, args),
         );
         const executionTime = Date.now() - startTime;
 
@@ -186,7 +190,7 @@ export class PipelineExecutor {
   private async executeWithRetry<T>(
     fn: () => Promise<T>,
     maxRetries = 3,
-    backoffMs = 1000
+    backoffMs = 1000,
   ): Promise<T> {
     for (let i = 0; i < maxRetries; i++) {
       try {
@@ -194,7 +198,12 @@ export class PipelineExecutor {
       } catch (error) {
         if (i === maxRetries - 1) throw error;
         await this.delay(backoffMs * Math.pow(2, i));
-        this.logger.logStageError(0, 'retry', { attempt: i + 1, error: error.message });
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.logStageError(0, 'retry', {
+          attempt: i + 1,
+          error: errorMessage,
+        });
       }
     }
     // This should never be reached due to throw in the loop
@@ -202,10 +211,10 @@ export class PipelineExecutor {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private async emitStage1Milestones(context: StageContext): Promise<void> {
+  private emitStage1Milestones(context: StageContext): void {
     const stageTemplates = getMilestoneTemplates(1);
     const stageNodeId = `stage-${context.stageNumber}`;
 
@@ -222,7 +231,7 @@ export class PipelineExecutor {
     );
 
     // Extract query from messages (user message)
-    const userMessage = context.messages.find(m => m.role === 'user');
+    const userMessage = context.messages.find((m) => m.role === 'user');
     const query = userMessage?.content || '';
 
     // Milestone 2: Identifying terms
@@ -240,7 +249,8 @@ export class PipelineExecutor {
 
     // Milestone 3: Searching databases
     const searchCount = context.tools.length > 0 ? 25 : 0; // Estimate based on tool availability
-    const sources = 'Tavily (aggregating NASA, arXiv, Nature, Science, and more)';
+    const sources =
+      'Tavily (aggregating NASA, arXiv, Nature, Science, and more)';
     this.logger.logMilestone(
       context.logId,
       `${stageNodeId}_milestone_3`,
@@ -255,7 +265,7 @@ export class PipelineExecutor {
     // Note: Milestone 4 (filtering) emitted after stage completion (lines 97-110)
   }
 
-  private async emitStage2Milestones(context: StageContext): Promise<void> {
+  private emitStage2Milestones(context: StageContext): void {
     const stageTemplates = getMilestoneTemplates(2);
     const stageNodeId = `stage-${context.stageNumber}`;
 
@@ -299,7 +309,7 @@ export class PipelineExecutor {
     // Note: Milestone 3 (validating) emitted after stage completion
   }
 
-  private async emitStage3Milestones(context: StageContext): Promise<void> {
+  private emitStage3Milestones(context: StageContext): void {
     const stageTemplates = getMilestoneTemplates(3);
     const stageNodeId = `stage-${context.stageNumber}`;
 
@@ -348,23 +358,62 @@ export class PipelineExecutor {
   private extractKeyTerms(query: string): string[] {
     // Simple keyword extraction: split on common words and punctuation
     const stopWords = new Set([
-      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-      'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-      'could', 'should', 'may', 'might', 'can', 'what', 'how', 'why', 'when',
-      'where', 'who', 'which', 'this', 'that', 'these', 'those'
+      'the',
+      'a',
+      'an',
+      'and',
+      'or',
+      'but',
+      'in',
+      'on',
+      'at',
+      'to',
+      'for',
+      'of',
+      'with',
+      'by',
+      'from',
+      'as',
+      'is',
+      'was',
+      'are',
+      'were',
+      'been',
+      'be',
+      'have',
+      'has',
+      'had',
+      'do',
+      'does',
+      'did',
+      'will',
+      'would',
+      'could',
+      'should',
+      'may',
+      'might',
+      'can',
+      'what',
+      'how',
+      'why',
+      'when',
+      'where',
+      'who',
+      'which',
+      'this',
+      'that',
+      'these',
+      'those',
     ]);
 
     const words = query
       .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
-      .filter(word => word.length > 3 && !stopWords.has(word));
+      .filter((word) => word.length > 3 && !stopWords.has(word));
 
     // Return unique terms, limit to 5 most relevant (longest words tend to be more specific)
     const uniqueWords = [...new Set(words)];
-    return uniqueWords
-      .sort((a, b) => b.length - a.length)
-      .slice(0, 5);
+    return uniqueWords.sort((a, b) => b.length - a.length).slice(0, 5);
   }
 }

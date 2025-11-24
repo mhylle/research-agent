@@ -1,10 +1,13 @@
-import { NodeType, NodeStatus } from '../../logging/interfaces/enhanced-log-entry.interface';
+import {
+  NodeType,
+  NodeStatus,
+} from '../../logging/interfaces/enhanced-log-entry.interface';
 
 export interface GraphNode {
   // Identity
-  id: string;                   // Same as nodeId in LogEntry
+  id: string; // Same as nodeId in LogEntry
   type: NodeType;
-  name: string;                 // Human-readable name
+  name: string; // Human-readable name
 
   // Visual properties
   icon: string;
@@ -14,13 +17,13 @@ export interface GraphNode {
   // Lifecycle
   startTime: Date;
   endTime?: Date;
-  duration?: number;            // milliseconds
+  duration?: number; // milliseconds
   status: NodeStatus;
 
   // Relationships
   parentId?: string;
   childrenIds: string[];
-  dependsOn: string[];          // For showing dependency edges
+  dependsOn: string[]; // For showing dependency edges
 
   // Position (for force-directed graph)
   x?: number;
@@ -36,8 +39,8 @@ export interface GraphNode {
 export interface NodeMetrics {
   tokensUsed?: number;
   latency?: number;
-  modelLatency?: number;     // LLM execution time
-  toolLatency?: number;       // Tool execution time
+  modelLatency?: number; // LLM execution time
+  toolLatency?: number; // Tool execution time
   retryCount?: number;
   cacheHit?: boolean;
 
@@ -75,11 +78,11 @@ export interface NodeMetrics {
 
 export interface GraphEdge {
   id: string;
-  source: string;               // nodeId
-  target: string;               // nodeId
+  source: string; // nodeId
+  target: string; // nodeId
   type: 'parent-child' | 'dependency' | 'data-flow' | 'retry';
   label?: string;
-  animated?: boolean;           // For real-time visualization
+  animated?: boolean; // For real-time visualization
 }
 
 export interface GraphData {

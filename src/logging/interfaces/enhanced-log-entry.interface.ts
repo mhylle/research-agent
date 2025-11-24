@@ -1,24 +1,29 @@
 import { LogEntry } from './log-entry.interface';
 
 export type NodeType = 'stage' | 'tool' | 'llm' | 'retry';
-export type NodeStatus = 'pending' | 'running' | 'completed' | 'error' | 'retrying';
+export type NodeStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'error'
+  | 'retrying';
 
 export interface EnhancedLogEntry extends LogEntry {
   // Node lifecycle tracking
-  nodeId: string;              // Unique identifier for this execution node
-  parentNodeId?: string;        // Parent node in execution hierarchy
+  nodeId: string; // Unique identifier for this execution node
+  parentNodeId?: string; // Parent node in execution hierarchy
   nodeType: NodeType;
 
   // Timing information
-  startTime: string;            // ISO timestamp when node initialized
-  endTime?: string;             // ISO timestamp when node completed
+  startTime: string; // ISO timestamp when node initialized
+  endTime?: string; // ISO timestamp when node completed
 
   // State tracking
   status: NodeStatus;
 
   // Relationships for graph visualization
-  dependencies: string[];       // nodeIds this node depends on
-  triggeredBy?: string;         // nodeId that triggered this node
+  dependencies: string[]; // nodeIds this node depends on
+  triggeredBy?: string; // nodeId that triggered this node
 
   // Performance metrics
   metrics?: {
@@ -43,16 +48,16 @@ export interface NodeLifecycleEvent {
 export interface MilestoneTemplate {
   id: string;
   stage: 1 | 2 | 3;
-  template: string;  // e.g., "Searching {count} databases: {sources}"
-  expectedProgress: number;  // 0-100
-  order: number;  // Execution order within stage
+  template: string; // e.g., "Searching {count} databases: {sources}"
+  expectedProgress: number; // 0-100
+  order: number; // Execution order within stage
 }
 
 export interface MilestoneData {
   milestoneId: string;
   stage: 1 | 2 | 3;
   template: string;
-  data: Record<string, any>;  // Dynamic values for template placeholders
+  data: Record<string, any>; // Dynamic values for template placeholders
   progress: number;
   status: 'pending' | 'running' | 'completed' | 'error';
   timestamp: string;

@@ -32,8 +32,9 @@ describe('Logs API (e2e)', () => {
 
   it('/api/logs/sessions/:logId (GET) - should return session details', async () => {
     // First get sessions to find a valid logId
-    const sessionsRes = await request(app.getHttpServer())
-      .get('/api/logs/sessions');
+    const sessionsRes = await request(app.getHttpServer()).get(
+      '/api/logs/sessions',
+    );
 
     if (sessionsRes.body.sessions.length === 0) {
       console.log('No sessions in log file, skipping test');

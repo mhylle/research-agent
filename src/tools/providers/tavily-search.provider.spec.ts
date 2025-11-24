@@ -41,9 +41,14 @@ describe('TavilySearchProvider', () => {
     const mockResponse = {
       data: {
         results: [
-          { title: 'Test', url: 'https://test.com', content: 'Test content', score: 0.9 }
-        ]
-      }
+          {
+            title: 'Test',
+            url: 'https://test.com',
+            content: 'Test content',
+            score: 0.9,
+          },
+        ],
+      },
     };
     mockedAxios.post.mockResolvedValue(mockResponse);
 
@@ -54,7 +59,7 @@ describe('TavilySearchProvider', () => {
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'https://api.tavily.com/search',
       expect.objectContaining({ query: 'test query' }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -66,7 +71,7 @@ describe('TavilySearchProvider', () => {
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'https://api.tavily.com/search',
       expect.objectContaining({ max_results: 10 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 });

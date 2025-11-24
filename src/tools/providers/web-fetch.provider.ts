@@ -79,11 +79,11 @@ export class WebFetchProvider implements ITool {
         properties: {
           url: {
             type: 'string',
-            description: 'The URL to fetch content from'
-          }
-        }
-      }
-    }
+            description: 'The URL to fetch content from',
+          },
+        },
+      },
+    },
   };
 
   private readonly timeout: number;
@@ -100,20 +100,34 @@ export class WebFetchProvider implements ITool {
 
   constructor(private configService: ConfigService) {
     this.timeout = this.configService.get<number>('WEB_FETCH_TIMEOUT') || 30000;
-    this.maxSize = this.configService.get<number>('WEB_FETCH_MAX_SIZE') || 104857600; // 100MB
-    this.storageDir = this.configService.get<string>('WEB_FETCH_STORAGE_DIR') || './data/fetched-content';
-    this.screenshotsEnabled = this.configService.get<boolean>('ENABLE_SCREENSHOTS') || false;
-    this.screenshotTimeout = this.configService.get<number>('SCREENSHOT_TIMEOUT') || 15000;
-    this.alwaysScreenshot = this.configService.get<boolean>('ALWAYS_SCREENSHOT') || false;
-    this.visionEnabled = this.configService.get<boolean>('VISION_LLM_ENABLED') || false;
-    this.visionModel = this.configService.get<string>('VISION_LLM_MODEL') || 'llava';
-    this.visionThreshold = parseFloat(this.configService.get<string>('VISION_THRESHOLD') || '0.7');
+    this.maxSize =
+      this.configService.get<number>('WEB_FETCH_MAX_SIZE') || 104857600; // 100MB
+    this.storageDir =
+      this.configService.get<string>('WEB_FETCH_STORAGE_DIR') ||
+      './data/fetched-content';
+    this.screenshotsEnabled =
+      this.configService.get<boolean>('ENABLE_SCREENSHOTS') || false;
+    this.screenshotTimeout =
+      this.configService.get<number>('SCREENSHOT_TIMEOUT') || 15000;
+    this.alwaysScreenshot =
+      this.configService.get<boolean>('ALWAYS_SCREENSHOT') || false;
+    this.visionEnabled =
+      this.configService.get<boolean>('VISION_LLM_ENABLED') || false;
+    this.visionModel =
+      this.configService.get<string>('VISION_LLM_MODEL') || 'llava';
+    this.visionThreshold = parseFloat(
+      this.configService.get<string>('VISION_THRESHOLD') || '0.7',
+    );
 
     // Initialize Ollama client
-    const ollamaBaseUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434';
+    const ollamaBaseUrl =
+      this.configService.get<string>('OLLAMA_BASE_URL') ||
+      'http://localhost:11434';
     this.ollama = new Ollama({ host: ollamaBaseUrl });
 
-    this.logger.log(`WebFetch initialized: screenshots=${this.screenshotsEnabled}, alwaysScreenshot=${this.alwaysScreenshot}, vision=${this.visionEnabled}, visionThreshold=${this.visionThreshold}, model=${this.visionModel}`);
+    this.logger.log(
+      `WebFetch initialized: screenshots=${this.screenshotsEnabled}, alwaysScreenshot=${this.alwaysScreenshot}, vision=${this.visionEnabled}, visionThreshold=${this.visionThreshold}, model=${this.visionModel}`,
+    );
   }
 
   /**
@@ -135,7 +149,11 @@ export class WebFetchProvider implements ITool {
   /**
    * Save complete HTML to disk
    */
-  private async saveHtml(html: string, logId: string, urlHash: string): Promise<string> {
+  private async saveHtml(
+    html: string,
+    logId: string,
+    urlHash: string,
+  ): Promise<string> {
     const logDir = await this.ensureStorageDir(logId);
     const htmlPath = path.join(logDir, `${urlHash}.html`);
     await fs.writeFile(htmlPath, html, 'utf-8');
@@ -160,11 +178,15 @@ export class WebFetchProvider implements ITool {
       confidence?: number;
       screenshotPath?: string;
       extractionMetadata?: WebFetchResult['extractionMetadata'];
-    }
+    },
   ): Promise<void> {
     const logDir = await this.ensureStorageDir(logId);
     const metadataPath = path.join(logDir, `${urlHash}.json`);
-    await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
+    await fs.writeFile(
+      metadataPath,
+      JSON.stringify(metadata, null, 2),
+      'utf-8',
+    );
   }
 
   /**
@@ -188,7 +210,8 @@ export class WebFetchProvider implements ITool {
 
       // Calculate confidence based on article quality
       const hasTitle = article.title && article.title.length > 0;
-      const hasContent = article.textContent && article.textContent.length > 500;
+      const hasContent =
+        article.textContent && article.textContent.length > 500;
       const hasExcerpt = article.excerpt && article.excerpt.length > 0;
 
       let confidence = 0;
@@ -237,9 +260,7 @@ export class WebFetchProvider implements ITool {
       $('script, style, nav, footer, iframe').remove();
 
       const title = $('title').text().trim() || $('h1').first().text().trim();
-      const fullContent = $('body').text()
-        .replace(/\s+/g, ' ')
-        .trim();
+      const fullContent = $('body').text().replace(/\s+/g, ' ').trim();
 
       const content = fullContent.substring(0, 5000);
 
@@ -269,7 +290,7 @@ export class WebFetchProvider implements ITool {
   private async captureScreenshot(
     url: string,
     logId: string,
-    urlHash: string
+    urlHash: string,
   ): Promise<string | null> {
     if (!this.screenshotsEnabled) {
       return null;
@@ -279,8 +300,16 @@ export class WebFetchProvider implements ITool {
       const browser = await chromium.launch({ headless: true });
       const page = await browser.newPage({
         viewport: {
-          width: parseInt(this.configService.get<string>('SCREENSHOT_VIEWPORT_WIDTH') || '1920', 10),
-          height: parseInt(this.configService.get<string>('SCREENSHOT_VIEWPORT_HEIGHT') || '1080', 10),
+          width: parseInt(
+            this.configService.get<string>('SCREENSHOT_VIEWPORT_WIDTH') ||
+              '1920',
+            10,
+          ),
+          height: parseInt(
+            this.configService.get<string>('SCREENSHOT_VIEWPORT_HEIGHT') ||
+              '1080',
+            10,
+          ),
         },
       });
 
@@ -311,7 +340,7 @@ export class WebFetchProvider implements ITool {
    */
   private async extractWithVision(
     screenshotPath: string,
-    url: string
+    url: string,
   ): Promise<ExtractionResult> {
     if (!this.visionEnabled || !screenshotPath) {
       return {
@@ -350,7 +379,9 @@ Be concise but complete. Extract all readable text.`;
 
       // Extract title (look for first line or quoted text)
       let title = '';
-      const titleMatch = responseText.match(/(?:title|heading)[:\s]+["']?([^"\n]+)["']?/i);
+      const titleMatch = responseText.match(
+        /(?:title|heading)[:\s]+["']?([^"\n]+)["']?/i,
+      );
       if (titleMatch) {
         title = titleMatch[1].trim();
       } else {
@@ -362,12 +393,14 @@ Be concise but complete. Extract all readable text.`;
       }
 
       const content = responseText;
-      const visualElements: Array<{type: string; description: string}> = [];
+      const visualElements: Array<{ type: string; description: string }> = [];
 
       // Check for visual elements mentioned
-      if (responseText.toLowerCase().includes('chart') ||
-          responseText.toLowerCase().includes('graph') ||
-          responseText.toLowerCase().includes('diagram')) {
+      if (
+        responseText.toLowerCase().includes('chart') ||
+        responseText.toLowerCase().includes('graph') ||
+        responseText.toLowerCase().includes('diagram')
+      ) {
         visualElements.push({
           type: 'visual',
           description: 'Visual content detected in screenshot',
@@ -425,7 +458,8 @@ Be concise but complete. Extract all readable text.`;
         maxContentLength: this.maxSize,
         maxBodyLength: this.maxSize,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         },
       });
 
@@ -433,7 +467,9 @@ Be concise but complete. Extract all readable text.`;
       const originalSize = Buffer.byteLength(html, 'utf-8');
       metadata.downloadDuration = Date.now() - downloadStart;
 
-      this.logger.log(`[${sessionLogId}] Downloaded ${originalSize} bytes in ${metadata.downloadDuration}ms`);
+      this.logger.log(
+        `[${sessionLogId}] Downloaded ${originalSize} bytes in ${metadata.downloadDuration}ms`,
+      );
 
       // 2. Save complete HTML to disk (NEVER discard data)
       let htmlPath: string | undefined;
@@ -441,7 +477,10 @@ Be concise but complete. Extract all readable text.`;
         htmlPath = await this.saveHtml(html, sessionLogId, urlHash);
         this.logger.log(`[${sessionLogId}] Saved HTML to: ${htmlPath}`);
       } catch (fileError) {
-        this.logger.warn(`[${sessionLogId}] Failed to save HTML:`, fileError.message);
+        this.logger.warn(
+          `[${sessionLogId}] Failed to save HTML:`,
+          fileError.message,
+        );
         htmlPath = undefined;
       }
 
@@ -462,30 +501,45 @@ Be concise but complete. Extract all readable text.`;
         contentLength: result.content.length,
       };
 
-      this.logger.log(`[${sessionLogId}] Readability: success=${result.success}, confidence=${result.confidence}, duration=${readabilityDuration}ms`);
+      this.logger.log(
+        `[${sessionLogId}] Readability: success=${result.success}, confidence=${result.confidence}, duration=${readabilityDuration}ms`,
+      );
 
       // Screenshot capture logic - separate from vision extraction
       // Capture screenshot if: alwaysScreenshot=true OR confidence < visionThreshold
-      const shouldCaptureScreenshot = this.screenshotsEnabled && (this.alwaysScreenshot || result.confidence < this.visionThreshold);
+      const shouldCaptureScreenshot =
+        this.screenshotsEnabled &&
+        (this.alwaysScreenshot || result.confidence < this.visionThreshold);
 
       if (shouldCaptureScreenshot) {
         const screenshotStart = Date.now();
-        screenshotPath = await this.captureScreenshot(url, sessionLogId, urlHash);
+        screenshotPath = await this.captureScreenshot(
+          url,
+          sessionLogId,
+          urlHash,
+        );
         const screenshotDuration = Date.now() - screenshotStart;
 
         if (screenshotPath) {
           const screenshotStats = await fs.stat(screenshotPath);
-          this.logger.log(`[${sessionLogId}] Screenshot captured: ${screenshotPath} (${(screenshotStats.size / 1024).toFixed(2)} KB) in ${screenshotDuration}ms`);
+          this.logger.log(
+            `[${sessionLogId}] Screenshot captured: ${screenshotPath} (${(screenshotStats.size / 1024).toFixed(2)} KB) in ${screenshotDuration}ms`,
+          );
         } else {
           this.logger.warn(`[${sessionLogId}] Screenshot capture failed`);
         }
       }
 
       // Vision extraction logic - only if confidence is low AND vision is enabled
-      const shouldUseVision = this.visionEnabled && result.confidence < this.visionThreshold && screenshotPath !== null;
+      const shouldUseVision =
+        this.visionEnabled &&
+        result.confidence < this.visionThreshold &&
+        screenshotPath !== null;
 
       if (shouldUseVision && screenshotPath) {
-        this.logger.log(`[${sessionLogId}] Readability confidence ${result.confidence} < ${this.visionThreshold}, trying Vision extraction`);
+        this.logger.log(
+          `[${sessionLogId}] Readability confidence ${result.confidence} < ${this.visionThreshold}, trying Vision extraction`,
+        );
 
         const screenshotStats = await fs.stat(screenshotPath);
         const visionStart = Date.now();
@@ -503,25 +557,40 @@ Be concise but complete. Extract all readable text.`;
           screenshotSize: screenshotStats.size,
         };
 
-        this.logger.log(`[${sessionLogId}] Vision: success=${visionResult.success}, confidence=${visionResult.confidence}, duration=${visionDuration}ms`);
+        this.logger.log(
+          `[${sessionLogId}] Vision: success=${visionResult.success}, confidence=${visionResult.confidence}, duration=${visionDuration}ms`,
+        );
 
         // Use vision result if it has better confidence or visual elements
-        if (visionResult.success &&
-            (visionResult.confidence > result.confidence ||
-             (visionResult.visualElements && visionResult.visualElements.length > 0))) {
+        if (
+          visionResult.success &&
+          (visionResult.confidence > result.confidence ||
+            (visionResult.visualElements &&
+              visionResult.visualElements.length > 0))
+        ) {
           result = visionResult;
-          metadata.selectionReason = visionResult.confidence > metadata.readability.confidence
-            ? `Vision confidence (${visionResult.confidence}) > Readability (${metadata.readability.confidence})`
-            : `Vision detected ${visionResult.visualElements?.length || 0} visual elements`;
-          this.logger.log(`[${sessionLogId}] Selected Vision extraction: ${metadata.selectionReason}`);
+          metadata.selectionReason =
+            visionResult.confidence > metadata.readability.confidence
+              ? `Vision confidence (${visionResult.confidence}) > Readability (${metadata.readability.confidence})`
+              : `Vision detected ${visionResult.visualElements?.length || 0} visual elements`;
+          this.logger.log(
+            `[${sessionLogId}] Selected Vision extraction: ${metadata.selectionReason}`,
+          );
         }
-      } else if (this.visionEnabled && result.confidence >= this.visionThreshold) {
-        this.logger.log(`[${sessionLogId}] Readability confidence ${result.confidence} >= ${this.visionThreshold}, skipping Vision extraction`);
+      } else if (
+        this.visionEnabled &&
+        result.confidence >= this.visionThreshold
+      ) {
+        this.logger.log(
+          `[${sessionLogId}] Readability confidence ${result.confidence} >= ${this.visionThreshold}, skipping Vision extraction`,
+        );
       }
 
       // Final fallback to Cheerio
       if (!result.success || result.confidence < 0.5) {
-        this.logger.log(`[${sessionLogId}] Current method confidence ${result.confidence} < 0.5, falling back to Cheerio`);
+        this.logger.log(
+          `[${sessionLogId}] Current method confidence ${result.confidence} < 0.5, falling back to Cheerio`,
+        );
 
         const cheerioStart = Date.now();
         result = this.extractWithCheerio(html);
@@ -534,8 +603,11 @@ Be concise but complete. Extract all readable text.`;
           contentLength: result.content.length,
         };
 
-        metadata.selectionReason = 'Cheerio fallback (all other methods failed or low confidence)';
-        this.logger.log(`[${sessionLogId}] Cheerio fallback: duration=${cheerioDuration}ms`);
+        metadata.selectionReason =
+          'Cheerio fallback (all other methods failed or low confidence)';
+        this.logger.log(
+          `[${sessionLogId}] Cheerio fallback: duration=${cheerioDuration}ms`,
+        );
       }
 
       // If no selection reason set yet, it means Readability was used
@@ -560,12 +632,19 @@ Be concise but complete. Extract all readable text.`;
           screenshotPath: screenshotPath || undefined,
           extractionMetadata: metadata,
         });
-        this.logger.log(`[${sessionLogId}] Saved complete metadata including extraction details`);
+        this.logger.log(
+          `[${sessionLogId}] Saved complete metadata including extraction details`,
+        );
       } catch (metaError) {
-        this.logger.warn(`[${sessionLogId}] Failed to save metadata:`, metaError.message);
+        this.logger.warn(
+          `[${sessionLogId}] Failed to save metadata:`,
+          metaError.message,
+        );
       }
 
-      this.logger.log(`[${sessionLogId}] Extraction complete: method=${result.method}, duration=${metadata.totalDuration}ms`);
+      this.logger.log(
+        `[${sessionLogId}] Extraction complete: method=${result.method}, duration=${metadata.totalDuration}ms`,
+      );
 
       return {
         url,
@@ -582,17 +661,18 @@ Be concise but complete. Extract all readable text.`;
 
       // Handle errors gracefully - return partial result instead of crashing
       const statusCode = error.response?.status;
-      const errorMessage = statusCode === 403
-        ? 'Access denied (403 Forbidden) - website blocks automated access'
-        : statusCode === 404
-        ? 'Page not found (404)'
-        : statusCode === 503
-        ? 'Service unavailable (503)'
-        : error.code === 'ECONNABORTED'
-        ? 'Request timeout'
-        : error.code === 'ERR_FR_MAX_CONTENT_LENGTH_EXCEEDED'
-        ? `Content too large (exceeds ${this.maxSize / 1048576}MB limit)`
-        : `Request failed: ${error.message}`;
+      const errorMessage =
+        statusCode === 403
+          ? 'Access denied (403 Forbidden) - website blocks automated access'
+          : statusCode === 404
+            ? 'Page not found (404)'
+            : statusCode === 503
+              ? 'Service unavailable (503)'
+              : error.code === 'ECONNABORTED'
+                ? 'Request timeout'
+                : error.code === 'ERR_FR_MAX_CONTENT_LENGTH_EXCEEDED'
+                  ? `Content too large (exceeds ${this.maxSize / 1048576}MB limit)`
+                  : `Request failed: ${error.message}`;
 
       this.logger.error(`[${sessionLogId}] Extraction failed: ${errorMessage}`);
 

@@ -241,7 +241,7 @@ client/
 
 **Features:**
 - Single-page chat-style interface
-- Real-time loading indicators
+- **Real-Time Agent Activity UI** (NEW - See below)
 - LocalStorage-based history (last 20 queries)
 - Error handling with retry
 - Responsive design (mobile, tablet, desktop)
@@ -255,6 +255,150 @@ The Angular UI calls the existing NestJS API:
 In development, requests are proxied to `http://localhost:3000` via `proxy.conf.json`.
 
 In production, the Angular build is served by NestJS using `@nestjs/serve-static`, so API calls use relative URLs.
+
+## Agent Activity Real-Time UI (Phase 3 - 80% Complete)
+
+### Overview
+
+Real-time visibility into research execution with granular task progress, error handling, and retry capabilities. Transform the black-box research process into a transparent, interactive experience.
+
+**Status**: Frontend complete (100%), Backend SSE endpoint required for full functionality.
+
+### Key Features
+
+- **Real-Time Progress**: Live updates via Server-Sent Events (SSE) showing agent activity during execution
+- **Granular Visibility**: Stage-level, tool-level, and milestone-level progress tracking
+  - Stage 1: Query Analysis & Web Search (4 milestones)
+  - Stage 2: Content Fetch & Selection (3 milestones, per-source tracking)
+  - Stage 3: Synthesis & Answer Generation (4 milestones)
+- **Error Resilience**: Failed tasks displayed with error messages while parallel work continues
+- **One-Click Retry**: Per-task retry capability (max 3 attempts) without restarting entire query
+- **Research History**: Chat-style history with expand/collapse for quick reference
+- **Accessibility**: WCAG AA compliant with screen reader support, keyboard navigation
+- **Responsive Design**: Mobile-first design adapting to all screen sizes (480px, 768px, 1200px+)
+
+### User Experience
+
+```
+User submits query: "What is quantum computing?"
+↓
+Agent Activity View appears immediately
+↓
+Real-time updates stream:
+  🔍 Stage 1: Analyzing query & searching
+    • Deconstructing query into core topics (20%)
+    • Identifying key terms: quantum, computing, qubits (40%)
+    • Searching 25 databases: NASA, arXiv, Nature (70%)
+    • Filtering results for credibility (90%)
+  ↓
+  📄 Stage 2: Content fetch & selection
+    • Fetching 5 relevant sources (30%)
+    • Extracting content from arxiv.org/abs/... (50%)
+    • Extracting content from nature.com/articles/... (70%)
+    • Validating content quality (95%)
+  ↓
+  ✨ Stage 3: Synthesis & answer generation
+    • Analyzing 5 sources (20%)
+    • Synthesizing key findings (50%)
+    • Generating comprehensive answer (80%)
+    • Formatting final response (95%)
+↓
+Answer appears below activity view
+↓
+History updated with new query (expandable)
+```
+
+### Architecture
+
+**Technology Stack**:
+- Backend: NestJS 11.x, Server-Sent Events (SSE)
+- Frontend: Angular 20.2.0, Signals (reactive state management)
+- Communication: EventSource API (native browser)
+
+**Data Flow**:
+1. User submits query → Backend returns logId immediately
+2. Frontend connects to SSE stream: `/research/stream/events/:logId`
+3. Backend emits milestone events during execution
+4. Frontend receives events, updates UI in real-time
+5. Completion triggers answer display and history update
+
+**Components**:
+- `AgentActivityView`: Container orchestrating entire activity UI
+- `StageProgressHeader`: Stage indicator (1-3) with progress bar
+- `TaskCard`: Individual task display with status/progress/retry
+- `ResearchHistory`: Chat-style history with expand/collapse
+
+### Quick Start
+
+**Prerequisites**: Backend SSE endpoint implementation required (see documentation).
+
+```bash
+# Start both servers
+npm run dev
+
+# Or separately:
+npm run start:dev          # Backend
+cd client && npm run start # Frontend
+
+# Access at http://localhost:4200
+```
+
+### API Endpoints
+
+**Existing**:
+- `POST /api/research/query` - Submit query, returns logId immediately
+- `POST /api/research/retry/:logId/:nodeId` - Retry failed task
+
+**Required** (not yet implemented):
+- `GET /research/stream/events/:logId` - SSE stream for real-time events
+
+### Documentation
+
+Comprehensive documentation available:
+- **[Implementation Summary](docs/summaries/agent-activity-ui-implementation.md)** - Complete feature overview with architecture diagrams
+- **[Session Context](docs/context/2025-01-24-session-context.md)** - Critical context for resuming implementation (READ FIRST)
+- **[Progress Report](docs/progress/2025-01-24-implementation-progress.md)** - Detailed task completion status
+- **[Known Issues](docs/known-issues.md)** - Current limitations and future enhancements
+- **[Quick Start Guide](docs/guides/agent-activity-ui-quickstart.md)** - Developer quick start with testing instructions
+
+### Implementation Status
+
+**Completed** (16/20 tasks, 80%):
+- ✅ Backend milestone emission system (all stages)
+- ✅ Frontend service with SSE connection management
+- ✅ All UI components (5 components)
+- ✅ Retry mechanism (full stack)
+- ✅ History integration
+- ✅ Accessibility features (ARIA, keyboard nav)
+- ✅ Responsive design (mobile-first)
+- ✅ Loading skeletons
+
+**Remaining**:
+- ❌ Backend SSE endpoint implementation (critical)
+- ❌ LogId return timing fix (return immediately, not after completion)
+- 🔄 Final testing and documentation
+
+**Next Steps**:
+1. Implement SSE endpoint: `GET /research/stream/events/:logId`
+2. Fix logId timing: Return immediately upon query submission
+3. End-to-end testing with real SSE stream
+4. Production deployment
+
+### Current Limitations
+
+- SSE endpoint not implemented - frontend cannot receive real-time updates yet
+- LogId returned after completion instead of immediately
+- Single query at a time (multi-query support planned)
+- No token usage or cost estimation display (planned)
+
+### Future Enhancements
+
+- Token usage and cost tracking in real-time
+- Multi-query support with tabs
+- Query pause/resume capability
+- Export research reports (PDF/Markdown)
+- Agent collaboration visualization
+- Predictive progress estimation
 
 ## Log Visualization & Debugging (Phase 2 - Complete)
 

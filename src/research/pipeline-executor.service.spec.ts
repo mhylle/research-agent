@@ -75,13 +75,15 @@ describe('PipelineExecutor', () => {
     toolRegistry.execute.mockResolvedValue(mockToolResult);
 
     const toolCalls = [
-      { function: { name: 'test_tool', arguments: { query: 'test' } } }
+      { function: { name: 'test_tool', arguments: { query: 'test' } } },
     ];
 
     const results = await executor.executeToolCalls(toolCalls, 'test-log-id');
 
     expect(results).toHaveLength(1);
-    expect(toolRegistry.execute).toHaveBeenCalledWith('test_tool', { query: 'test' });
+    expect(toolRegistry.execute).toHaveBeenCalledWith('test_tool', {
+      query: 'test',
+    });
     expect(logger.logToolExecution).toHaveBeenCalled();
   });
 
@@ -117,7 +119,9 @@ describe('PipelineExecutor', () => {
       logId: 'test-id',
     };
 
-    await expect(executor.executeStage(context)).rejects.toThrow('Persistent failure');
+    await expect(executor.executeStage(context)).rejects.toThrow(
+      'Persistent failure',
+    );
     expect(ollamaService.chat).toHaveBeenCalledTimes(3); // Initial + 2 retries
   });
 
@@ -127,7 +131,7 @@ describe('PipelineExecutor', () => {
       .mockResolvedValueOnce({ result: 'success' });
 
     const toolCalls = [
-      { function: { name: 'test_tool', arguments: { query: 'test' } } }
+      { function: { name: 'test_tool', arguments: { query: 'test' } } },
     ];
 
     const results = await executor.executeToolCalls(toolCalls, 'test-log-id');

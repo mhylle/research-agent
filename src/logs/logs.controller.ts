@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, Res, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  Res,
+  NotFoundException,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { LogsService } from './logs.service';
 import { QuerySessionsDto } from './dto/query-sessions.dto';
@@ -25,7 +32,10 @@ export class LogsController {
   }
 
   @Get('screenshot/*path')
-  async getScreenshot(@Param('path') filePath: string | string[], @Res() res: Response) {
+  async getScreenshot(
+    @Param('path') filePath: string | string[],
+    @Res() res: Response,
+  ) {
     // Security: only allow files from data directory
     const pathStr = Array.isArray(filePath) ? filePath.join('/') : filePath;
     const fullPath = path.join(process.cwd(), pathStr);

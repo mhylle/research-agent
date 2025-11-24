@@ -4,7 +4,12 @@ import * as winston from 'winston';
 import * as fs from 'fs';
 import * as path from 'path';
 import { EventEmitter } from 'events';
-import { NodeLifecycleEvent } from './interfaces/enhanced-log-entry.interface';
+import {
+  NodeLifecycleEvent,
+  MilestoneEvent,
+  MilestoneData,
+} from './interfaces/enhanced-log-entry.interface';
+import { formatMilestoneDescription } from './milestone-templates';
 
 @Injectable()
 export class ResearchLogger {
@@ -245,5 +250,58 @@ export class ResearchLogger {
 
   getActiveNodes(): Map<string, NodeLifecycleEvent> {
     return this.activeNodes;
+  }
+
+  logMilestone(
+    logId: string,
+    nodeId: string,
+    milestoneId: string,
+    stage: 1 | 2 | 3,
+    template: string,
+    data: Record<string, any>,
+    progress: number,
+    status: 'pending' | 'running' | 'completed' | 'error' = 'running',
+  ): void {
+    const timestamp = new Date().toISOString();
+
+    const milestoneData: MilestoneData = {
+      milestoneId,
+      stage,
+      template,
+      data,
+      progress,
+      status,
+      timestamp,
+    };
+
+    // 1. Persist to database (log to winston for now - matches existing pattern)
+    this.logger.info('Milestone', {
+      logId,
+      nodeId,
+      nodeType: 'stage',
+      stage,
+      component: 'milestone',
+      operation: 'progress',
+      input: { template, data },
+      output: { progress, status },
+      status,
+      timestamp,
+      startTime: timestamp,
+      milestone: milestoneData,
+    });
+
+    // 2. Emit SSE event
+    const event: MilestoneEvent = {
+      logId,
+      nodeId,
+      parentNodeId: `stage${stage}`,
+      nodeType: 'stage',
+      event: 'milestone',
+      timestamp,
+      milestone: milestoneData,
+    };
+
+    this.eventEmitter.emit(`event:${logId}`, event);
+    this.eventEmitter.emit('event:*', event);
   }
 }

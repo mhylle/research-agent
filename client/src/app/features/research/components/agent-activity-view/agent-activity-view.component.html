@@ -1,0 +1,145 @@
+<div class="agent-activity-view" role="main" aria-label="Agent Activity View">
+  <!-- Loading State -->
+  @if (!isConnected() && !connectionError()) {
+    <div class="agent-activity-view__loading" role="status" aria-live="polite">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Connecting to research agent...</p>
+    </div>
+  }
+
+  <!-- Connection Error Banner -->
+  @if (connectionError()) {
+    <div
+      class="agent-activity-view__error-banner"
+      role="alert"
+      aria-live="assertive"
+    >
+      <span class="error-icon">⚠️</span>
+      <span class="error-message">{{ connectionError() }}</span>
+      <button
+        type="button"
+        class="error-retry-button"
+        (click)="retryConnection()"
+        aria-label="Retry connection"
+      >
+        Retry Connection
+      </button>
+    </div>
+  }
+
+  <!-- Main Content (shown when connected) -->
+  @if (isConnected()) {
+    <div class="agent-activity-view__content">
+      <!-- Stage Progress Header -->
+      <app-stage-progress-header
+        [stage]="currentStage()"
+        [progress]="stageProgress()"
+        aria-label="Research stage progress"
+      />
+
+      <!-- Tasks Container (scrollable) -->
+      <div
+        #tasksContainer
+        class="agent-activity-view__tasks-container"
+        role="region"
+        aria-label="Task list"
+      >
+        <!-- Active Tasks Section -->
+        <section class="tasks-section" aria-labelledby="active-tasks-heading">
+          <h3
+            id="active-tasks-heading"
+            class="section-heading"
+          >
+            Active Tasks
+            @if (activeTasks().length > 0) {
+              <span class="task-count">({{ activeTasks().length }})</span>
+            }
+          </h3>
+
+          <!-- Active Tasks List -->
+          @if (activeTasks().length > 0) {
+            <div
+              class="tasks-list"
+              role="list"
+              aria-live="polite"
+              aria-atomic="false"
+            >
+              @for (task of activeTasks(); track trackByTaskId($index, task)) {
+                <app-task-card
+                  [task]="task"
+                  (retry)="handleRetry($event)"
+                  role="listitem"
+                />
+              }
+            </div>
+          } @else {
+            <p class="empty-state" aria-live="polite">
+              Waiting for tasks...
+            </p>
+          }
+        </section>
+
+        <!-- Completed Tasks Section (Collapsible) -->
+        @if (completedTasks().length > 0) {
+          <section
+            class="tasks-section tasks-section--completed"
+            aria-labelledby="completed-tasks-heading"
+          >
+            <button
+              type="button"
+              class="section-heading section-heading--collapsible"
+              (click)="toggleCompletedTasks()"
+              [attr.aria-expanded]="showCompletedTasks()"
+              aria-controls="completed-tasks-list"
+            >
+              <span class="chevron-icon" aria-hidden="true">{{ getChevronIcon() }}</span>
+              <h3 id="completed-tasks-heading">
+                Completed Tasks
+                <span class="task-count">({{ completedTasks().length }})</span>
+              </h3>
+            </button>
+
+            <!-- Completed Tasks List (Collapsible Content) -->
+            @if (showCompletedTasks()) {
+              <div
+                id="completed-tasks-list"
+                class="tasks-list tasks-list--collapsed"
+                role="list"
+              >
+                @for (task of completedTasks(); track trackByTaskId($index, task)) {
+                  <app-task-card
+                    [task]="task"
+                    (retry)="handleRetry($event)"
+                    role="listitem"
+                  />
+                }
+              </div>
+            }
+          </section>
+        }
+      </div>
+
+      <!-- Answer Section (shown when research is complete) -->
+      @if (isComplete()) {
+        <section
+          class="agent-activity-view__answer-section"
+          role="region"
+          aria-labelledby="answer-heading"
+          aria-live="polite"
+        >
+          <div class="answer-card">
+            <h3 id="answer-heading" class="answer-heading">
+              <span class="answer-icon">✨</span>
+              Research Complete
+            </h3>
+            <div class="answer-content">
+              <p class="answer-text">
+                The research has been completed successfully. View the full answer and sources in the results section.
+              </p>
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+  }
+</div>

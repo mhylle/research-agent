@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AppController } from './app.controller';
@@ -11,9 +12,18 @@ import { ResearchModule } from './research/research.module';
 import { HealthModule } from './health/health.module';
 import { LogsModule } from './logs/logs.module';
 import { OrchestrationModule } from './orchestration/orchestration.module';
+import { LogEntryEntity } from './logging/entities/log-entry.entity';
 
 @Module({
   imports: [
+    // SQLite Database Configuration for Logging
+    TypeOrmModule.forRoot({
+      type: 'better-sqlite3',
+      database: './data/logs/research.db',
+      entities: [LogEntryEntity],
+      synchronize: true, // Auto-create tables
+      logging: false,
+    }),
     ServeStaticModule.forRoot({
       rootPath: join(
         __dirname,

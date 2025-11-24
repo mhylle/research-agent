@@ -11,7 +11,7 @@ export class LogEntryEntity {
   @Index()
   logId: string;
 
-  @Column('timestamp with time zone')
+  @Column('datetime')
   @Index()
   timestamp: Date;
 
@@ -28,6 +28,6 @@ export class LogEntryEntity {
   @Column('uuid', { nullable: true })
   stepId?: string;
 
-  @Column('jsonb')
+  @Column('simple-json')
   data: LogEntryData;
 }

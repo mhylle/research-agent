@@ -10,6 +10,7 @@ import { LLMModule } from './llm/llm.module';
 import { ResearchModule } from './research/research.module';
 import { HealthModule } from './health/health.module';
 import { LogsModule } from './logs/logs.module';
+import { OrchestrationModule } from './orchestration/orchestration.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { LogsModule } from './logs/logs.module';
     ResearchModule,
     HealthModule,
     LogsModule,
+    OrchestrationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

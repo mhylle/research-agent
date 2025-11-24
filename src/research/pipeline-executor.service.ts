@@ -274,18 +274,27 @@ export class PipelineExecutor {
       'running',
     );
 
-    // Milestone 2: Extracting content (emit once with aggregate message)
-    // In real implementation, this would be emitted per source during fetch
-    this.logger.logMilestone(
-      context.logId,
-      `${stageNodeId}_milestone_2`,
-      stageTemplates[1].id,
-      2,
-      stageTemplates[1].template,
-      { url: 'multiple sources' },
-      stageTemplates[1].expectedProgress,
-      'running',
-    );
+    // Milestone 2: Extracting content (emit for each source with progressive progress)
+    // Progress ranges from 30% to 70% across all sources
+    const progressStart = 30;
+    const progressEnd = 70;
+    const progressRange = progressEnd - progressStart;
+
+    for (let i = 0; i < sourceCount; i++) {
+      const progress = progressStart + (i / sourceCount) * progressRange;
+      const sourceUrl = `source-${i + 1}.example.com`; // Placeholder URL
+
+      this.logger.logMilestone(
+        context.logId,
+        `${stageNodeId}_milestone_2_${i}`,
+        stageTemplates[1].id,
+        2,
+        stageTemplates[1].template,
+        { url: sourceUrl },
+        progress,
+        'running',
+      );
+    }
 
     // Note: Milestone 3 (validating) emitted after stage completion
   }

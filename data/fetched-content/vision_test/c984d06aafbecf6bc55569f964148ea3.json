@@ -1,0 +1,11 @@
+{
+  "url": "https://example.com",
+  "fetchedAt": "2025-11-23T12:13:16.384Z",
+  "method": "vision",
+  "originalSize": 513,
+  "extractedSize": 395,
+  "title": "or heading:",
+  "content": "1. The main title or heading:  \n   **Example Domain**  \n\n2. The primary text content:  \n   - \"This domain is for use in documentation examples without needing permission. Avoid use in operations.\"  \n   - \"Learn more\"  \n\n3. Any charts, graphs, or important visual elements:  \n   None. The page contains only text (title, paragraph, and hyperlink) with no charts, graphs, or other visual elements.",
+  "htmlPath": "data/fetched-content/vision_test/c984d06aafbecf6bc55569f964148ea3.html",
+  "confidence": 0.8999999999999999
+}

@@ -1,0 +1,11 @@
+{
+  "url": "https://example.com",
+  "fetchedAt": "2025-11-23T12:24:28.067Z",
+  "method": "readability",
+  "originalSize": 513,
+  "extractedSize": 111,
+  "title": "Example Domain",
+  "content": "This domain is for use in documentation examples without needing permission. Avoid use in operations.Learn more",
+  "htmlPath": "data/fetched-content/test-logging-123/c984d06aafbecf6bc55569f964148ea3.html",
+  "confidence": 0.5
+}

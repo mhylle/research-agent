@@ -1,0 +1,34 @@
+{
+  "url": "https://example.com",
+  "fetchedAt": "2025-11-23T20:00:01.144Z",
+  "method": "vision",
+  "originalSize": 513,
+  "extractedSize": 335,
+  "title": "or heading:",
+  "content": "1. The main title or heading:  \n   \"Example Domain\"  \n\n2. The primary text content:  \n   \"This domain is for use in documentation examples without needing permission. Avoid use in operations.\"  \n   \"Learn more\"  \n\n3. Charts, graphs, or important visual elements:  \n   None (the page consists solely of text with no graphical elements).",
+  "htmlPath": "data/fetched-content/screenshot-test-1763927988000/c984d06aafbecf6bc55569f964148ea3.html",
+  "confidence": 0.8999999999999999,
+  "screenshotPath": "data/fetched-content/screenshot-test-1763927988000/c984d06aafbecf6bc55569f964148ea3.png",
+  "extractionMetadata": {
+    "selectionReason": "Vision confidence (0.8999999999999999) > Readability (0.5)",
+    "totalDuration": 13144,
+    "downloadDuration": 591,
+    "readability": {
+      "attempted": true,
+      "success": true,
+      "confidence": 0.5,
+      "duration": 87,
+      "contentLength": 111
+    },
+    "vision": {
+      "attempted": true,
+      "success": true,
+      "confidence": 0.8999999999999999,
+      "duration": 11234,
+      "model": "qwen3-vl:8b",
+      "promptLength": 0,
+      "responseLength": 335,
+      "screenshotSize": 22134
+    }
+  }
+}

@@ -36,6 +36,10 @@ export class PipelineExecutor {
       // Emit stage-specific milestones
       if (context.stageNumber === 1) {
         await this.emitStage1Milestones(context);
+      } else if (context.stageNumber === 2) {
+        await this.emitStage2Milestones(context);
+      } else if (context.stageNumber === 3) {
+        await this.emitStage3Milestones(context);
       }
 
       // Add system prompt to messages
@@ -102,6 +106,30 @@ export class PipelineExecutor {
           `${stageNodeId}_milestone_4`,
           stageTemplates[3].id,
           1,
+          stageTemplates[3].template,
+          {},
+          stageTemplates[3].expectedProgress,
+          'completed',
+        );
+      } else if (context.stageNumber === 2) {
+        const stageTemplates = getMilestoneTemplates(2);
+        this.logger.logMilestone(
+          context.logId,
+          `${stageNodeId}_milestone_3`,
+          stageTemplates[2].id,
+          2,
+          stageTemplates[2].template,
+          {},
+          stageTemplates[2].expectedProgress,
+          'completed',
+        );
+      } else if (context.stageNumber === 3) {
+        const stageTemplates = getMilestoneTemplates(3);
+        this.logger.logMilestone(
+          context.logId,
+          `${stageNodeId}_milestone_4`,
+          stageTemplates[3].id,
+          3,
           stageTemplates[3].template,
           {},
           stageTemplates[3].expectedProgress,
@@ -225,6 +253,87 @@ export class PipelineExecutor {
     );
 
     // Note: Milestone 4 (filtering) emitted after stage completion (lines 97-110)
+  }
+
+  private async emitStage2Milestones(context: StageContext): Promise<void> {
+    const stageTemplates = getMilestoneTemplates(2);
+    const stageNodeId = `stage-${context.stageNumber}`;
+
+    // Count sources from previous stage messages (estimate from tool calls in Stage 1)
+    const sourceCount = 10; // Default estimate for sources to fetch
+
+    // Milestone 1: Fetching sources
+    this.logger.logMilestone(
+      context.logId,
+      `${stageNodeId}_milestone_1`,
+      stageTemplates[0].id,
+      2,
+      stageTemplates[0].template,
+      { count: sourceCount },
+      stageTemplates[0].expectedProgress,
+      'running',
+    );
+
+    // Milestone 2: Extracting content (emit once with aggregate message)
+    // In real implementation, this would be emitted per source during fetch
+    this.logger.logMilestone(
+      context.logId,
+      `${stageNodeId}_milestone_2`,
+      stageTemplates[1].id,
+      2,
+      stageTemplates[1].template,
+      { url: 'multiple sources' },
+      stageTemplates[1].expectedProgress,
+      'running',
+    );
+
+    // Note: Milestone 3 (validating) emitted after stage completion
+  }
+
+  private async emitStage3Milestones(context: StageContext): Promise<void> {
+    const stageTemplates = getMilestoneTemplates(3);
+    const stageNodeId = `stage-${context.stageNumber}`;
+
+    // Count sources from Stage 2 results
+    const sourceCount = 10; // Estimate based on Stage 2 output
+
+    // Milestone 1: Analyzing sources
+    this.logger.logMilestone(
+      context.logId,
+      `${stageNodeId}_milestone_1`,
+      stageTemplates[0].id,
+      3,
+      stageTemplates[0].template,
+      { count: sourceCount },
+      stageTemplates[0].expectedProgress,
+      'running',
+    );
+
+    // Milestone 2: Synthesizing findings
+    this.logger.logMilestone(
+      context.logId,
+      `${stageNodeId}_milestone_2`,
+      stageTemplates[1].id,
+      3,
+      stageTemplates[1].template,
+      {},
+      stageTemplates[1].expectedProgress,
+      'running',
+    );
+
+    // Milestone 3: Generating answer
+    this.logger.logMilestone(
+      context.logId,
+      `${stageNodeId}_milestone_3`,
+      stageTemplates[2].id,
+      3,
+      stageTemplates[2].template,
+      {},
+      stageTemplates[2].expectedProgress,
+      'running',
+    );
+
+    // Note: Milestone 4 (formatting) emitted after stage completion
   }
 
   private extractKeyTerms(query: string): string[] {

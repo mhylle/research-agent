@@ -1,0 +1,11 @@
+{
+  "url": "https://webmasters.stackexchange.com/questions/122437/how-can-i-influence-what-google-shows-under-the-rich-result-latest-from-exampl",
+  "fetchedAt": "2025-11-23T11:22:05.494Z",
+  "method": "readability",
+  "originalSize": 188265,
+  "extractedSize": 966,
+  "title": "How can I influence what Google shows under the rich result \"Latest from [example.com]\"?",
+  "content": "\n                \nFor the website that I am working on, Google has been displaying for a while a rich result consisting of three cards under the title \"Latest from [name of the website]\".\nThe problem with these results is that it is taking the latest post from the entire website. We need it to display the results belonging only to one branch/directory of the website, such as blog articles and not other types of posts (we have classified ads appearing in those results).\nAfter searching the internet up and down, I have not managed to find what structured data, if any, corresponds to these \"Latest from [...]\" rich results. They started appearing as soon as we began adding Schema.org structured data to our website such as Organization and SiteNavigationElement, but I have not figured out if there is any connection between them.\nThe results we see are both on desktop and on mobile.\nHere are a couple of examples:\nthepeninsulaqatar.com:\n\ncss-tricks.com:\n\n    ",
+  "htmlPath": "data/fetched-content/session_1763896925057/8d71bef5a12a49f5b660a71aba4713fc.html",
+  "confidence": 1
+}

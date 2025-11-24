@@ -1,0 +1,11 @@
+{
+  "url": "https://www.reddit.com/r/vuejs/comments/1iutymw/is_vue_performance_really_better_than_react/",
+  "fetchedAt": "2025-11-23T17:11:57.121Z",
+  "method": "readability",
+  "originalSize": 449064,
+  "extractedSize": 1125,
+  "title": "The heart of the internet",
+  "content": "\n      \n      Hello everyone,\n    \n      Trying to setup for the next project most performant app and from my friends and colleagues, I've heard that Vue can beat react without any troubles. Internet says the same. Having in mind absence of virtual DOM for Vue it sounds more than cool.\n    \n      However, my tests showed me opposite. Looking for help - whether my performance tests are wrong or is there some optimizations am I missing?\n    \n      I was trying to run performance test, like these snippets: https://gist.github.com/SirSerje/3eee3edd2fc844b8123fd693531472eb and from my observations:\n    \n        \n      \n      LCP for Vue is ~10% slower\n    \n    \n      \n      example I've provided runs with react with 100 000 entries (M1 16 Ram), for Vue it breaks in the same scenario\n    \n    \n      \n      Update: I want to bring Vue to my business project, so the only way to advocate for Vue will be performance (community support, devs appreciation I can't bring to the table)\n    \n      Update: best answer to my own question is here https://github.com/krausest/js-framework-benchmark provided by u/c-digs\n    \n    ",
+  "htmlPath": "data/fetched-content/session_1763917903104/9f4cdbe503431fdf19245f97144edab1.html",
+  "confidence": 1
+}

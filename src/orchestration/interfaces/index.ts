@@ -2,3 +2,4 @@
 export * from './plan.interface';
 export * from './phase.interface';
 export * from './plan-step.interface';
+export * from './recovery.interface';

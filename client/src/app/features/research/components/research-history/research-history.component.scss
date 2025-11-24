@@ -1,0 +1,361 @@
+@use 'sass:color';
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as *;
+
+// Research history container
+.research-history {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+
+  // Header
+  &__header {
+    margin-bottom: $spacing-lg;
+  }
+
+  &__title {
+    font-size: $font-size-2xl;
+    font-weight: $font-bold;
+    color: $text-primary;
+    margin: 0;
+  }
+
+  // Loading state
+  &__loading {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-xl 0;
+    color: $text-secondary;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid rgba($primary, 0.2);
+    border-top-color: $primary;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    font-size: $font-size-base;
+    margin: 0;
+  }
+
+  // Empty state
+  &__empty {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-xl 0;
+    text-align: center;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    line-height: 1;
+  }
+
+  .empty-text {
+    font-size: $font-size-lg;
+    color: $text-secondary;
+    margin: 0;
+  }
+
+  // Error state
+  &__error {
+    @include card;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md;
+    background-color: rgba($error, 0.1);
+    border-left: 4px solid $error;
+    margin-top: $spacing-md;
+  }
+
+  .error-icon {
+    font-size: $font-size-2xl;
+    flex-shrink: 0;
+  }
+
+  .error-text {
+    color: $error;
+    margin: 0;
+  }
+
+  // History list
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+}
+
+// History item card
+.history-item {
+  @include card;
+  padding: $spacing-md;
+  background-color: $bg-primary;
+  border: 1px solid $border;
+  transition: all $transition-base;
+  animation: fadeIn 0.3s ease-out;
+
+  &:hover {
+    border-color: color.adjust($border, $lightness: -10%);
+    box-shadow: $shadow-md;
+  }
+
+  // Expanded state
+  &--expanded {
+    border-color: $primary;
+  }
+
+  // Toggle button
+  &__toggle {
+    @include button-reset;
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: $spacing-sm;
+    transition: opacity $transition-fast;
+
+    &:hover {
+      opacity: 0.8;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $border-focus;
+      outline-offset: 2px;
+      border-radius: $border-radius-sm;
+    }
+  }
+
+  .toggle-icon {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    line-height: 1.5;
+    flex-shrink: 0;
+    transition: transform $transition-fast;
+    margin-top: 2px;
+  }
+
+  &--expanded .toggle-icon {
+    transform: none;
+  }
+
+  // Query heading
+  &__query {
+    font-size: $font-size-lg;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    margin: 0;
+    line-height: $line-height;
+    word-break: break-word;
+  }
+
+  // Content area
+  &__content {
+    margin-bottom: $spacing-sm;
+  }
+
+  // Answer preview
+  &__preview {
+    font-size: $font-size-base;
+    color: $text-secondary;
+    margin: 0;
+    line-height: $line-height;
+    padding-left: calc($font-size-sm + $spacing-sm);
+  }
+
+  // Full answer (expanded)
+  &__answer {
+    padding: $spacing-md;
+    background-color: $bg-secondary;
+    border-radius: $border-radius-sm;
+    border-left: 3px solid $primary;
+    margin-left: calc($font-size-sm + $spacing-sm);
+    animation: expandDown 0.3s ease-out;
+  }
+
+  .answer-text {
+    font-size: $font-size-base;
+    color: $text-primary;
+    margin: 0;
+    line-height: $line-height;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  // Metadata row
+  &__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    font-size: $font-size-xs;
+    color: $text-secondary;
+    padding-left: calc($font-size-sm + $spacing-sm);
+  }
+
+  .meta-timestamp {
+    font-weight: $font-medium;
+  }
+
+  .meta-separator {
+    color: $text-muted;
+  }
+
+  .meta-link {
+    color: $primary;
+    text-decoration: none;
+    font-weight: $font-medium;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: $primary-hover;
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $border-focus;
+      outline-offset: 2px;
+      border-radius: $border-radius-sm;
+    }
+  }
+
+  .meta-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: $font-medium;
+
+    &--error {
+      color: $error;
+    }
+
+    &--incomplete {
+      color: $warning;
+    }
+  }
+}
+
+// Screen reader only content
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+// Animations
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes expandDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+// Responsive design
+@media (max-width: $breakpoint-md) {
+  .research-history {
+    padding: 0 $spacing-sm;
+
+    &__title {
+      font-size: $font-size-xl;
+    }
+  }
+
+  .history-item {
+    padding: $spacing-sm;
+
+    &__query {
+      font-size: $font-size-base;
+    }
+
+    &__preview,
+    .answer-text {
+      font-size: $font-size-sm;
+    }
+
+    &__meta {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-xs;
+
+      .meta-separator {
+        display: none;
+      }
+    }
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .history-item {
+    border-width: 2px;
+
+    &--expanded {
+      border-width: 3px;
+    }
+  }
+
+  .meta-link {
+    text-decoration: underline;
+  }
+}
+
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  .history-item {
+    animation: none;
+  }
+
+  .history-item__answer {
+    animation: none;
+  }
+
+  .loading-spinner {
+    animation: none;
+    border-top-color: transparent;
+  }
+
+  .toggle-icon {
+    transition: none;
+  }
+}

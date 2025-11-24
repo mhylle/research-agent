@@ -1,0 +1,112 @@
+<div class="research-history">
+  <!-- Header -->
+  <div class="research-history__header">
+    <h2 class="research-history__title">Research History</h2>
+  </div>
+
+  <!-- Loading state -->
+  @if (logsService.isLoadingSessions()) {
+    <div class="research-history__loading">
+      <span class="loading-spinner" role="status" aria-label="Loading history"></span>
+      <p class="loading-text">Loading history...</p>
+    </div>
+  }
+
+  <!-- Empty state -->
+  @else if (historyItems().length === 0) {
+    <div class="research-history__empty">
+      <span class="empty-icon" aria-hidden="true">📚</span>
+      <p class="empty-text">No research history yet. Start by asking a question!</p>
+    </div>
+  }
+
+  <!-- History items list -->
+  @else {
+    <div class="research-history__list">
+      @for (item of historyItems(); track trackByLogId($index, item)) {
+        <article class="history-item" [class.history-item--expanded]="isExpanded(item.id)">
+          <!-- Expandable header -->
+          <button
+            class="history-item__toggle"
+            type="button"
+            (click)="toggleItem(item.id)"
+            (keydown)="handleKeydown($event, item.id)"
+            [attr.aria-expanded]="isExpanded(item.id)"
+            [attr.aria-controls]="'history-content-' + item.id"
+            [attr.aria-label]="'Toggle details for: ' + item.query"
+          >
+            <span class="toggle-icon" aria-hidden="true">
+              {{ isExpanded(item.id) ? '▼' : '▶' }}
+            </span>
+            <h3 class="history-item__query">{{ item.query }}</h3>
+          </button>
+
+          <!-- Answer content (collapsible) -->
+          <div
+            class="history-item__content"
+            [id]="'history-content-' + item.id"
+            [attr.aria-hidden]="!isExpanded(item.id)"
+          >
+            <!-- Answer preview (when collapsed) -->
+            @if (!isExpanded(item.id)) {
+              <p class="history-item__preview">
+                {{ getAnswerPreview(item.answer, 100) }}
+              </p>
+            }
+
+            <!-- Full answer (when expanded) -->
+            @if (isExpanded(item.id)) {
+              <div class="history-item__answer">
+                <p class="answer-text">{{ item.answer }}</p>
+              </div>
+            }
+          </div>
+
+          <!-- Metadata row -->
+          <div class="history-item__meta">
+            <span class="meta-timestamp" [attr.aria-label]="'Timestamp: ' + item.timestamp.toLocaleString()">
+              {{ formatTimestamp(item.timestamp) }}
+            </span>
+
+            <span class="meta-separator" aria-hidden="true">•</span>
+
+            <a
+              class="meta-link"
+              [routerLink]="['/logs']"
+              [queryParams]="{ logId: item.logId }"
+              [attr.aria-label]="'View detailed logs for: ' + item.query"
+            >
+              View details
+            </a>
+
+            @if (item.status === 'error') {
+              <span class="meta-separator" aria-hidden="true">•</span>
+              <span class="meta-status meta-status--error" role="status">
+                <span aria-hidden="true">⚠️</span>
+                <span class="sr-only">Error:</span>
+                Failed
+              </span>
+            }
+
+            @if (item.status === 'incomplete') {
+              <span class="meta-separator" aria-hidden="true">•</span>
+              <span class="meta-status meta-status--incomplete" role="status">
+                <span aria-hidden="true">⏳</span>
+                <span class="sr-only">Status:</span>
+                Incomplete
+              </span>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  <!-- Error state -->
+  @if (logsService.error()) {
+    <div class="research-history__error" role="alert">
+      <span class="error-icon" aria-hidden="true">⚠️</span>
+      <p class="error-text">{{ logsService.error() }}</p>
+    </div>
+  }
+</div>

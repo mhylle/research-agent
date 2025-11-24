@@ -6,9 +6,10 @@ import { PipelineExecutor } from './pipeline-executor.service';
 import { LLMModule } from '../llm/llm.module';
 import { ToolsModule } from '../tools/tools.module';
 import { LoggingModule } from '../logging/logging.module';
+import { LogsModule } from '../logs/logs.module';
 
 @Module({
-  imports: [LLMModule, ToolsModule, LoggingModule],
+  imports: [LLMModule, ToolsModule, LoggingModule, LogsModule],
   controllers: [ResearchController, ResearchStreamController],
   providers: [ResearchService, PipelineExecutor],
 })

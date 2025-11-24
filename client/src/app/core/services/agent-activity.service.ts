@@ -164,9 +164,10 @@ export class AgentActivityService {
       const index = tasks.findIndex(t => t.nodeId === nodeId);
       if (index >= 0) {
         const updated = [...tasks];
+        const progressValue = event.data?.['progress'];
         updated[index] = {
           ...updated[index],
-          progress: (event.data?.['progress'] as number) || updated[index].progress,
+          progress: typeof progressValue === 'number' ? progressValue : updated[index].progress,
         };
         return updated;
       }
@@ -182,14 +183,14 @@ export class AgentActivityService {
     this.activeTasks.update(tasks => {
       const index = tasks.findIndex(t => t.nodeId === nodeId);
       if (index >= 0) {
-        const completed = {
+        const completedTask = {
           ...tasks[index],
           status: 'completed' as TaskStatus,
           progress: 100,
         };
 
         // Move to completed tasks
-        this.completedTasks.update(completedTasks => [...completedTasks, completed]);
+        this.completedTasks.update(completedTasks => [...completedTasks, completedTask]);
 
         // Remove from active
         return tasks.filter((_, i) => i !== index);
@@ -232,7 +233,7 @@ export class AgentActivityService {
   private formatDescription(template: string, data: Record<string, unknown>): string {
     let result = template;
     for (const [key, value] of Object.entries(data)) {
-      result = result.replace(`{${key}}`, String(value));
+      result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
     }
     return result;
   }

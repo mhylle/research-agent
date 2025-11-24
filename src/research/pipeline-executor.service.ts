@@ -224,7 +224,7 @@ export class PipelineExecutor {
       'running',
     );
 
-    // Note: Milestone 4 (filtering) will be emitted after tool execution in executeToolCalls
+    // Note: Milestone 4 (filtering) emitted after stage completion (lines 97-110)
   }
 
   private extractKeyTerms(query: string): string[] {

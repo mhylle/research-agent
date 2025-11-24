@@ -1,0 +1,24 @@
+{
+  "url": "https://www.qai.ca/resource-library/n2y5bjb0pfa0qujlnvhyqupyu9gjxd",
+  "fetchedAt": "2025-11-24T21:27:32.489Z",
+  "method": "readability",
+  "originalSize": 166504,
+  "extractedSize": 3390,
+  "title": "Quantum Technologies 101: Superposition and Entanglement | Quantum Algorithms Institute",
+  "content": "\n  By Dr. Shohini GhoseThe building block of a quantum computer is the qubit. Unlike the classical bit which can be either a 0 or 1, it’s not very easy to conceptualize a qubit because it has properties that are outside of our everyday experiences. One such property is superposition, which is often described as the existence of the qubit simultaneously as 0 and 1, but that is a bit misleading. We can never actually observe a qubit to be both 0 and 1 at the same time. That would be somewhat like observing an electrical signal to be on and off at the same time, or a coin being heads and tails at the same time, which we never do. But we do observe quantum particles such as photons or electrons behaving in ways that can only be explained if we mathematically describe the particle as having some probability of being in two different possible states or configurations at once. That’s superposition in a nutshell. We never observe a particle in superposition directly, but we can infer its effects in the probabilistic behavior of the particle. Whether the qubit actually exists in both states at once is a question that remains outside the realm of observation.In the context of quantum computing, superposition means that a qubit (a photon or an electron or any other quantum particle) is not limited to being deterministically described as 1 or 0 during a computation. There is some probability of observing outcome 1 when measuring the qubit and some probability of outcome 0. Prior to the measurement, the qubit is described to be in a superposition of 0 and 1, and there is no way to predict perfectly which outcome will be observed. A qubit could be in one of an infinite set of superposition states; the probability of observing 0 could be 60% and observing 1 could be 40%, or it could be 72% versus 28% or any other number in between.This infinitely fluid state of the qubit might seem like an obstacle for precision computing, but in fact, it increases our options for manipulating the qubit. Unlike classical computing, quantum computing operations are not limited to just switching 0s to 1s and vice versa. Instead, quantum logic involves an infinite possible set of operations that can change the qubit superposition and hence the probabilities of getting outcome 0 or 1. Furthermore, when multiple qubits interact, they can form a collective superposition known as entanglement. For example, 2 qubits can be in an equal superposition with a 50% chance of both particles being observed to be 0 or both being 1. Prior to measuring the qubits, there is no way to tell which outcome you will get, but if one qubit is observed to be 1, then the superposition instantly ‘collapses’ and the other qubit will also definitely be 1, even if it happens to be on the other side of the universe at the moment of measurement.There are limits, however. Despite this seemingly instant connection, faster-than-light communication is not possible using entangled qubits. That’s because, prior to observation of a qubit, there’s no way to tell which of the outcomes 0 or 1, you will get, and hence only random values of 0 and 1 can be sent by Alice to Bob when she measures her qubit, and his entangled qubit collapses to the corresponding value. Nevertheless, entanglement between qubits is an extremely powerful connection and is not possible between classical bits in regular computers.\n",
+  "htmlPath": "data/fetched-content/session_1764019649042/67c3d03dc3ca3f0548010c09ae1fff5f.html",
+  "confidence": 1,
+  "screenshotPath": "data/fetched-content/session_1764019649042/67c3d03dc3ca3f0548010c09ae1fff5f.png",
+  "extractionMetadata": {
+    "selectionReason": "Readability confidence (1) >= 0.7",
+    "totalDuration": 3447,
+    "downloadDuration": 611,
+    "readability": {
+      "attempted": true,
+      "success": true,
+      "confidence": 1,
+      "duration": 83,
+      "contentLength": 3390
+    }
+  }
+}

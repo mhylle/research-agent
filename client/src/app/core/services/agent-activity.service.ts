@@ -32,7 +32,8 @@ export class AgentActivityService {
     this.currentLogId = logId;
     this.resetState();
 
-    const url = `${environment.apiUrl}/research/stream/events/${logId}`;
+    // Fixed URL to match backend route: /research/stream/:logId
+    const url = `${environment.apiUrl}/research/stream/${logId}`;
     this.eventSource = new EventSource(url);
 
     this.eventSource.onopen = () => {
@@ -46,25 +47,45 @@ export class AgentActivityService {
       // EventSource auto-reconnects, so just update status
     };
 
-    // Listen for different event types
-    this.eventSource.addEventListener('node-start', (e: MessageEvent) => {
-      this.handleTaskStart(JSON.parse(e.data));
+    // NEW ORCHESTRATOR EVENT TYPES
+    this.eventSource.addEventListener('session_started', (e: MessageEvent) => {
+      this.handleSessionStarted(JSON.parse(e.data));
     });
 
-    this.eventSource.addEventListener('node-milestone', (e: MessageEvent) => {
-      this.handleMilestone(JSON.parse(e.data));
+    this.eventSource.addEventListener('plan_created', (e: MessageEvent) => {
+      this.handlePlanCreated(JSON.parse(e.data));
     });
 
-    this.eventSource.addEventListener('node-progress', (e: MessageEvent) => {
-      this.handleProgress(JSON.parse(e.data));
+    this.eventSource.addEventListener('phase_started', (e: MessageEvent) => {
+      this.handlePhaseStarted(JSON.parse(e.data));
     });
 
-    this.eventSource.addEventListener('node-complete', (e: MessageEvent) => {
-      this.handleTaskComplete(JSON.parse(e.data));
+    this.eventSource.addEventListener('phase_completed', (e: MessageEvent) => {
+      this.handlePhaseCompleted(JSON.parse(e.data));
     });
 
-    this.eventSource.addEventListener('node-error', (e: MessageEvent) => {
-      this.handleTaskError(JSON.parse(e.data));
+    this.eventSource.addEventListener('phase_failed', (e: MessageEvent) => {
+      this.handlePhaseFailed(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('step_started', (e: MessageEvent) => {
+      this.handleStepStarted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('step_completed', (e: MessageEvent) => {
+      this.handleStepCompleted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('step_failed', (e: MessageEvent) => {
+      this.handleStepFailed(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('session_completed', (e: MessageEvent) => {
+      this.handleSessionCompleted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('session_failed', (e: MessageEvent) => {
+      this.handleSessionFailed(JSON.parse(e.data));
     });
   }
 
@@ -86,140 +107,68 @@ export class AgentActivityService {
     this.connectionError.set(null);
   }
 
-  private handleTaskStart(event: MilestoneEventData): void {
-    // Tool/stage starts - create placeholder task if needed
-    const existingTask = this.activeTasks().find(t => t.nodeId === event.nodeId);
-
-    if (!existingTask) {
-      const newTask: ActivityTask = {
-        id: `task_${event.nodeId}`,
-        nodeId: event.nodeId,
-        stage: this.currentStage() as 1 | 2 | 3,
-        type: (event.nodeType as TaskType) || 'tool',
-        description: (event.data?.['description'] as string) || 'Processing...',
-        progress: 0,
-        status: 'running',
-        timestamp: new Date(event.timestamp),
-        retryCount: 0,
-        canRetry: false,
-      };
-
-      this.activeTasks.update(tasks => [...tasks, newTask]);
-    }
+  // NEW ORCHESTRATOR EVENT HANDLERS
+  private handleSessionStarted(event: any): void {
+    console.log('Session started:', event);
   }
 
-  private handleMilestone(event: MilestoneEventData): void {
-    if (!event.milestone) return;
+  private handlePlanCreated(event: any): void {
+    console.log('Plan created:', event);
+    // Map phases to stages (if needed, for now we'll use dynamic phase tracking)
+  }
 
-    const milestone = event.milestone;
-    const taskId = milestone.milestoneId;
+  private handlePhaseStarted(event: any): void {
+    const { phaseId, phaseName, stepCount } = event;
 
-    // Check if task already exists
-    const existingTaskIndex = this.activeTasks().findIndex(t => t.id === taskId);
+    const newTask: ActivityTask = {
+      id: phaseId,
+      nodeId: phaseId,
+      stage: 1, // We'll update this dynamically
+      type: 'milestone',
+      description: `Phase: ${phaseName} (${stepCount} steps)`,
+      progress: 0,
+      status: 'running',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
 
-    if (existingTaskIndex >= 0) {
-      // Update existing task
-      this.activeTasks.update(tasks => {
-        const updated = [...tasks];
-        updated[existingTaskIndex] = {
-          ...updated[existingTaskIndex],
-          description: this.formatDescription(milestone.template, milestone.data),
-          progress: milestone.progress,
-          status: milestone.status as TaskStatus,
-        };
-        return updated;
-      });
-    } else {
-      // Create new task
-      const newTask: ActivityTask = {
-        id: taskId,
-        nodeId: event.nodeId,
-        stage: milestone.stage,
-        type: 'milestone',
-        description: this.formatDescription(milestone.template, milestone.data),
-        progress: milestone.progress,
-        status: milestone.status as TaskStatus,
-        timestamp: new Date(milestone.timestamp),
-        retryCount: 0,
-        canRetry: false,
-        data: milestone.data,
-      };
-
-      this.activeTasks.update(tasks => [...tasks, newTask]);
-    }
-
-    // Update current stage
-    if (milestone.stage !== this.currentStage()) {
-      this.currentStage.set(milestone.stage);
-    }
-
-    // Calculate stage progress
+    this.activeTasks.update(tasks => [...tasks, newTask]);
     this.updateStageProgress();
   }
 
-  private handleProgress(event: MilestoneEventData): void {
-    const nodeId = event.nodeId;
+  private handlePhaseCompleted(event: any): void {
+    const { phaseId, stepsCompleted } = event;
 
     this.activeTasks.update(tasks => {
-      const index = tasks.findIndex(t => t.nodeId === nodeId);
-      if (index >= 0) {
-        const updated = [...tasks];
-        const progressValue = event.data?.['progress'];
-        updated[index] = {
-          ...updated[index],
-          progress: typeof progressValue === 'number' ? progressValue : updated[index].progress,
-        };
-        return updated;
-      }
-      return tasks;
-    });
-
-    this.updateStageProgress();
-  }
-
-  private handleTaskComplete(event: MilestoneEventData): void {
-    const nodeId = event.nodeId;
-
-    this.activeTasks.update(tasks => {
-      const index = tasks.findIndex(t => t.nodeId === nodeId);
+      const index = tasks.findIndex(t => t.id === phaseId);
       if (index >= 0) {
         const completedTask = {
           ...tasks[index],
           status: 'completed' as TaskStatus,
           progress: 100,
         };
-
-        // Move to completed tasks
-        this.completedTasks.update(completedTasks => [...completedTasks, completedTask]);
-
-        // Remove from active
+        this.completedTasks.update(completed => [...completed, completedTask]);
         return tasks.filter((_, i) => i !== index);
       }
       return tasks;
     });
 
-    // Check if all stages complete
-    if (this.currentStage() === 3 && this.activeTasks().length === 0) {
-      this.isComplete.set(true);
-    }
-
     this.updateStageProgress();
   }
 
-  private handleTaskError(event: MilestoneEventData): void {
-    const nodeId = event.nodeId;
+  private handlePhaseFailed(event: any): void {
+    const { phaseId, error } = event;
 
     this.activeTasks.update(tasks => {
-      const index = tasks.findIndex(t => t.nodeId === nodeId);
+      const index = tasks.findIndex(t => t.id === phaseId);
       if (index >= 0) {
         const updated = [...tasks];
-        const errorData = event.data?.['error'] as { message?: string; code?: string } | undefined;
         updated[index] = {
           ...updated[index],
           status: 'error' as TaskStatus,
           error: {
-            message: errorData?.message || 'Unknown error',
-            code: errorData?.code,
+            message: error || 'Phase failed',
             timestamp: new Date(),
           },
           canRetry: true,
@@ -228,6 +177,80 @@ export class AgentActivityService {
       }
       return tasks;
     });
+  }
+
+  private handleStepStarted(event: any): void {
+    const { stepId, toolName } = event;
+
+    const newTask: ActivityTask = {
+      id: stepId,
+      nodeId: stepId,
+      stage: 1, // Dynamic
+      type: 'tool',
+      description: `Running: ${toolName}`,
+      progress: 0,
+      status: 'running',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+
+    this.activeTasks.update(tasks => [...tasks, newTask]);
+  }
+
+  private handleStepCompleted(event: any): void {
+    const { stepId, toolName, durationMs } = event;
+
+    this.activeTasks.update(tasks => {
+      const index = tasks.findIndex(t => t.id === stepId);
+      if (index >= 0) {
+        const completedTask = {
+          ...tasks[index],
+          description: `Completed: ${toolName} (${durationMs}ms)`,
+          status: 'completed' as TaskStatus,
+          progress: 100,
+        };
+        this.completedTasks.update(completed => [...completed, completedTask]);
+        return tasks.filter((_, i) => i !== index);
+      }
+      return tasks;
+    });
+
+    this.updateStageProgress();
+  }
+
+  private handleStepFailed(event: any): void {
+    const { stepId, toolName, error } = event;
+
+    this.activeTasks.update(tasks => {
+      const index = tasks.findIndex(t => t.id === stepId);
+      if (index >= 0) {
+        const updated = [...tasks];
+        updated[index] = {
+          ...updated[index],
+          description: `Failed: ${toolName}`,
+          status: 'error' as TaskStatus,
+          error: {
+            message: error?.message || 'Step failed',
+            timestamp: new Date(),
+          },
+          canRetry: true,
+        };
+        return updated;
+      }
+      return tasks;
+    });
+  }
+
+  private handleSessionCompleted(event: any): void {
+    console.log('Session completed:', event);
+    this.isComplete.set(true);
+  }
+
+  private handleSessionFailed(event: any): void {
+    console.log('Session failed:', event);
+    const { error } = event;
+    this.connectionError.set(error || 'Research failed');
   }
 
   private formatDescription(template: string, data: Record<string, unknown>): string {

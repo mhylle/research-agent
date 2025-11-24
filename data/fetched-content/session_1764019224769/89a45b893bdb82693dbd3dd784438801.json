@@ -1,0 +1,34 @@
+{
+  "url": "https://www.youtube.com/watch?v=a0XoTRPDtWQ",
+  "fetchedAt": "2025-11-24T21:20:52.860Z",
+  "method": "vision",
+  "originalSize": 1200964,
+  "extractedSize": 2687,
+  "title": "or heading",
+  "content": "### 1. Main title or heading  \n**\"Inden du fortsætter til YouTube\"** (Before you continue to YouTube)  \n\n---\n\n### 2. Primary text content  \n*(Focus on cookie/data policy explanations; ignore navigation/footer)*  \n\n- **Cookie/data usage purposes**:  \n  - *Primary purposes*:  \n    - Levere og vedligeholde Google-tjenester (Provide and maintain Google services)  \n    - Registrere tjenesteudfald og beskytte mod spam, svindel og misbrug (Track service issues and protect against spam, fraud, abuse)  \n    - Måle målgruppeengagement og indsamle websitestatistik med henblik på at forstå, hvordan vores tjenester bruges, samt forbedre kvaliteten af de pågældende tjenester (Measure audience engagement and collect website statistics to understand how services are used and improve quality)  \n\n  - *If \"Acceptér alle\" is selected*:  \n    - Udvikle og forbedre nye tjenester (Develop and improve new services)  \n    - Levere og måle effektiviteten af annoncer (Deliver and measure ad effectiveness)  \n    - Vise personligt tilpasset indhold (affhængigt af dine indstillinger) (Show personalized content based on your settings)  \n    - Vise personligt tilpassede annoncer (affhængigt af dine indstillinger) (Show personalized ads based on your settings)  \n\n  - *If \"Afvis alle\" is selected*:  \n    - No additional cookies/data use for the above purposes.  \n\n  - *Non-personalized content/ads*:  \n    - Ikke-tilpasset indhold og ikke-personligt tilpassede annoncer påvirkes f.eks. af det indhold, du aktuelt kigger på, og din lokation (annoncevisning er baseret på din generelle lokation). Tilpasset indhold og personligt tilpassede annoncer kan f.eks. omfatte videoanbefalinger, en tilpasset YouTube-startside og skærmdyredde annoncer, som er baseret på tidligere aktivitet, f.eks. de videoer, du har set, og de ting, du har søgt efter på YouTube. Vi bruger også cookies og data til at personligt tilpasse brugeroplevelsen, så den er alderssvarende, hvis det er relevant.  \n\n  - *Additional options*:  \n    - Vælg \"Flere valgmuligheder\" for at se yderligere oplysninger, herunder oplysninger om administration af dine privatlivsindstillinger. Du kan også til enhver tid besøge g.co/privacytools.  \n\n---\n\n### 3. Visual elements  \n- **No charts/graphs**: The page is text-based with no visual data visualizations.  \n- **Key UI elements**:  \n  - Buttons: \"Flere valgmuligheder\" (More options), \"Afvis alle\" (Reject all), \"Acceptér alle\" (Accept all).  \n  - YouTube logo (top-left) with \"En Google-virksomhed\" (A Google company).  \n  - Language toggle (\"da\") and \"Log ind\" (Sign in) buttons (top-right).  \n\n*(Note: All text is in Danish; the page is a standard cookie consent screen for YouTube.)*",
+  "htmlPath": "data/fetched-content/session_1764019224769/89a45b893bdb82693dbd3dd784438801.html",
+  "confidence": 0.8999999999999999,
+  "screenshotPath": "data/fetched-content/session_1764019224769/89a45b893bdb82693dbd3dd784438801.png",
+  "extractionMetadata": {
+    "selectionReason": "Vision confidence (0.8999999999999999) > Readability (0)",
+    "totalDuration": 28091,
+    "downloadDuration": 724,
+    "readability": {
+      "attempted": true,
+      "success": false,
+      "confidence": 0,
+      "duration": 204,
+      "contentLength": 0
+    },
+    "vision": {
+      "attempted": true,
+      "success": true,
+      "confidence": 0.8999999999999999,
+      "duration": 22026,
+      "model": "qwen3-vl:8b",
+      "promptLength": 0,
+      "responseLength": 2687,
+      "screenshotSize": 83048
+    }
+  }
+}

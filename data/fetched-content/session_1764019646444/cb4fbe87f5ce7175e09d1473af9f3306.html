@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" prefix="og: https://ogp.me/ns#">
+  <head>
+    <meta charset="utf-8" />
+<noscript><style>form.antibot * :not(.antibot-message) { display: none !important; }</style>
+</noscript><script async src="https://www.googletagmanager.com/gtag/js?id=G-3LQDL2XXWV"></script>
+<script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments)};gtag("js", new Date());gtag("set", "developer_id.dMDhkMT", true);gtag("config", "G-3LQDL2XXWV", {"groups":"default","link_attribution":true,"allow_ad_personalization_signals":false,"page_location":location.pathname + location.search + location.hash});</script>
+<meta name="description" content="Learn essential concepts like qubits, superposition, and entanglement in &quot;Quantum Computing Key Concepts: Qubits, Superposition, and Entanglement.&quot; Build you" />
+<link rel="canonical" href="https://niccs.cisa.gov/training/catalog/tonex/quantum-computing-key-concepts-qubits-superposition-and-entanglement" />
+<meta name="rating" content="general" />
+<meta property="og:site_name" content="National Initiative for Cybersecurity Careers and Studies" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://niccs.cisa.gov/training/catalog/tonex/quantum-computing-key-concepts-qubits-superposition-and-entanglement" />
+<meta property="og:title" content="Quantum Computing Key Concepts: Qubits, Superposition, and Entanglement" />
+<meta property="og:image" content="https://niccs.cisa.gov/profiles/niccsd8_gov/themes/custom/niccs_uswds/NICCS_logo_Black.svg" />
+<meta name="msvalidate.01" content="0B3B5FDFA146291AFF402102A2D95260" />
+<meta name="google-site-verification" content="2ucwXDz8UCX1TpYF_rDWTFaUeO92WhKqFOAa_1bnpdM" />
+<meta name="google-site-verification" content="KEo_PYa538HADf10Sy8zaFuUBurVeJFfw468Gh7Iu4A" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "WebPage",
+            "breadcrumb": {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "Training",
+                        "item": "https://niccs.cisa.gov/training"
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Education \u0026 Training Catalog",
+                        "item": "https://niccs.cisa.gov/training/catalog"
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "Tonex, Inc.",
+                        "item": "https://niccs.cisa.gov/training/catalog/tonex"
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 4,
+                        "name": "Quantum Computing Key Concepts: Qubits, Superposition, and Entanglement",
+                        "item": "https://niccs.cisa.gov/training/catalog/tonex/quantum-computing-key-concepts-qubits-superposition-and-entanglement"
+                    }
+                ]
+            }
+        }
+    ]
+}</script>
+<link rel="icon" href="/profiles/niccsd8_gov/themes/custom/niccs_uswds/assets/img/favicons/favicon.ico" type="image/vnd.microsoft.icon" />
+
+    <title>Quantum Computing Key Concepts: Qubits, Superposition, and Entanglement from Tonex, Inc. | NICCS</title>
+    <link rel="stylesheet" media="all" href="/sites/default/files/css/css_ROPxcoJh2SfAieDEmWxsNr-p7P4W6ZALEQPqDeNmvs4.css?delta=0&amp;language=en&amp;theme=niccs_uswds&amp;include=eJxdjl0KwzAMgy8U5iMFN_FSQ36KlbR0p19p8zD2IotP2HLIDJxUBOAkcKGZUG1WOOtHXFzhB44ISrktnF3VEOCjJu2cPYQtrDTA0878fR0A3TpJN9aqNVFowyD_dLO2axSb_Kn88Q4nuhRa-Np90mhjux7aVQ7Qra_S4sjijlA8hu1y0jO-lJZaqA" />
+<link rel="stylesheet" media="all" href="/sites/default/files/css/css_GkIS6oNC0sCllSag2in8cFjg8hO90aOrftF1hzAzI98.css?delta=1&amp;language=en&amp;theme=niccs_uswds&amp;include=eJxdjl0KwzAMgy8U5iMFN_FSQ36KlbR0p19p8zD2IotP2HLIDJxUBOAkcKGZUG1WOOtHXFzhB44ISrktnF3VEOCjJu2cPYQtrDTA0878fR0A3TpJN9aqNVFowyD_dLO2axSb_Kn88Q4nuhRa-Np90mhjux7aVQ7Qra_S4sjijlA8hu1y0jO-lJZaqA" />
+<link rel="stylesheet" media="print" href="/sites/default/files/css/css_tIMyFfe8LwWSsppshAFBu6VVgqzhZaY6jpEUp5R7kJw.css?delta=2&amp;language=en&amp;theme=niccs_uswds&amp;include=eJxdjl0KwzAMgy8U5iMFN_FSQ36KlbR0p19p8zD2IotP2HLIDJxUBOAkcKGZUG1WOOtHXFzhB44ISrktnF3VEOCjJu2cPYQtrDTA0878fR0A3TpJN9aqNVFowyD_dLO2axSb_Kn88Q4nuhRa-Np90mhjux7aVQ7Qra_S4sjijlA8hu1y0jO-lJZaqA" />
+<link rel="stylesheet" media="all" href="/sites/default/files/css/css_cFV0U5cMUJLIPWqm1RbSZGbtuh2vTLDsMuow7-iG7rc.css?delta=3&amp;language=en&amp;theme=niccs_uswds&amp;include=eJxdjl0KwzAMgy8U5iMFN_FSQ36KlbR0p19p8zD2IotP2HLIDJxUBOAkcKGZUG1WOOtHXFzhB44ISrktnF3VEOCjJu2cPYQtrDTA0878fR0A3TpJN9aqNVFowyD_dLO2axSb_Kn88Q4nuhRa-Np90mhjux7aVQ7Qra_S4sjijlA8hu1y0jO-lJZaqA" />
+
+    <script src="https://dap.digitalgov.gov/Universal-Federated-Analytics-Min.js?agency=DHS&amp;subagency=CISA&amp;siteplatform=Drupal&amp;pga4=G-3LQDL2XXWV" id="_fed_an_ua_tag" async></script>
+
+  </head>
+  <body id="body" class="general general--training general--training--catalog general--training--catalog--tonex general--training--catalog--tonex--quantum-computing-key-concepts-qubits-superposition-and-entanglement path-node page-node-type-training-course">
+        <a href="#main-content" class="visually-hidden focusable skip-link">
+      Skip to main content
+    </a>
+    
+      <div class="dialog-off-canvas-main-canvas" data-off-canvas-main-canvas>
+    
+<header class="usa-header usa-header--basic" role="banner">
+      <div class="usa-banner">
+  <div class="usa-accordion">
+    <header class="usa-banner__header">
+      <div class="usa-banner__inner">
+        <div class="grid-col-auto">
+          <img class="usa-banner__header-flag" src="/themes/custom/dhs_uswds/assets/uswds/img/us_flag_small.png" width="16" height="11" alt="US flag signifying that this is a United States Federal Government website">
+        </div>
+        <div class="grid-col-fill tablet:grid-col-auto">
+          <p class="usa-banner__header-text">Official website of the Cybersecurity and Infrastructure Security Agency</p>
+          <p class="usa-banner__header-action" aria-hidden="true">Here’s how you know</p>
+        </div>
+        <button class="usa-accordion__button usa-banner__button" aria-expanded="false" aria-controls="gov-banner">
+            <span class="usa-banner__button-text">Here’s how you know</span>
+            <span class="visually-hidden"> this is a secure, official government website</span>
+        </button>
+      </div>
+    </header>
+    <div class="usa-banner__content usa-accordion__content" id="gov-banner">
+      <div class="grid-row grid-gap-lg">
+        <div class="usa-banner__guidance tablet:grid-col-6">
+          <img class="usa-banner__icon usa-media-block__img" src="/themes/custom/dhs_uswds/assets/uswds/img/icon-dot-gov.svg" width="64" height="64" alt="">
+          <div class="usa-media-block__body">
+            <p>
+              <strong>Official websites use .gov</strong>
+            </p>
+            <p>
+              A <strong>.gov</strong> website belongs to an official government organization in the United States.
+            </p>
+          </div>
+        </div>
+        <div class="usa-banner__guidance tablet:grid-col-6">
+          <img class="usa-banner__icon usa-media-block__img" src="/themes/custom/dhs_uswds/assets/uswds/img/icon-https.svg" height="64" width="64" alt="">
+          <div class="usa-media-block__body">
+            <p>
+              <strong>Secure .gov websites use HTTPS</strong>
+            </p>
+            <p>
+              A <strong>lock</strong> ( <span class="icon-lock">
+                <svg class="usa-icon" aria-hidden="true" role="img">
+                  <use xlink:href="/themes/custom/dhs_uswds/assets/uswds/img/sprite.svg#lock"></use>
+                </svg>
+              </span> ) or <strong>https://</strong> means you’ve safely connected to the .gov website. Share sensitive information only on official, secure websites.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+      <div class="above-header header-top dhs-blue-bg text-uppercase">
+        <div class="region region-header-top">
+    <div class="usa-logo" id="logo">
+    <a class="logo-img" href="/" accesskey="1" title="National Initiative for Cybersecurity Careers and Studies" aria-label="Home">
+    <svg focusable="false" role="img" aria-label="National Initiative for Cybersecurity Careers and Studies" height="60" width="240">
+      <use href="/profiles/niccsd8_gov/themes/custom/niccs_uswds/NICCS.svg#niccs-logo"></use>
+    </svg>
+  </a>
+        <em class="usa-logo__text" aria-hidden="true">National Initiative for Cybersecurity Careers and Studies</em>
+  </div>
+  <nav role="navigation" aria-labelledby="nav--utility-menu---refresh-menu" id="nav--utility-menu---refresh" class="settings-tray-editable block block-menu navigation menu--utility-menu---refresh" data-drupal-settingstray="editable">
+                    
+  <div  class="visually-hidden" id="nav--utility-menu---refresh-menu">
+    Utility Menu - Refresh
+  </div>
+  
+
+        
+              <ul class="menu">
+                    <li class="menu-item">
+                  <a href="/about-us" data-drupal-link-system-path="node/36359">About</a>
+                              </li>
+                <li class="menu-item">
+                  <a href="/contact-us" title="Contact NICCS" data-drupal-link-system-path="node/36362">Contact</a>
+                              </li>
+                <li class="menu-item">
+                  <a href="https://public.govdelivery.com/accounts/USDHSCISA/subscriber/new?topic_id=USDHSCISA_1" title="Subscribe">Subscribe</a>
+                              </li>
+        </ul>
+  
+
+
+  </nav>
+<div class="magnifying-glass-block settings-tray-editable block block-niccs-digital-search block-usa-search-global-block" id="block-niccs-uswds-searchgovglobalsearchblock" data-drupal-settingstray="editable">
+  
+    
+      <div><form class="usa-search-form-global usa-form" autocomplete="off" data-drupal-selector="usa-search-form-global" action="/api/search" method="post" id="usa-search-form-global" accept-charset="UTF-8">
+  
+    <input data-drupal-selector="edit-honeypot-time" type="hidden" name="honeypot_time" value="UwjrdZzHK8KFn8EgG4Dw7LefmuJp-g3_qpDn8bwel-4" />
+
+<div class="search-container js-form-wrapper form-wrapper" data-drupal-selector="edit-form" id="edit-form"><div class="usa-form-group js-form-item form-item js-form-type-textfield form-item-query js-form-item-query form-no-label">
+      
+<label for="edit-query" class="usa-label usa-input--required visually-hidden js-form-required form-required" id="edit-query--label" title="this is a required field">Keyword(s) to search for </label>
+          
+    <input class="usa-search-keyword form-text required usa-input" placeholder="Search NICCS" data-drupal-selector="edit-query" type="text" id="edit-query" name="query" value="" size="60" maxlength="128" required="required" />
+
+
+      </div>
+<div data-drupal-selector="edit-actions" class="form-actions js-form-wrapper form-wrapper" id="edit-actions">
+  <button class="magnifying-glass__button usa-search-submit"><div><svg class="usa-icon search-icon" focusable="false" role="img" aria-label="Search NICCS"><use href="/themes/custom/dhs_uswds/assets/uswds/img/sprite.svg#search" />
+</svg>
+</div></button>
+
+
+</div></div>
+    <input autocomplete="off" data-drupal-selector="form-zkwkwg20s7cmfbz9-hncx86zgtq7kzkqa3co8a8lw84" type="hidden" name="form_build_id" value="form-ZkWKwg20s7Cmfbz9_hnCx86zGTq7kzkqa3Co8A8Lw84" />
+
+
+    <input data-drupal-selector="edit-usa-search-form-global" type="hidden" name="form_id" value="usa_search_form_global" />
+
+<div class="url-textfield js-form-wrapper form-wrapper" style="display: none !important;"><div class="usa-form-group js-form-item form-item js-form-type-textfield form-item-url js-form-item-url">
+      
+<label for="edit-url" class="usa-label" id="edit-url--label">Leave this field blank </label>
+          
+    <input autocomplete="off" data-drupal-selector="edit-url" type="text" id="edit-url" name="url" value="" size="20" maxlength="128" class="form-text usa-input" />
+
+
+      </div>
+</div>
+</form>
+<div class="magnifying-glass"><button class="magnifying-glass__button toggler mobile-nav-button"><div class="open-icon-toggle" type="button"><svg class="usa-icon search-icon" focusable="false" role="img" aria-label="Open the search box"><use href="/themes/custom/dhs_uswds/assets/uswds/img/sprite.svg#search" />
+</svg>
+</div><div class="close-icon-toggle" type="button"><svg class="usa-icon close-icon" focusable="false" role="img" aria-label="Close the search box"><use href="/themes/custom/dhs_uswds/assets/uswds/img/sprite.svg#close" />
+</svg>
+</div></button>
+</div></div>
+  </div>
+
+  </div>
+
+
+      <div class="mobile-menu-button-wrapper">
+        <button class="mobile-nav-button" aria-label="Main Menu" aria-role="button" type="button" id="mobile-menu-button" aria-expanded="false">
+          <div class="menu-icon-toggle" type="button">
+            <svg class="usa-icon menu-icon" aria-hidden="true" role="img">
+              <use xlink:href="/themes/custom/dhs_uswds/assets/uswds/img/sprite.svg#menu"></use>
+            </svg>
+          </div>
+          <div class="close-icon-toggle" type="button">
+            <svg class="usa-icon close-icon" aria-hidden="true" role="img">
+              <use xlink:href="/themes/custom/dhs_uswds/assets/uswds/img/sprite.svg#close"></use>
+            </svg>
+          </div>
+        </button>
+      </div>
+    </div>
+  
+  <div class="main-nav usa-nav-container dhs-blue-70-bg">
+
+  
+  <nav aria-label="Primary navigation" class="usa-nav" role="navigation">
+    
+
+            <div class="region region-primary-menu">
+      
+  
+          <ul class="usa-nav__primary usa-accordion">
+    
+                  <li class="usa-nav__primary-item">
+      
+              <button class="usa-accordion__button usa-nav__link " aria-expanded="false" aria-controls="basic-nav-section-1">
+          <span>Cybersecurity by Audience</span>
+        </button>
+      
+                
+  
+          <ul id="basic-nav-section-1" class="usa-nav__submenu" hidden="">
+
+          
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/audience/cybersecurity-beginners">
+          <span>Beginners</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/audience/cybersecurity-k-12-teachers">
+          <span>K-12 Teachers</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/audience/cybersecurity-students">
+          <span>Students</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/audience/cybersecurity-school-administrators">
+          <span>School Administrators</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/audience/cybersecurity-veterans">
+          <span>Veterans</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/audience/cybersecurity-colleges-universities">
+          <span>Colleges &amp; Universities</span>
+        </a>
+              
+              </li>
+      
+    
+          </ul>
+    
+  
+
+      
+              </li>
+      
+                  <li class="usa-nav__primary-item">
+      
+              <button class="usa-accordion__button usa-nav__link " aria-expanded="false" aria-controls="basic-nav-section-2">
+          <span>Training</span>
+        </button>
+      
+                
+  
+          <ul id="basic-nav-section-2" class="usa-nav__submenu" hidden="">
+
+          
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/training/catalog">
+          <span>Education &amp; Training Catalog</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/training/cisa-learning">
+          <span>CISA Learning</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/training/add-your-courses">
+          <span>Add Your Courses to NICCS</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/training/cwd-program">
+          <span>Cybersecurity Workforce Development and Training</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/training/niccs-training-frequently-asked-questions">
+          <span>NICCS Training Frequently Asked Questions</span>
+        </a>
+              
+              </li>
+      
+    
+          </ul>
+    
+  
+
+      
+              </li>
+      
+                  <li class="usa-nav__primary-item">
+      
+              <button class="usa-accordion__button usa-nav__link " aria-expanded="false" aria-controls="basic-nav-section-3">
+          <span>Interactive Tools</span>
+        </button>
+      
+                
+  
+          <ul id="basic-nav-section-3" class="usa-nav__submenu" hidden="">
+
+          
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/tools/nice-framework">
+          <span>NICE Workforce Framework for Cybersecurity (NICE Framework)</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/tools/nice-framework-mapping-tool">
+          <span>NICE Framework Mapping Tool</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/tools/cyber-career-pathways-tool">
+          <span>Cyber Career Pathways Tool</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/tools/career-pathways-roadmap">
+          <span>Career Pathways Roadmap</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/tools/cybersecurity-career-map">
+          <span>Cybersecurity Career Map</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/tools/dhs-pushbuttonpdtm-tool">
+          <span>DHS PushButtonPD™ Tool</span>
+        </a>
+              
+              </li>
+      
+    
+          </ul>
+    
+  
+
+      
+              </li>
+      
+                  <li class="usa-nav__primary-item">
+      
+              <button class="usa-accordion__button usa-nav__link " aria-expanded="false" aria-controls="basic-nav-section-4">
+          <span>Resources</span>
+        </button>
+      
+                
+  
+          <ul id="basic-nav-section-4" class="usa-nav__submenu" hidden="">
+
+          
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/resources/cybersecurity-certifications">
+          <span>Certifications</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/resources/cybersecurity-scholarships">
+          <span>Scholarships</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/resources/internships-apprenticeships">
+          <span>Internships &amp; Apprenticeships</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/resources/cybersecurity-competitions-games">
+          <span>Competitions &amp; Games</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/resources/glossary">
+          <span>Glossary</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/resources/additional-resources">
+          <span>Additional Resources</span>
+        </a>
+              
+              </li>
+      
+    
+          </ul>
+    
+  
+
+      
+              </li>
+      
+                  <li class="usa-nav__primary-item">
+      
+              <button class="usa-accordion__button usa-nav__link " aria-expanded="false" aria-controls="basic-nav-section-5">
+          <span>News &amp; Events</span>
+        </button>
+      
+                
+  
+          <ul id="basic-nav-section-5" class="usa-nav__submenu" hidden="">
+
+          
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/news-events/news">
+          <span>News</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/news-events/events">
+          <span>Events</span>
+        </a>
+              
+              </li>
+      
+                  <li class="usa-nav__submenu-item">
+      
+      
+                      <a href="/news-events/featured-stories">
+          <span>Featured Stories</span>
+        </a>
+              
+              </li>
+      
+    
+          </ul>
+    
+  
+
+      
+              </li>
+      
+    
+          </ul>
+    
+  
+
+
+
+
+  </div>
+
+    
+    
+    
+  </nav>
+
+  </div>
+</header>
+
+  <div class="content-row dhs-light-blue-80-bg">
+    <div class="grid-container">
+      <div class="grid-row grid-gap">
+        <div class="grid-col-12">
+            <div class="region region-highlighted">
+    <div data-drupal-messages-fallback class="hidden"></div>
+
+  </div>
+
+                  </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="region region-breadcrumb">
+    <nav aria-label="breadcrumb">
+  <span id="system-breadcrumb" class="visually-hidden">Breadcrumb</span>
+  <ol class="add-list-reset uswds-breadcrumbs uswds-horizontal-list">
+      <li>
+              <a href="/training">Training</a>
+        <svg class="usa-icon expand_more-icon separator" aria-hidden="true" focusable="false" role="img">
+          <use href="/themes/custom/dhs_uswds/assets/uswds/img/sprite.svg#navigate_far_next"></use>
+        </svg>
+          </li>
+      <li>
+              <a href="/training/catalog">Education &amp; Training Catalog</a>
+        <svg class="usa-icon expand_more-icon separator" aria-hidden="true" focusable="false" role="img">
+          <use href="/themes/custom/dhs_uswds/assets/uswds/img/sprite.svg#navigate_far_next"></use>
+        </svg>
+          </li>
+      <li>
+              <a href="/training/catalog/tonex">Tonex, Inc.</a>
+        <svg class="usa-icon expand_more-icon separator" aria-hidden="true" focusable="false" role="img">
+          <use href="/themes/custom/dhs_uswds/assets/uswds/img/sprite.svg#navigate_far_next"></use>
+        </svg>
+          </li>
+      <li>
+              Quantum Computing Key Concepts: Qubits, Superposition, and Entanglement
+          </li>
+    </ol>
+  </nav>
+
+  </div>
+
+
+<a id="main-content" tabindex="-1"></a>
+
+
+
+<main class="usa-section">
+
+      <div id="intro-row" class="content-row content-row-overlaps dhs-light-blue-80-bg">
+            <div class="grid-container">
+        <div class="grid-row grid-gap">
+          <div class="intro-col">
+            <div><h1 class="uswds-page-title page-title">Quantum Computing Key Concepts: Qubits, Superposition, and Entanglement
+</h1>
+<p>Learn essential concepts like qubits, superposition, and entanglement in "Quantum Computing Key Concepts: Qubits, Superposition, and Entanglement." Build your foundation for advanced quantum studies.</p>
+</div>
+                      </div>
+        </div>
+      </div>
+    </div>
+  
+      <div class="region-content grid-col-12">
+        <div class="region region-content">
+    <div id="block-niccs-basic-system-main" class="block block-system block-system-main-block">
+  
+    
+      <article>
+
+  
+    
+
+  
+  <div>
+
+    
+    
+<div  class="has-overlap-row content-row">
+    
+<div  class="overlap-row grid-container">
+  <h2>Course Overview</h2>
+    
+<div  class="grid-gap grid-row expanding-row">
+    
+<div  class="tablet:grid-col-3">
+    
+  <div class="field field--name-field-tc-proficiency field--type-list-string field--label-above">
+    <div class="field__label">Overall Proficiency Level</div>
+              <div class="field__item">2 - Intermediate</div>
+          </div>
+
+  <div class="field field--name-field-tc-catalog-number field--type-string field--label-above">
+    <div class="field__label">Course Catalog Number</div>
+              <div class="field__item">T101</div>
+          </div>
+
+  <div class="clearfix text-formatted field field--name-field-tc-prerequisites field--type-text-long field--label-above">
+    <div class="field__label">Course Prerequisites</div>
+              <div class="field__item"><p>None</p>
+</div>
+          </div>
+
+  </div>
+<div  class="tablet:grid-col-3">
+    
+  <div class="field field--name-field-tc-purpose field--type-entity-reference field--label-above">
+    <div class="field__label">Training Purpose</div>
+          <div class="field__items">
+              <div class="field__item">Functional Development</div>
+          <div class="field__item">Management Development</div>
+              </div>
+      </div>
+
+  <div class="field field--name-field-tc-audiences field--type-entity-reference field--label-above">
+    <div class="field__label">Specific Audience</div>
+          <div class="field__items">
+              <div class="field__item">All</div>
+              </div>
+      </div>
+
+  </div>
+<div  class="tablet:grid-col-3">
+    
+  <div class="field field--name-field-tc-delivery-method field--type-list-string field--label-above">
+    <div class="field__label">Delivery Method</div>
+          <div class="field__items">
+              <div class="field__item">Online, Self-Paced</div>
+              </div>
+      </div>
+
+  </div>
+  </div>
+  </div>
+  </div>
+<div  class="grid-container">
+    
+<div  class="grid-row grid-gap">
+    
+<section  class="main-content tablet:grid-col-9">
+    
+<div  class="grid-row">
+    <div class="views-element-container"><div class="view view-eva view-training-courses view-id-training_courses view-display-id-entity_view_7 js-view-dom-id-c9f19e41457b8b999617092ceeba16db413aabe026c6d5e5293bec94a7f04717">
+  
+    
+
+  
+  
+
+      <div></div>
+
+  
+  
+
+  
+  
+
+  
+  </div>
+</div><div class="views-element-container"><div class="view view-eva view-training-courses view-id-training_courses view-display-id-entity_view_5 js-view-dom-id-c7da8700cd68051dc8e57975795d984616335584892bac1d594ee1d5a7141dd9">
+  
+    
+
+  
+  
+
+  <div class="delivery-methods">
+  
+  <ul class="usa-list usa-list--unstyled uswds-horizontal-list">
+
+          <li class="course-button Online Self-Paced">Online, Self-Paced</li>
+    
+  </ul>
+
+</div>
+
+  
+  
+
+  
+  
+
+  
+  </div>
+</div>
+  </div>
+<div class="field field--name-field-tc-objectives field--type-text-long field--label-above">
+  <h2 class="mobile-accordion field__label">Learning Objectives</h2>
+        <div class="mobile-accordion-content field__item"><ul>
+<li>Define and understand the role of qubits in quantum systems.</li>
+<li>Explore the concept of superposition and its applications.</li>
+<li>Examine the phenomenon of quantum entanglement.</li>
+<li>Analyze how these concepts impact quantum algorithms.</li>
+<li>Apply theoretical concepts to practical quantum computing challenges.</li>
+</ul>
+</div>
+    </div>
+
+<div >
+  <h2 class="framework-connections mobile-accordion">Framework Connections</h2>
+    
+<div  class="mobile-accordion-content">
+    <ul class="usa-list usa-list--unstyled"><li class="ncwf-category-on-course">
+    <a href="/tools/nice-framework?category=design-development"><svg class="design-development category-svg" focusable="false" height="24" role="img" viewbox="0 0 192 192" width="24" aria-hidden="true"><use href="/profiles/niccsd8_gov/icons/categories.svg#design-development" />
+</svg>
+<span>Design and Development</span>
+    </a>
+  </li></ul><div><p>The materials within this course focus on the NICE Framework Task, Knowledge, and Skill statements identified within the indicated NICE Framework component(s):</p>
+</div>  <div>
+              <header>
+        <h3>Competency Areas</h3>
+      </header>
+                    <div class="item-list">
+        <ul class="field__items">
+                  <li><a href="/tools/nice-framework/competency-area/artificial-intelligence-ai-security" hreflang="en">Artificial Intelligence (AI) Security</a></li>
+              <li><a href="/tools/nice-framework/competency-area/cloud-security" hreflang="en">Cloud Security</a></li>
+              <li><a href="/tools/nice-framework/competency-area/devsecops" hreflang="en">DevSecOps</a></li>
+                </ul>
+      </div>
+          </div>
+
+  <div>
+              <header>
+        <h3>Work Roles</h3>
+      </header>
+                    <div class="item-list">
+        <ul class="field__items">
+                  <li><a href="/tools/nice-framework/work-role/cybersecurity-architecture" hreflang="en">Cybersecurity Architecture</a></li>
+              <li><a href="/tools/nice-framework/work-role/technology-research-and-development" hreflang="en">Technology Research and Development</a></li>
+                </ul>
+      </div>
+          </div>
+
+
+
+  </div>
+  </div>
+  </section>
+<aside  class="tablet:grid-col-3">
+    
+            <div class="field field--name-field-tc-provider-name field--type-entity-reference field--label-hidden field__item"><section>
+  <div>
+    <div class="field__label">More courses from this provider:</div>
+    <a href="/training/catalog/tonex" class="text-bold">Tonex, Inc.</a>
+  <div class="field field--name-field-tp-locations field--type-address field--label-above">
+    <div class="field__label">Contact Information</div>
+          <div class="field__items">
+              <div class="field__item"><p class="address" translate="no"><span class="organization">Tonex, Inc.</span><br>
+<span class="address-line1">6275 W. Plano Parkway, Suite 500 </span><br>
+<span class="locality">Plano</span>, <span class="administrative-area">TX</span> <span class="postal-code">75093</span></p></div>
+              </div>
+      </div>
+
+  </div>
+</section>
+</div>
+      
+            <div class="field field--name-field-tc-reg-link field--type-link field--label-hidden field__item"><a href="https://www.tonex.com/training-courses/quantum-computing-key-concepts-qubits-superposition-and-entanglement/" class="text-bold" title="Visit provider website for more information on this course">Visit provider website for more information on this course</a></div>
+      
+  </aside>
+  </div>
+  </div>
+  </div>
+
+</article>
+
+  </div>
+
+  </div>
+
+    </div>
+  
+      <div class="grid-container">
+      <div class="grid-row grid-gap">
+        <div class="grid-col-12">
+            <div class="region region-date-info">
+    <div id="block-niccs-uswds-trainingcoursefeedbacksolicitation" class="settings-tray-editable block block-block-content block-block-content2a983e16-7bf7-45c0-b08d-35adfad2f632" data-drupal-settingstray="editable">
+  
+      <h2>Feedback</h2>
+    
+      
+            <div class="clearfix text-formatted field field--name-body field--type-text-with-summary field--label-hidden field__item"><p>If you would like to provide feedback on this course, please e-mail the NICCS team at <a href="mailto:NICCS@mail.cisa.dhs.gov">NICCS@mail.cisa.dhs.gov</a>. <u>Please keep in mind that NICCS does not own this course or accept payment for course entry.</u> <strong>If you have questions related to the details of this course, such as cost, prerequisites, how to register, etc., please contact the course training provider directly.</strong> You can find course training provider contact information by following the link that says “Visit course page for more information...” on this page.</p>
+</div>
+      
+  </div>
+<div id="block-niccs-uswds-lastpublishedblock" class="settings-tray-editable block block-niccs-pages block-niccs-node-last-published-block" data-drupal-settingstray="editable">
+  
+    
+      <div class="margin-top-8">Last Published Date: <time datetime="2025-01-13T09:27:01-05:00">January 13, 2025</time>
+</div>
+  </div>
+
+  </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+
+
+<div class="usa-footer-container">
+  <footer class="usa-footer usa-footer--medium" role="contentinfo">
+    <div class="grid-container usa-footer__return-to-top">
+      <div class="grid-row grid-gap">
+        <div class="grid-col-12">
+          <a href="#" class="focusable">Return to top</a>
+        </div>
+      </div>
+    </div>
+
+          <div class="usa-footer__primary-section dhs-dark-gray-10-bg">
+        <div class="grid-container">
+          <div class="grid-row grid-gap">
+            <div class="grid-col-12">
+                              <div>
+                                                          <div class="usa-footer__primary-section__menu ">
+                  <nav class="usa-footer__nav" aria-label="Footer navigation">  <div class="region region-footer-menu">
+    
+
+    
+                <ul class="grid-row grid-gap add-list-reset">
+        
+    
+                  <li class="mobile-lg:grid-col-4 desktop:grid-col-2 usa-footer__primary-content">
+        <a href="https://www.dhs.gov/plain-writing-dhs" class="usa-footer__primary-link">Plain Writing</a>
+      </li>
+      
+    
+                  <li class="mobile-lg:grid-col-4 desktop:grid-col-2 usa-footer__primary-content">
+        <a href="/niccs-policy" class="usa-footer__primary-link" data-drupal-link-system-path="node/3138">NICCS Policy</a>
+      </li>
+      
+    
+                  <li class="mobile-lg:grid-col-4 desktop:grid-col-2 usa-footer__primary-content">
+        <a href="/sitemap" class="usa-footer__primary-link" data-drupal-link-system-path="node/22467">Sitemap</a>
+      </li>
+      
+    
+                  <li class="mobile-lg:grid-col-4 desktop:grid-col-2 usa-footer__primary-content">
+        <a href="/resources/glossary" class="usa-footer__primary-link" data-drupal-link-system-path="node/4520">Glossary</a>
+      </li>
+      
+    
+                </ul>
+        
+  
+
+
+
+  </div>
+</nav>
+                </div>
+              
+              
+              </div>
+            </div>
+          </div>
+                            </div>
+      </div>
+                  <div class="usa-footer__intermediate-section white-bg">
+        <div class="grid-container">
+                      <div class="grid-row grid-gap flex-justify">
+              <div class="grid-row usa-footer__logo">
+                <div class="usa-logo">
+                  <a class="logo-img" href="/" title="National Initiative for Cybersecurity Careers and Studies" aria-label="Home">
+                    <svg focusable="false" role="img" aria-label="National Initiative for Cybersecurity Careers and Studies" height="60" width="240">
+                      <use href="/profiles/niccsd8_gov/themes/custom/niccs_uswds/NICCS.svg#niccs-logo"></use>
+                    </svg>
+                  </a>
+                                      <em class="usa-logo__text text-uppercase" aria-hidden="true">National Initiative for Cybersecurity Careers and Studies</em>
+                                  </div>
+              </div>
+                                              
+                <div class="usa-footer__contact-links">
+                  <div class="usa-footer__contact-links__group">
+                    <div class="usa-footer__social-title text-bold text-uppercase">Follow us on CISA's Social Media</div>
+                    <div class="usa-footer__social-links">
+                                                                        <div class="grid-col-auto">
+                            <a class="no-ext usa-social-link usa-social-link--facebook" href="https://www.facebook.com/CISA" target="_blank">
+                              <img class="usa-social-link__icon" src="/profiles/niccsd8_gov/themes/custom/niccs_uswds/assets/img/social-icons/facebook.svg" alt="Facebook" />
+                            </a>
+                          </div>
+                                                                                                <div class="grid-col-auto">
+                            <a class="no-ext usa-social-link usa-social-link--x" href="https://x.com/CISAgov" target="_blank">
+                              <img class="usa-social-link__icon" src="/profiles/niccsd8_gov/themes/custom/niccs_uswds/assets/img/social-icons/x.svg" alt="X" />
+                            </a>
+                          </div>
+                                                                                                                                                                                                                                          <div class="grid-col-auto">
+                            <a class="no-ext usa-social-link usa-social-link--instagram" href="https://www.instagram.com/cisagov" target="_blank">
+                              <img class="usa-social-link__icon" src="/profiles/niccsd8_gov/themes/custom/niccs_uswds/assets/img/social-icons/instagram.svg" alt="Instagram" />
+                            </a>
+                          </div>
+                                                                                                <div class="grid-col-auto">
+                            <a class="no-ext usa-social-link usa-social-link--linkedin" href="https://www.linkedin.com/company/cisagov" target="_blank">
+                              <img class="usa-social-link__icon" src="/profiles/niccsd8_gov/themes/custom/niccs_uswds/assets/img/social-icons/linkedin.svg" alt="LinkedIn" />
+                            </a>
+                          </div>
+                                                                                                                </div>
+                  </div>
+
+                                      <div class="usa-footer__contact-links__group">
+                      <div class="usa-footer__contact-info">
+                        <div class="usa-footer__contact-heading text-bold">Contact Us</div>
+                                                                                                  <div class="mailbox">
+                            <a href="mailto:NICCS@mail.cisa.dhs.gov" class="mailto text-no-underline">
+                              <img class="mailicon usa-social-link__icon" src="/profiles/niccsd8_gov/themes/custom/niccs_uswds/assets/img/social-icons/email.svg" alt="" />
+                              NICCS@mail.cisa.dhs.gov
+                            </a>
+                          </div>
+                                              </div>
+                    </div>
+                                  </div>
+                          </div>
+                  </div>
+      </div>
+    
+    <div class="usa-footer__secondary-section">
+      <div class="grid-container">
+        <div class="grid-row grid-gap">
+          <div class="grid-col-9">
+            <section class="usa-identifier__section usa-identifier__section--masthead">
+              <div class="usa-identifier__container">
+                <div class="usa-identifier__logos">
+                  <a href="https://www.cisa.gov" class="usa-identifier__logo">
+                    <img class="usa-identifier__logo-img" src="/profiles/niccsd8_gov/themes/custom/niccs_uswds/CISA_Logo_Color_SVG.svg" alt="Cybersecurity and Infrastructure Security Agency Seal">
+                  </a></div>
+                <div class="usa-identifier__identity">
+                  <p class="usa-identifier__identity-domain">CISA.gov</p>
+                  <p class="usa-identifier__identity-disclaimer">
+                    An official website of the <a href="https://www.cisa.gov">Cybersecurity and Infrastructure Security Agency</a>
+                  </p>
+                </div>
+              </div>
+            </section>
+              <div class="region region-footer-secondary">
+      <nav role="navigation" aria-labelledby="nav--identifier-links-menu" id="nav--identifier-links" class="settings-tray-editable block block-menu navigation menu--identifier-links" data-drupal-settingstray="editable">
+                    
+  <div  class="visually-hidden" id="nav--identifier-links-menu">
+    Identifier links
+  </div>
+  
+
+        
+              <ul class="menu">
+                    <li class="menu-item">
+                  <a href="https://www.cisa.gov">About CISA</a>
+                              </li>
+                <li class="menu-item">
+                  <a href="https://www.dhs.gov/accessibility">Accessibility</a>
+                              </li>
+                <li class="menu-item">
+                  <a href="https://www.dhs.gov/performance-financial-reports">Budget and Performance</a>
+                              </li>
+                <li class="menu-item">
+                  <a href="https://www.dhs.gov/foia">FOIA Requests</a>
+                              </li>
+                <li class="menu-item">
+                  <a href="https://www.cisa.gov/cisa-no-fear-act-reporting">No FEAR Act</a>
+                              </li>
+                <li class="menu-item">
+                  <a href="https://www.oig.dhs.gov/">Office of Inspector General</a>
+                              </li>
+                <li class="menu-item">
+                  <a href="https://www.cisa.gov/privacy-policy">Privacy Policy</a>
+                              </li>
+        </ul>
+  
+
+
+  </nav>
+
+  </div>
+
+            <section class="usa-identifier__section usa-identifier__section--usagov" >
+              <div class="usa-identifier__container">
+                <div class="usa-identifier__usagov-description">Looking for U.S. government information and services?</div>
+                <a href="https://www.usa.gov/" class="usa-link" title="Visit the USA.gov website">Visit USA.gov</a>
+              </div>
+            </section>
+          </div>
+                      <div class="grid-col-3 ntas-widget">
+                <iframe id="ntas-frame" src="https://www.dhs.gov/ntas/" name="NationalTerrorismAdvisorySystem" title="National Terrorism Advisory System" width="170" height="180" scrolling="no" frameborder="0" seamless border="0"></iframe>
+            </div>
+                  </div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+
+  </div>
+
+    
+    <script type="application/json" data-drupal-selector="drupal-settings-json">{"path":{"baseUrl":"\/","pathPrefix":"","currentPath":"node\/33589","currentPathIsAdmin":false,"isFront":false,"currentLanguage":"en"},"pluralDelimiter":"\u0003","suppressDeprecationErrors":true,"ajaxPageState":{"libraries":"eJx1T9FuAyEM-yFUPgmlSUqjAakw3On29Tv1eOgm7cVxbCmxuRBwxDtBA1-8KkBZEdi7xua9UrFvDfJEmtgFMRe_UwnNmJFIqrXIg37toxN_JXHGksWyDSoJSp2fcYIWXf7j_IP4xqWcJ6xZy5F99jPeH_XVfTPRvvQr2QcPODC0XtUmHirZt5Tdc9FEjcoxjBH_dW4sLVxXpc_X2Xcz3RHfeKsus2jYuSbMvukRr_EDue6Esg","theme":"niccs_uswds","theme_token":null},"ajaxTrustedUrl":{"\/api\/search":true},"google_analytics":{"account":"G-3LQDL2XXWV","trackOutbound":true,"trackMailto":true,"trackTel":true,"trackDownload":true,"trackDownloadExtensions":"7z|aac|arc|arj|asf|asx|avi|bin|csv|doc(x|m)?|dot(x|m)?|exe|flv|gif|gz|gzip|hqx|jar|jpe?g|js|mp(2|3|4|e?g)|mov(ie)?|msi|msp|pdf|phps|png|ppt(x|m)?|pot(x|m)?|pps(x|m)?|ppam|sld(x|m)?|thmx|qtm?|ra(m|r)?|sea|sit|tar|tgz|torrent|txt|wav|wma|wmv|wpd|xls(x|m|b)?|xlt(x|m)|xlam|xml|z|zip","trackUrlFragments":true},"wcmSurvey":{"userPercentage":"100","pageDepth":"10","url":"https:\/\/cisasurvey.gov1.qualtrics.com\/jfe\/form\/SV_bei3f4LX6BjtRbM","force":false,"surveyRetakeTimeout":"30","surveyPopup":"\u003Cdiv id=\u0022wcm-survey-popup\u0022 class=\u0022\u0022\u003E\n        \u003Cdiv class=\u0022message\u0022\u003E\n        \u003Cp\u003EYou have been selected to participate in a brief survey about your experience today with National Initiative for Cybersecurity Careers and Studies.\u003C\/p\u003E\r\n\r\n\u003Cp\u003EWould you like to participate in our survey?\u003C\/p\u003E\r\n\r\n\u003Cp\u003EIf you accept you will be leaving the National Initiative for Cybersecurity Careers and Studies website and going to a third party site.\u003Cbr \/\u003E\r\nThat site may have different privacy, security and accessibility policies than the National Initiative for Cybersecurity Careers and Studies site.\u003Cbr \/\u003E\r\nNational Initiative for Cybersecurity Careers and Studies does not endorse any commercial products, services, programs or content on the third party website.\u003Cbr \/\u003E\r\nThank you for visiting our site. We hope your visit was informative and enjoyable.\u003C\/p\u003E\r\n\n    \u003C\/div\u003E\n\u003C\/div\u003E\n","survey":{"sid":"1","title":"Thank you for visiting our website.","body":"\u003Cp\u003EYou have been selected to participate in a brief survey about your experience today with National Initiative for Cybersecurity Careers and Studies.\u003C\/p\u003E\r\n\r\n\u003Cp\u003EWould you like to participate in our survey?\u003C\/p\u003E\r\n\r\n\u003Cp\u003EIf you accept you will be leaving the National Initiative for Cybersecurity Careers and Studies website and going to a third party site.\u003Cbr \/\u003E\r\nThat site may have different privacy, security and accessibility policies than the National Initiative for Cybersecurity Careers and Studies site.\u003Cbr \/\u003E\r\nNational Initiative for Cybersecurity Careers and Studies does not endorse any commercial products, services, programs or content on the third party website.\u003Cbr \/\u003E\r\nThank you for visiting our site. We hope your visit was informative and enjoyable.\u003C\/p\u003E\r\n","url":"https:\/\/cisasurvey.gov1.qualtrics.com\/jfe\/form\/SV_bei3f4LX6BjtRbM","targetlang":"en","yeslabel":"Yes, I\u0027ll give my feedback.","nolabel":"No, thanks.","yestitle":"Yes, I\u0027ll give my feedback.","notitle":"No, thanks.","is_active":"1","patterns":[],"force":false},"debugMode":false,"position":"centered","offset":"","height":"","width":"","maxHeight":"","maxWidth":""},"data":{"extlink":{"extTarget":true,"extTargetAppendNewWindowDisplay":true,"extTargetAppendNewWindowLabel":"(opens in a new window)","extTargetNoOverride":false,"extNofollow":true,"extTitleNoOverride":false,"extNoreferrer":false,"extFollowNoOverride":true,"extClass":"ext","extLabel":"(link is external)","extImgClass":false,"extSubdomains":false,"extExclude":"","extInclude":"","extCssExclude":".no-ext","extCssInclude":"","extCssExplicit":"","extAlert":true,"extAlertText":"You are leaving the National Initiative for Cybersecurity Careers and Studies website and going to a third party site. That site may have different privacy, security, and accessibility policies than the National Initiative for Cybersecurity Careers and Studies site. National Initiative for Cybersecurity Careers and Studies does not endorse any commercial products, services, programs or content on the third party website.\r\n\r\nThank you for visiting our site. We hope your visit was informative and enjoyable.","extHideIcons":false,"mailtoClass":"mailto","telClass":"0","mailtoLabel":"(link sends email)","telLabel":"(link is a phone number)","extUseFontAwesome":false,"extIconPlacement":"append","extPreventOrphan":false,"extFaLinkClasses":"fa fa-external-link","extFaMailtoClasses":"fa fa-envelope-o","extAdditionalLinkClasses":"","extAdditionalMailtoClasses":"","extAdditionalTelClasses":"","extFaTelClasses":"fa fa-phone","allowedDomains":["(.+\\.gov\/)|(.+\\.mil\/)"],"extExcludeNoreferrer":""}},"trackDocs":{"4":"txt","5":"doc","6":"docx","8":"xlsm","9":"xlsx","10":"pdf","11":"ppt","12":"pptx"},"field_group":{"html_element":{"mode":"default","context":"view","settings":{"classes":"add-grid-tablet grid-col-3","show_empty_fields":false,"id":"","label_as_html":false,"element":"div","show_label":false,"label_element":"h3","label_element_classes":"","attributes":"","effect":"none","speed":"fast"}}},"user":{"uid":0,"permissionsHash":"ded28309576983e67881656ea05f265e42dcd58c51a0a8f8855fc7ee7333e69d"},"niccsAdmin":{"debug":0},"dhs_image_base":"\/themes\/custom\/dhs_uswds\/assets\/uswds\/img"}</script>
+<script src="/core/assets/vendor/jquery/jquery.min.js?v=4.0.0-rc.1"></script>
+<script src="/sites/default/files/js/js_s9IHCrwo9qm4m7UvWKU3qxYlB9AOmhjCua2rSNGV_ZI.js?scope=footer&amp;delta=1&amp;language=en&amp;theme=niccs_uswds&amp;include=eJx1Tu0KwzAIfKGwPJKIulSWGohJS99-2ZpBN9gfPe9DjheH7jt7fM9gSuSAvKpFavh1t4r0AC70sbEmbZjBBSst4wNOOPURUFNLkUqvLr9sFdYq1GAVd0yDmo6z0AWH7nfhVDZIpaQsgIb5aEqv2n-UG7GFnVbwXjc54rmerzRfqA"></script>
+<script src="https://siteimproveanalytics.com/js/siteanalyze_6342107.js" async></script>
+<script src="/sites/default/files/js/js_Yq3BddPzd6yb8bpLy6rftH5xn4E7svFLY-eJKz7A8vg.js?scope=footer&amp;delta=3&amp;language=en&amp;theme=niccs_uswds&amp;include=eJx1Tu0KwzAIfKGwPJKIulSWGohJS99-2ZpBN9gfPe9DjheH7jt7fM9gSuSAvKpFavh1t4r0AC70sbEmbZjBBSst4wNOOPURUFNLkUqvLr9sFdYq1GAVd0yDmo6z0AWH7nfhVDZIpaQsgIb5aEqv2n-UG7GFnVbwXjc54rmerzRfqA"></script>
+
+  </body>
+</html>

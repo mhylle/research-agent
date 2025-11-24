@@ -1,0 +1,24 @@
+{
+  "url": "https://niccs.cisa.gov/training/catalog/tonex/quantum-computing-key-concepts-qubits-superposition-and-entanglement",
+  "fetchedAt": "2025-11-24T21:27:29.042Z",
+  "method": "readability",
+  "originalSize": 50009,
+  "extractedSize": 1427,
+  "title": "Quantum Computing Key Concepts: Qubits, Superposition, and Entanglement",
+  "content": "\nLearn essential concepts like qubits, superposition, and entanglement in \"Quantum Computing Key Concepts: Qubits, Superposition, and Entanglement.\" Build your foundation for advanced quantum studies.\n\n  \n    \n      \n\n  \n    \n\n  \n  \n\n    \n    \n\n  Course Overview\n    \n\n    \n\n    \n  \n    Overall Proficiency Level\n              2 - Intermediate\n          \n\n  \n    Course Catalog Number\n              T101\n          \n\n  \n    Course Prerequisites\n              None\n          \n\n  \n\n    \n  \n    Training Purpose\n          \n              Functional Development\n          Management Development\n              \n      \n\n  \n    Specific Audience\n          \n              All\n              \n      \n\n  \n\n    Delivery Method\n          \n              Online, Self-Paced\n              \n      \n  \n  \n\n    \n\n  \n  \n\n          Online, Self-Paced\n    \n  \n\n\n\n  Learning Objectives\n        \nDefine and understand the role of qubits in quantum systems.\nExplore the concept of superposition and its applications.\nExamine the phenomenon of quantum entanglement.\nAnalyze how these concepts impact quantum algorithms.\nApply theoretical concepts to practical quantum computing challenges.\n\n\n    \n\n\n  Framework Connections\n    \n\n    \n    \nDesign and Development\n    \n  The materials within this course focus on the NICE Framework Task, Knowledge, and Skill statements identified within the indicated NICE Framework component(s):  \n\n  \n\n\n\n  \n  \n  \n  \n\n\n\n  ",
+  "htmlPath": "data/fetched-content/session_1764019646444/cb4fbe87f5ce7175e09d1473af9f3306.html",
+  "confidence": 1,
+  "screenshotPath": "data/fetched-content/session_1764019646444/cb4fbe87f5ce7175e09d1473af9f3306.png",
+  "extractionMetadata": {
+    "selectionReason": "Readability confidence (1) >= 0.7",
+    "totalDuration": 2598,
+    "downloadDuration": 990,
+    "readability": {
+      "attempted": true,
+      "success": true,
+      "confidence": 1,
+      "duration": 97,
+      "contentLength": 1427
+    }
+  }
+}

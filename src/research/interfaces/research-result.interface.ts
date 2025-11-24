@@ -1,15 +1,16 @@
 export interface ResearchResult {
   logId: string;
+  planId: string;
   answer: string;
   sources: Array<{
     url: string;
     title: string;
-    relevance?: string;
+    relevance: string;
   }>;
   metadata: {
     totalExecutionTime: number;
-    stages: Array<{
-      stage: number;
+    phases: Array<{
+      phase: string;
       executionTime: number;
     }>;
   };

@@ -8,12 +8,15 @@ import { environment } from '../../../environments/environment';
 export class AgentActivityService {
   // Signals for reactive state
   currentStage = signal<number>(1);
+  totalPhases = signal<number>(3); // Dynamic total phases
   activeTasks = signal<ActivityTask[]>([]);
   completedTasks = signal<ActivityTask[]>([]);
   stageProgress = signal<number>(0);
   isComplete = signal<boolean>(false);
   isConnected = signal<boolean>(false);
   connectionError = signal<string | null>(null);
+
+  private phaseCounter = 0; // Track current phase index
 
   // Computed signals
   allTasks = computed(() => [...this.activeTasks(), ...this.completedTasks()]);
@@ -100,6 +103,8 @@ export class AgentActivityService {
 
   private resetState(): void {
     this.currentStage.set(1);
+    this.totalPhases.set(3);
+    this.phaseCounter = 0;
     this.activeTasks.set([]);
     this.completedTasks.set([]);
     this.stageProgress.set(0);
@@ -114,16 +119,23 @@ export class AgentActivityService {
 
   private handlePlanCreated(event: any): void {
     console.log('Plan created:', event);
-    // Map phases to stages (if needed, for now we'll use dynamic phase tracking)
+    const { totalPhases } = event;
+    if (totalPhases) {
+      this.totalPhases.set(totalPhases);
+    }
   }
 
   private handlePhaseStarted(event: any): void {
     const { phaseId, phaseName, stepCount } = event;
 
+    // Increment phase counter
+    this.phaseCounter++;
+    this.currentStage.set(this.phaseCounter);
+
     const newTask: ActivityTask = {
       id: phaseId,
       nodeId: phaseId,
-      stage: 1, // We'll update this dynamically
+      stage: this.phaseCounter as 1 | 2 | 3,
       type: 'milestone',
       description: `Phase: ${phaseName} (${stepCount} steps)`,
       progress: 0,

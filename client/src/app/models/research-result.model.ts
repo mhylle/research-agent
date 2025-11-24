@@ -1,5 +1,6 @@
 export interface ResearchResult {
   logId: string;
+  planId: string;
   query: string;              // Added by frontend
   answer: string;
   sources: Source[];
@@ -10,15 +11,15 @@ export interface ResearchResult {
 export interface Source {
   url: string;
   title: string;
-  relevance?: 'high' | 'medium' | 'low';
+  relevance: 'high' | 'medium' | 'low';
 }
 
 export interface ResultMetadata {
   totalExecutionTime: number;
-  stages: StageMetadata[];
+  phases: PhaseMetadata[];
 }
 
-export interface StageMetadata {
-  stage: number;
+export interface PhaseMetadata {
+  phase: string;
   executionTime: number;
 }

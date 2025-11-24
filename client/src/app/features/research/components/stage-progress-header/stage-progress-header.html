@@ -1,8 +1,8 @@
 <div class="stage-header">
   <div class="stage-info">
-    <span class="stage-icon">{{ getStageIcon(stage()) }}</span>
+    <span class="stage-icon">{{ getStageIcon(displayPhase()) }}</span>
     <h2 class="stage-title">
-      Stage {{ stage() }} of 3: {{ getStageName(stage()) }}
+      Phase {{ displayPhase() }} of {{ totalPhases() }}: {{ displayName() }}
     </h2>
   </div>
 

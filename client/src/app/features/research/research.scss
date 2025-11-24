@@ -48,4 +48,48 @@
       margin: 0;
     }
   }
+
+  // Agent activity view styles
+  &__activity-container {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xl;
+    padding: $spacing-lg 0;
+  }
+
+  &__answer-section {
+    margin-top: $spacing-xl;
+
+    app-result-card {
+      display: block;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: center;
+    margin-top: $spacing-lg;
+  }
+
+  &__back-button {
+    padding: $spacing-md $spacing-lg;
+    font-size: $font-size-base;
+    font-weight: $font-medium;
+    color: $text-primary;
+    background: $bg-secondary;
+    border: 1px solid $border;
+    border-radius: $border-radius;
+    cursor: pointer;
+    transition: all $transition-base;
+
+    &:hover {
+      background: $bg-tertiary;
+      border-color: $primary;
+      color: $primary;
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+  }
 }

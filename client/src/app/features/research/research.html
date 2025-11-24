@@ -1,40 +1,74 @@
 <div class="research container">
-  <header class="research__header">
-    <h1 class="research__title">Research Agent</h1>
-    <p class="research__subtitle">
-      Ask any question and get comprehensive research-backed answers
-    </p>
-  </header>
+  <!-- Standard research page view -->
+  @if (!showActivityView()) {
+    <header class="research__header">
+      <h1 class="research__title">Research Agent</h1>
+      <p class="research__subtitle">
+        Ask any question and get comprehensive research-backed answers
+      </p>
+    </header>
 
-  <app-search-input
-    [disabled]="researchService.isLoading()"
-    (querySubmitted)="onQuerySubmitted($event)"
-  ></app-search-input>
+    <app-search-input
+      [disabled]="researchService.isLoading()"
+      (querySubmitted)="onQuerySubmitted($event)"
+    ></app-search-input>
 
-  <app-error-message
-    [error]="researchService.error()"
-    [canRetry]="!!researchService.currentQuery()"
-    (retry)="onRetry()"
-    (dismiss)="onDismissError()"
-  ></app-error-message>
+    <app-error-message
+      [error]="researchService.error()"
+      [canRetry]="!!researchService.currentQuery()"
+      (retry)="onRetry()"
+      (dismiss)="onDismissError()"
+    ></app-error-message>
 
-  <app-loading-indicator
-    *ngIf="researchService.isLoading()"
-    [currentStage]="1"
-  ></app-loading-indicator>
+    <app-loading-indicator
+      *ngIf="researchService.isLoading()"
+      [currentStage]="1"
+    ></app-loading-indicator>
 
-  <div class="research__results">
-    <h2 class="research__results-title" *ngIf="researchService.hasResults()">
-      Research History
-    </h2>
+    <div class="research__results">
+      <h2 class="research__results-title" *ngIf="researchService.hasResults()">
+        Research History
+      </h2>
 
-    <app-result-card
-      *ngFor="let result of researchService.history()"
-      [result]="result"
-    ></app-result-card>
+      <app-result-card
+        *ngFor="let result of researchService.history()"
+        [result]="result"
+      ></app-result-card>
 
-    <div class="research__empty" *ngIf="!researchService.hasResults() && !researchService.isLoading()">
-      <p>No research queries yet. Start by asking a question above!</p>
+      <div class="research__empty" *ngIf="!researchService.hasResults() && !researchService.isLoading()">
+        <p>No research queries yet. Start by asking a question above!</p>
+      </div>
     </div>
-  </div>
+  }
+
+  <!-- Agent activity view with answer (shown after research completes) -->
+  @if (showActivityView() && currentLogId()) {
+    <div class="research__activity-container">
+      <!-- Activity view shows task breakdown and progress -->
+      <app-agent-activity-view
+        [logId]="currentLogId()!"
+        (retry)="handleTaskRetry($event)"
+      ></app-agent-activity-view>
+
+      <!-- Answer section appears below activity -->
+      @if (showAnswer()) {
+        <div class="research__answer-section">
+          <app-result-card
+            [result]="researchService.currentResult()!"
+          ></app-result-card>
+        </div>
+      }
+
+      <!-- Back button to return to history -->
+      <div class="research__actions">
+        <button
+          class="research__back-button"
+          type="button"
+          (click)="currentLogId.set(null)"
+        >
+          ← Back to History
+        </button>
+      </div>
+    </div>
+  }
 </div>

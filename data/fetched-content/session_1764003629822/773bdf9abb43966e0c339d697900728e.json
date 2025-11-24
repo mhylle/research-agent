@@ -1,0 +1,24 @@
+{
+  "url": "https://implicit.harvard.edu/implicit/takeatest.html",
+  "fetchedAt": "2025-11-24T17:00:32.368Z",
+  "method": "readability",
+  "originalSize": 12063,
+  "extractedSize": 3105,
+  "title": "Take a Test",
+  "content": "\n        \nPreliminary Information\n\nOn the next page, you'll be asked to select an Implicit Association Test (IAT) from a list of possible topics. We'll also ask you (optionally) to report your attitudes or beliefs about these topics and give you some information about yourself. We ask these questions because the IAT can be more valuable if you also describe your own self-understanding of the attitude or stereotype that the IAT measures. We would also like to compare differences between people and groups.\n\nOn the IAT, you may find it easier to pair certain attributes with one group of people compared to another. Your IAT results may depart from your personal beliefs.\nAge Restrictions:  You must be 18 years of age or older to participate. Visitors between 14-17 years of age may visit Project Implicit Youth.\n\t  Data Privacy: Data exchanged with this site are protected by SSL encryption. Project Implicit uses the same secure hypertext transfer protocol (HTTPS) that banks use to transfer credit card information securely. This provides strong security for data transfer to and from our website. IP addresses are routinely recorded but are completely confidential. For research purposes, data without directly identifying information is made publicly available. You can find more information on our Data Privacy page.\n   Important Disclaimer: In reporting the results of any IAT test you take, we will mention possible interpretations that have a basis in research done (at the University of Washington, University of Virginia, Harvard University, and Yale University) with these tests. However, these Universities and the individual researchers who have contributed to this site make no claims about the validity of these suggested interpretations. If you are unprepared to encounter interpretations you might find objectionable, please do not proceed further.You may prefer to examine general information about the IAT before deciding whether or not to proceed.\n   Please contact Project Implicit at questions@projectimplicit.net to:\n\n\nAsk a question about the research procedures.\nExpress concerns about your participation.\nShare why you left before completing a study.\nReport an illness, injury, or other problem.\n\nFor questions about your rights as a research subject or to report concerns about the study, please contact the Institutional Review Board (IRB) listed below:\n\nTonya R. Moon, Ph.D.\nChair, Institutional Review Board for the Social and Behavioral Sciences\nOne Morton Dr Suite 500\nUniversity of Virginia, P.O. Box 800392\nCharlottesville, VA 22908-0392\nEmail: irbsbshelp@virginia.edu\nWebsite: https://research.virginia.edu/irb-sbs\nWebsite for Research Participants:\nhttps://research.virginia.edu/research-participants\n\t   \n   I am aware of the possibility of encountering interpretations of my IAT test performance with which I may not agree. Knowing this, I wish to proceed  \n      I am aware of the possibility of encountering interpretations of my IAT test performance with which I may not agree. Knowing this, I wish to proceed using a touchscreen OR using a keyboard.\n        ",
+  "htmlPath": "data/fetched-content/session_1764003629822/773bdf9abb43966e0c339d697900728e.html",
+  "confidence": 1,
+  "screenshotPath": "data/fetched-content/session_1764003629822/773bdf9abb43966e0c339d697900728e.png",
+  "extractionMetadata": {
+    "selectionReason": "Readability confidence (1) >= 0.7",
+    "totalDuration": 2546,
+    "downloadDuration": 463,
+    "readability": {
+      "attempted": true,
+      "success": true,
+      "confidence": 1,
+      "duration": 48,
+      "contentLength": 3105
+    }
+  }
+}

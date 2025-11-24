@@ -5,3 +5,4 @@ export * from './log-session.model';
 export * from './log-detail.model';
 export * from './timeline-node.model';
 export * from './graph-node.model';
+export * from './activity-task.model';

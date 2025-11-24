@@ -5,6 +5,7 @@ import { ResearchLogger } from '../logging/research-logger.service';
 import { StageContext } from './interfaces/stage-context.interface';
 import { StageResult } from './interfaces/stage-result.interface';
 import { ChatMessage } from '../llm/interfaces/chat-message.interface';
+import { getMilestoneTemplates } from '../logging/milestone-templates';
 
 @Injectable()
 export class PipelineExecutor {
@@ -31,6 +32,11 @@ export class PipelineExecutor {
         messagesCount: context.messages.length,
         toolsCount: context.tools.length,
       });
+
+      // Emit stage-specific milestones
+      if (context.stageNumber === 1) {
+        await this.emitStage1Milestones(context);
+      }
 
       // Add system prompt to messages
       const messages: ChatMessage[] = [
@@ -87,6 +93,21 @@ export class PipelineExecutor {
         },
         executionTime
       );
+
+      // Emit final milestone for Stage 1 (filtering)
+      if (context.stageNumber === 1) {
+        const stageTemplates = getMilestoneTemplates(1);
+        this.logger.logMilestone(
+          context.logId,
+          `${stageNodeId}_milestone_4`,
+          stageTemplates[3].id,
+          1,
+          stageTemplates[3].template,
+          {},
+          stageTemplates[3].expectedProgress,
+          'completed',
+        );
+      }
 
       // Node lifecycle: stage complete
       this.logger.nodeComplete(stageNodeId, context.logId, result);
@@ -154,5 +175,78 @@ export class PipelineExecutor {
 
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private async emitStage1Milestones(context: StageContext): Promise<void> {
+    const stageTemplates = getMilestoneTemplates(1);
+    const stageNodeId = `stage-${context.stageNumber}`;
+
+    // Milestone 1: Deconstructing query
+    this.logger.logMilestone(
+      context.logId,
+      `${stageNodeId}_milestone_1`,
+      stageTemplates[0].id,
+      1,
+      stageTemplates[0].template,
+      {},
+      stageTemplates[0].expectedProgress,
+      'running',
+    );
+
+    // Extract query from messages (user message)
+    const userMessage = context.messages.find(m => m.role === 'user');
+    const query = userMessage?.content || '';
+
+    // Milestone 2: Identifying terms
+    const terms = this.extractKeyTerms(query);
+    this.logger.logMilestone(
+      context.logId,
+      `${stageNodeId}_milestone_2`,
+      stageTemplates[1].id,
+      1,
+      stageTemplates[1].template,
+      { terms: terms.join(', ') },
+      stageTemplates[1].expectedProgress,
+      'running',
+    );
+
+    // Milestone 3: Searching databases
+    const searchCount = context.tools.length > 0 ? 25 : 0; // Estimate based on tool availability
+    const sources = 'Tavily (aggregating NASA, arXiv, Nature, Science, and more)';
+    this.logger.logMilestone(
+      context.logId,
+      `${stageNodeId}_milestone_3`,
+      stageTemplates[2].id,
+      1,
+      stageTemplates[2].template,
+      { count: searchCount, sources },
+      stageTemplates[2].expectedProgress,
+      'running',
+    );
+
+    // Note: Milestone 4 (filtering) will be emitted after tool execution in executeToolCalls
+  }
+
+  private extractKeyTerms(query: string): string[] {
+    // Simple keyword extraction: split on common words and punctuation
+    const stopWords = new Set([
+      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+      'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+      'could', 'should', 'may', 'might', 'can', 'what', 'how', 'why', 'when',
+      'where', 'who', 'which', 'this', 'that', 'these', 'those'
+    ]);
+
+    const words = query
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 3 && !stopWords.has(word));
+
+    // Return unique terms, limit to 5 most relevant (longest words tend to be more specific)
+    const uniqueWords = [...new Set(words)];
+    return uniqueWords
+      .sort((a, b) => b.length - a.length)
+      .slice(0, 5);
   }
 }

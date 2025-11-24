@@ -75,9 +75,41 @@ export class ResearchComponent {
    * @param taskId - The ID of the task to retry
    */
   handleTaskRetry(taskId: string): void {
-    console.log('Retry requested for task:', taskId);
-    // For now, retry the entire query
-    // Future enhancement: implement per-task retry logic
-    this.onRetry();
+    const logId = this.currentLogId();
+
+    if (!logId) {
+      console.error('Cannot retry task: No logId available');
+      return;
+    }
+
+    console.log('Initiating retry for task:', taskId, 'in log:', logId);
+
+    // Call the retry API
+    this.researchService.retryTask(logId, taskId).subscribe({
+      next: (response) => {
+        // Success - SSE will automatically update the UI with retry status
+        console.log('✅ Retry initiated successfully:', response.message);
+        // The AgentActivityService will receive SSE events and update the UI
+      },
+      error: (error) => {
+        // Handle different error scenarios
+        const errorMessage = error.error?.message || error.message || 'Failed to retry task';
+        const statusCode = error.status;
+
+        console.error('❌ Retry failed:', errorMessage, 'Status:', statusCode);
+
+        // Log specific error types for debugging
+        if (statusCode === 404) {
+          console.error('Task or log not found. LogId:', logId, 'TaskId:', taskId);
+        } else if (statusCode === 400) {
+          console.error('Task is not in a retryable state or max retries exceeded');
+        } else if (statusCode === 500) {
+          console.error('Server error during retry execution');
+        }
+
+        // TODO: Show user-friendly error message via toast/snackbar service
+        // For now, error is logged to console for debugging
+      }
+    });
   }
 }

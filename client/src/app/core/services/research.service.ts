@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { ResearchQuery, ResearchResult } from '../../models';
 import { environment } from '../../../environments/environment';
 
@@ -80,5 +80,18 @@ export class ResearchService {
     } catch (err) {
       console.error('Failed to save history to storage', err);
     }
+  }
+
+  /**
+   * Retry a specific task within a research session
+   * @param logId - The log ID of the research session
+   * @param nodeId - The task/node ID to retry
+   * @returns Observable with success status and message
+   */
+  retryTask(logId: string, nodeId: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      `${environment.apiUrl}/research/retry/${logId}/${nodeId}`,
+      {}
+    );
   }
 }

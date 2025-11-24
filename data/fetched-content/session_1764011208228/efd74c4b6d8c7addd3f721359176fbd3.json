@@ -1,0 +1,34 @@
+{
+  "url": "https://www.youtube.com/watch?v=yNNXia9IrZs",
+  "fetchedAt": "2025-11-24T19:07:27.060Z",
+  "method": "vision",
+  "originalSize": 1405928,
+  "extractedSize": 1213,
+  "title": "or heading",
+  "content": "### 1. Main title or heading  \n\"String Theory, Quantum Gravity and Black Holes (Or, Are We Holoc...)\" (truncated; full title likely includes \"Holomorphic?\")  \n\n### 2. Primary text content (article body)  \n\"295.259 visninger • Blev streamet for 2 år siden • Live with Brian Greene  \nJoin Brian Greene and Juan Maldacena as they explore a wealth of developments connecting black holes, string theory, quantum gravity, quantum entanglement, wormholes, and the holographic principle.  \nThis program is part of the Big Ideas Series, made possible with support from the John Templeton Foundation...\"  \n\n### 3. Important visual elements  \n- **Video thumbnail**: Features Juan Maldacena with partial text: \"JUAN MALDACENA STRING THEORY, QU...\".  \n- **Suggested videos (right sidebar)**: Thumbnails with titles like \"Have We Been Brainwashed? Quantum Mechanics and...\", \"Roger Penrose: Time, Black Holes, and the Cosmos\", and \"The Elegant Universe: Brian Greene in Conversation with...\"; each includes view counts (e.g., \"100.759 visninger\") and durations (e.g., \"for 9 dage siden\").  \n- **Channel info**: \"World Science Festival\" with \"1.37 mio. abonnenter\" (1.37 million subscribers) and an \"Abonner\" (Subscribe) button.",
+  "htmlPath": "data/fetched-content/session_1764011208228/efd74c4b6d8c7addd3f721359176fbd3.html",
+  "confidence": 0.8999999999999999,
+  "screenshotPath": "data/fetched-content/session_1764011208228/efd74c4b6d8c7addd3f721359176fbd3.png",
+  "extractionMetadata": {
+    "selectionReason": "Vision confidence (0.8999999999999999) > Readability (0)",
+    "totalDuration": 38832,
+    "downloadDuration": 744,
+    "readability": {
+      "attempted": true,
+      "success": false,
+      "confidence": 0,
+      "duration": 296,
+      "contentLength": 0
+    },
+    "vision": {
+      "attempted": true,
+      "success": true,
+      "confidence": 0.8999999999999999,
+      "duration": 33273,
+      "model": "qwen3-vl:8b",
+      "promptLength": 0,
+      "responseLength": 1213,
+      "screenshotSize": 1096546
+    }
+  }
+}

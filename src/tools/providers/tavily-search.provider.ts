@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ITool } from '../interfaces/tool.interface';
 import { ToolDefinition } from '../interfaces/tool-definition.interface';
 import { SearchResult } from '../interfaces/search-result.interface';
+import { TavilySearchArgs } from './interfaces/tavily-search-args.interface';
 
 @Injectable()
 export class TavilySearchProvider implements ITool {
@@ -36,8 +37,24 @@ export class TavilySearchProvider implements ITool {
     this.apiKey = this.configService.get<string>('TAVILY_API_KEY') || '';
   }
 
+  private validateArgs(args: Record<string, any>): TavilySearchArgs {
+    if (typeof args.query !== 'string' || !args.query) {
+      throw new Error('tavily_search: query must be a non-empty string');
+    }
+    if (
+      args.max_results !== undefined &&
+      typeof args.max_results !== 'number'
+    ) {
+      throw new Error('tavily_search: max_results must be a number');
+    }
+    return {
+      query: args.query,
+      max_results: args.max_results,
+    };
+  }
+
   async execute(args: Record<string, any>): Promise<SearchResult[]> {
-    const { query, max_results = 5 } = args;
+    const { query, max_results = 5 } = this.validateArgs(args);
 
     try {
       const response = await axios.post(

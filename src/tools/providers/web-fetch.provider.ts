@@ -11,6 +11,7 @@ import { chromium } from 'playwright';
 import { Ollama } from 'ollama';
 import { ITool } from '../interfaces/tool.interface';
 import { ToolDefinition } from '../interfaces/tool-definition.interface';
+import { WebFetchArgs } from './interfaces/web-fetch-args.interface';
 
 export interface WebFetchResult {
   url: string;
@@ -434,8 +435,21 @@ Be concise but complete. Extract all readable text.`;
     }
   }
 
+  private validateArgs(args: Record<string, any>): WebFetchArgs {
+    if (typeof args.url !== 'string' || !args.url) {
+      throw new Error('web_fetch: url must be a non-empty string');
+    }
+    if (args.logId !== undefined && typeof args.logId !== 'string') {
+      throw new Error('web_fetch: logId must be a string');
+    }
+    return {
+      url: args.url,
+      logId: args.logId,
+    };
+  }
+
   async execute(args: Record<string, any>): Promise<WebFetchResult> {
-    const { url, logId } = args;
+    const { url, logId } = this.validateArgs(args);
     const overallStartTime = Date.now();
 
     // Generate logId if not provided (for testing and backwards compatibility)

@@ -1,0 +1,34 @@
+{
+  "url": "https://www.space.com/astronomy/black-holes/this-is-the-holy-grail-of-theoretical-physics-is-the-key-to-quantum-gravity-hiding-in-this-new-way-to-make-black-holes",
+  "fetchedAt": "2025-11-24T19:06:48.227Z",
+  "method": "vision",
+  "originalSize": 1470102,
+  "extractedSize": 2493,
+  "title": "Is the 'Holy Grail' of Theoretical Physics the Key to Quantum Gravity? Hiding in This New Way to Make Black Holes",
+  "content": "### 1. Main Title  \n\"Is the 'Holy Grail' of Theoretical Physics the Key to Quantum Gravity? Hiding in This New Way to Make Black Holes\"  \n\n### 2. Primary Text Content  \nBlack holes and the mystery of quantum gravity are two of the most enigmatic phenomena in physics. Theories of quantum gravity—how gravity works at the quantum level—have yet to be reconciled with the rest of physics. But a new way to make black holes could offer clues to this longstanding puzzle. Scientists have long speculated that black holes might hold the answers to quantum gravity.  \n\nA team of physicists led by Dr. Jane Smith at Caltech developed a new model for creating black holes that avoids the singularity problem. Their model suggests black holes can form without a central singularity, implying quantum gravity effects are significant at these scales. The new model has been tested in simulations, showing black holes created this way have properties differing from traditional models—potentially providing evidence for quantum gravity.  \n\nQuantum gravity is the field aiming to unify general relativity and quantum mechanics. A key problem is the singularity at a black hole’s center, where current physics breaks down. The new model offers a path to resolve this issue.  \n\nThe Event Horizon Telescope (EHT) has imaged Sgr A* and M87*, revealing their accretion disks. The new model predicts these black holes may exhibit quantum gravity signatures, such as specific accretion disk patterns. EHT observations could validate the model.  \n\nIf confirmed, this work could revolutionize understanding of black holes and quantum gravity, enabling direct tests of quantum gravity theories via black hole behavior. The implications are profound: quantum gravity effects in black holes might mean our current understanding of gravity is incomplete.  \n\n### 3. Important Visual Elements  \n- **Images of black hole accretion disks**: Side-by-side photos of Sgr A* (center of our galaxy) and M87* (Virgo cluster), labeled with their names.  \n- **Graph**: Illustrates quantum gravity effects on a black hole’s accretion disk, with a blue region highlighting where quantum gravity is expected to dominate.  \n- **Diagram**: Shows the new black hole formation model, avoiding a central singularity and integrating quantum gravity effects.  \n- **Comparative chart**: Contrasts traditional black hole models (with singularities) against the new model (without singularities), emphasizing structural and quantum differences.",
+  "htmlPath": "data/fetched-content/session_1764011156873/c5d6ec3c459ad6ff5663b4fd1897127f.html",
+  "confidence": 0.8999999999999999,
+  "screenshotPath": "data/fetched-content/session_1764011156873/c5d6ec3c459ad6ff5663b4fd1897127f.png",
+  "extractionMetadata": {
+    "selectionReason": "Vision confidence (0.8999999999999999) > Readability (0)",
+    "totalDuration": 51354,
+    "downloadDuration": 580,
+    "readability": {
+      "attempted": true,
+      "success": false,
+      "confidence": 0,
+      "duration": 10319,
+      "contentLength": 0
+    },
+    "vision": {
+      "attempted": true,
+      "success": true,
+      "confidence": 0.8999999999999999,
+      "duration": 36414,
+      "model": "qwen3-vl:8b",
+      "promptLength": 0,
+      "responseLength": 2493,
+      "screenshotSize": 1242407
+    }
+  }
+}

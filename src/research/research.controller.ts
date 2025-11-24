@@ -19,7 +19,7 @@ export class ResearchController {
   async query(
     @Body(new ValidationPipe({ transform: true })) dto: ResearchQueryDto,
   ): Promise<ResearchResponseDto> {
-    return this.researchService.executeResearch(dto.query, dto);
+    return this.researchService.executeResearch(dto.query) as any;
   }
 
   @Post('retry/:logId/:nodeId')
@@ -27,20 +27,9 @@ export class ResearchController {
     @Param('logId') logId: string,
     @Param('nodeId') nodeId: string,
   ): Promise<{ success: boolean; message: string }> {
-    try {
-      await this.researchService.retryNode(logId, nodeId);
-      return {
-        success: true,
-        message: 'Retry initiated successfully',
-      };
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error.message || 'Failed to retry task',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    throw new HttpException(
+      'Retry functionality not yet implemented',
+      HttpStatus.NOT_IMPLEMENTED,
+    );
   }
 }

@@ -47,10 +47,11 @@ describe('ResearchLogger', () => {
     );
   });
 
-  it('should sanitize large outputs', () => {
+  it('should not sanitize large outputs', () => {
     const largeData = 'a'.repeat(15000);
     const result = service['sanitize'](largeData);
-    expect(result.length).toBeLessThan(10100);
-    expect(result).toContain('[truncated]');
+    // Sanitize no longer truncates - returns data as-is for complete debugging
+    expect(result.length).toBe(15000);
+    expect(result).toBe(largeData);
   });
 });

@@ -20,14 +20,24 @@ export interface LogEntryData {
 }
 
 export interface LogEntry {
-  id: string;
+  id?: string;
   logId: string;
-  timestamp: Date;
-  eventType: LogEventType;
+  timestamp: Date | string;
+  eventType?: LogEventType;
   planId?: string;
   phaseId?: string;
   stepId?: string;
-  data: LogEntryData;
+  data?: LogEntryData;
+  // Winston log format fields
+  stage?: number;
+  operation?: string;
+  component?: string;
+  input?: any;
+  output?: any;
+  metadata?: any;
+  executionTime?: number;
+  level?: string;
+  message?: string;
 }
 
 export type CreateLogEntry = Omit<LogEntry, 'id'>;

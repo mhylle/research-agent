@@ -1,0 +1,18 @@
+<div class="stage-header">
+  <div class="stage-info">
+    <span class="stage-icon">{{ getStageIcon(stage()) }}</span>
+    <h2 class="stage-title">
+      Stage {{ stage() }} of 3: {{ getStageName(stage()) }}
+    </h2>
+  </div>
+
+  <div class="progress-container">
+    <div class="progress-bar">
+      <div
+        class="progress-fill"
+        [style.width.%]="progress()">
+      </div>
+    </div>
+    <span class="progress-text">{{ progress() }}%</span>
+  </div>
+</div>

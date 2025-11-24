@@ -1,0 +1,114 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Orchestrator } from './orchestrator.service';
+import { PlannerService } from './planner.service';
+import { ExecutorRegistry } from '../executors/executor-registry.service';
+import { LogService } from '../logging/log.service';
+import { Plan } from './interfaces/plan.interface';
+
+describe('Orchestrator', () => {
+  let orchestrator: Orchestrator;
+  let mockPlannerService: jest.Mocked<PlannerService>;
+  let mockExecutorRegistry: jest.Mocked<ExecutorRegistry>;
+  let mockLogService: jest.Mocked<LogService>;
+  let mockEventEmitter: jest.Mocked<EventEmitter2>;
+
+  const mockPlan: Plan = {
+    id: 'plan-1',
+    query: 'test query',
+    status: 'executing',
+    phases: [
+      {
+        id: 'phase-1',
+        planId: 'plan-1',
+        name: 'search',
+        status: 'pending',
+        steps: [
+          {
+            id: 'step-1',
+            phaseId: 'phase-1',
+            type: 'tool_call',
+            toolName: 'tavily_search',
+            config: { query: 'test' },
+            dependencies: [],
+            status: 'pending',
+            order: 0,
+          },
+        ],
+        replanCheckpoint: false,
+        order: 0,
+      },
+    ],
+    createdAt: new Date(),
+  };
+
+  beforeEach(async () => {
+    mockPlannerService = {
+      createPlan: jest.fn().mockResolvedValue(mockPlan),
+      replan: jest.fn().mockResolvedValue({ modified: false, plan: mockPlan }),
+      decideRecovery: jest
+        .fn()
+        .mockResolvedValue({ action: 'skip', reason: 'test' }),
+      setPhaseResults: jest.fn(),
+    } as unknown as jest.Mocked<PlannerService>;
+
+    const mockExecutor = {
+      execute: jest.fn().mockResolvedValue({ output: { results: ['test'] } }),
+    };
+
+    mockExecutorRegistry = {
+      getExecutor: jest.fn().mockReturnValue(mockExecutor),
+    } as unknown as jest.Mocked<ExecutorRegistry>;
+
+    mockLogService = {
+      append: jest.fn().mockResolvedValue({ id: 'log-1' }),
+    } as unknown as jest.Mocked<LogService>;
+
+    mockEventEmitter = {
+      emit: jest.fn(),
+    } as unknown as jest.Mocked<EventEmitter2>;
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        Orchestrator,
+        { provide: PlannerService, useValue: mockPlannerService },
+        { provide: ExecutorRegistry, useValue: mockExecutorRegistry },
+        { provide: LogService, useValue: mockLogService },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
+      ],
+    }).compile();
+
+    orchestrator = module.get<Orchestrator>(Orchestrator);
+  });
+
+  describe('executeResearch', () => {
+    it('should create plan and execute all phases', async () => {
+      const result = await orchestrator.executeResearch('test query');
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockPlannerService.createPlan).toHaveBeenCalledWith(
+        'test query',
+        expect.any(String),
+      );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockExecutorRegistry.getExecutor).toHaveBeenCalledWith(
+        'tool_call',
+      );
+      expect(result).toBeDefined();
+      expect(result.logId).toBeDefined();
+    });
+
+    it('should emit session events', async () => {
+      await orchestrator.executeResearch('test query');
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockLogService.append).toHaveBeenCalledWith(
+        expect.objectContaining({ eventType: 'session_started' }),
+      );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockLogService.append).toHaveBeenCalledWith(
+        expect.objectContaining({ eventType: 'session_completed' }),
+      );
+    });
+  });
+});

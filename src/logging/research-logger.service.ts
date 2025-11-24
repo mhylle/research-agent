@@ -9,7 +9,6 @@ import {
   MilestoneEvent,
   MilestoneData,
 } from './interfaces/enhanced-log-entry.interface';
-import { formatMilestoneDescription } from './milestone-templates';
 
 @Injectable()
 export class ResearchLogger {

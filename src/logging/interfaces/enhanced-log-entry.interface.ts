@@ -34,8 +34,31 @@ export interface NodeLifecycleEvent {
   nodeId: string;
   parentNodeId?: string;
   nodeType: NodeType;
-  event: 'start' | 'progress' | 'complete' | 'error';
+  event: 'start' | 'progress' | 'complete' | 'error' | 'milestone';
   timestamp: string;
   data?: any;
   status?: NodeStatus;
+}
+
+export interface MilestoneTemplate {
+  id: string;
+  stage: 1 | 2 | 3;
+  template: string;  // e.g., "Searching {count} databases: {sources}"
+  expectedProgress: number;  // 0-100
+  order: number;  // Execution order within stage
+}
+
+export interface MilestoneData {
+  milestoneId: string;
+  stage: 1 | 2 | 3;
+  template: string;
+  data: Record<string, any>;  // Dynamic values for template placeholders
+  progress: number;
+  status: 'pending' | 'running' | 'completed' | 'error';
+  timestamp: string;
+}
+
+export interface MilestoneEvent extends NodeLifecycleEvent {
+  event: 'milestone';
+  milestone: MilestoneData;
 }

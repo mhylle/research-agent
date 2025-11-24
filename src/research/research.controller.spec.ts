@@ -48,6 +48,6 @@ describe('ResearchController', () => {
     const result = await controller.query(dto);
 
     expect(result.answer).toBe('Test answer');
-    expect(service.executeResearch).toHaveBeenCalledWith('What is AI?', dto);
+    expect(service.executeResearch).toHaveBeenCalledWith('What is AI?');
   });
 });

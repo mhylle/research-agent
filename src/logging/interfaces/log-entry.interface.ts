@@ -1,21 +1,33 @@
-export interface LogEntry {
-  timestamp: string;
-  logId: string;
-  stage?: number;
-  component: string;
-  operation: string;
+import { LogEventType } from './log-event-type.enum';
+
+export interface LogEntryData {
   input?: any;
   output?: any;
-  executionTime?: number;
-  metadata?: {
-    model?: string;
-    toolCalls?: number;
-    tokensUsed?: number;
-    toolLatency?: number;
-    modelLatency?: number;
-    toolName?: string;
-    inputSize?: number;
-    outputSize?: number;
-    error?: string;
+  prompt?: string;
+  tokensUsed?: {
+    prompt: number;
+    completion: number;
+    total: number;
   };
+  durationMs?: number;
+  error?: {
+    message: string;
+    code?: string;
+    stack?: string;
+  };
+  metadata?: Record<string, any>;
+  [key: string]: any;
 }
+
+export interface LogEntry {
+  id: string;
+  logId: string;
+  timestamp: Date;
+  eventType: LogEventType;
+  planId?: string;
+  phaseId?: string;
+  stepId?: string;
+  data: LogEntryData;
+}
+
+export type CreateLogEntry = Omit<LogEntry, 'id'>;

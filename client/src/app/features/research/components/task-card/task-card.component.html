@@ -1,0 +1,74 @@
+<div
+  class="task-card"
+  [ngClass]="getStatusClass()"
+  [attr.aria-label]="'Task: ' + task().description"
+  role="article"
+>
+  <!-- Status Icon -->
+  <div class="task-card__icon" [attr.aria-label]="'Status: ' + task().status">
+    {{ getStatusIcon() }}
+  </div>
+
+  <!-- Task Content -->
+  <div class="task-card__content">
+    <!-- Task Description -->
+    <div class="task-card__description">
+      {{ task().description }}
+    </div>
+
+    <!-- Progress Bar (only for running, retrying, or completed tasks) -->
+    <div class="task-card__progress" *ngIf="shouldShowProgress()">
+      <div class="progress-bar" [ngClass]="getProgressBarClass()">
+        <div
+          class="progress-fill"
+          [style.transform]="'scaleX(' + (task().progress / 100) + ')'"
+          [attr.aria-valuenow]="getProgressPercentage()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          role="progressbar"
+        ></div>
+      </div>
+      <span class="progress-percentage" aria-live="polite">
+        {{ getProgressPercentage() }}%
+      </span>
+    </div>
+
+    <!-- Metadata Row -->
+    <div class="task-card__meta">
+      <span class="task-card__timestamp">
+        {{ formatTimestamp(task().timestamp) }}
+      </span>
+
+      <span class="task-card__duration" *ngIf="task().duration !== undefined">
+        {{ formatDuration(task().duration) }}
+      </span>
+
+      <span class="task-card__stage">Stage {{ task().stage }}</span>
+
+      <!-- Retry Count (if retried) -->
+      <span class="task-card__retry-count" *ngIf="task().retryCount > 0">
+        Retry {{ task().retryCount }}
+      </span>
+    </div>
+
+    <!-- Error Message (if error exists) -->
+    <div class="task-card__error" *ngIf="task().error">
+      <span class="task-card__error-icon">⚠️</span>
+      <span class="task-card__error-message">
+        {{ task().error?.message }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Retry Button (only for error state with canRetry) -->
+  <button
+    *ngIf="task().status === 'error' && task().canRetry"
+    type="button"
+    class="task-card__retry-button"
+    (click)="onRetryClick()"
+    aria-label="Retry task"
+  >
+    <span class="retry-icon">↻</span>
+    Retry
+  </button>
+</div>

@@ -1,0 +1,336 @@
+@use 'sass:color';
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as *;
+
+// Animations
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes completePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes errorShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+// Base card styles
+.task-card {
+  @include card;
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  margin-bottom: $spacing-sm;
+  background-color: $bg-primary;
+  border: 1px solid $border;
+  transition: all $transition-base;
+  animation: fadeInSlide 0.3s ease-out;
+
+  // Status-specific styles
+  &--pending {
+    background-color: color.adjust($text-secondary, $lightness: 40%);
+    border-left: 4px solid $text-secondary;
+
+    .task-card__icon {
+      color: $text-secondary;
+    }
+  }
+
+  &--running {
+    background-color: color.adjust($primary, $lightness: 45%);
+    border-left: 4px solid $primary;
+
+    .task-card__icon {
+      color: $primary;
+      animation: spin 2s linear infinite;
+    }
+  }
+
+  &--completed {
+    background-color: color.adjust($success, $lightness: 48%);
+    border-left: 4px solid $success;
+    animation: completePulse 0.5s ease-out;
+
+    .task-card__icon {
+      color: $success;
+      font-weight: $font-bold;
+    }
+  }
+
+  &--error {
+    background-color: color.adjust($error, $lightness: 45%);
+    border-left: 4px solid $error;
+    border-color: $error;
+    animation: errorShake 0.5s ease-out;
+
+    .task-card__icon {
+      color: $error;
+    }
+  }
+
+  &--retrying {
+    background-color: color.adjust($warning, $lightness: 40%);
+    border-left: 4px solid $warning;
+
+    .task-card__icon {
+      color: $warning;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+  }
+
+  // Icon
+  &__icon {
+    font-size: $font-size-2xl;
+    flex-shrink: 0;
+    line-height: 1;
+    min-width: 1.5rem;
+    text-align: center;
+  }
+
+  // Content area
+  &__content {
+    flex: 1;
+    min-width: 0; // Prevent flex item from overflowing
+  }
+
+  // Description
+  &__description {
+    font-size: $font-size-base;
+    font-weight: $font-medium;
+    color: $text-primary;
+    margin-bottom: $spacing-sm;
+    line-height: $line-height;
+    word-wrap: break-word;
+  }
+
+  // Progress section
+  &__progress {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+  }
+
+  // Metadata row
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+    font-size: $font-size-xs;
+    color: $text-secondary;
+  }
+
+  &__timestamp,
+  &__duration,
+  &__stage,
+  &__retry-count {
+    font-weight: $font-medium;
+  }
+
+  &__retry-count {
+    color: $warning;
+  }
+
+  // Error message
+  &__error {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-xs;
+    margin-top: $spacing-sm;
+    padding: $spacing-xs $spacing-sm;
+    background-color: rgba($error, 0.1);
+    border-radius: $border-radius-sm;
+  }
+
+  &__error-icon {
+    font-size: $font-size-sm;
+    flex-shrink: 0;
+  }
+
+  &__error-message {
+    font-size: $font-size-xs;
+    color: color.adjust($error, $lightness: -10%);
+    line-height: $line-height-tight;
+  }
+
+  // Retry button
+  &__retry-button {
+    @include button-reset;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    background-color: $error;
+    color: white;
+    font-weight: $font-medium;
+    font-size: $font-size-sm;
+    border-radius: $border-radius-sm;
+    transition: background-color $transition-fast;
+    flex-shrink: 0;
+    align-self: flex-start;
+
+    &:hover {
+      background-color: color.adjust($error, $lightness: -10%);
+    }
+
+    &:focus-visible {
+      outline: 2px solid $border-focus;
+      outline-offset: 2px;
+    }
+
+    .retry-icon {
+      font-size: $font-size-lg;
+      line-height: 1;
+    }
+  }
+}
+
+// Progress bar
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+
+  // Status-specific colors
+  &--running .progress-fill {
+    background-color: $primary;
+  }
+
+  &--completed .progress-fill {
+    background-color: $success;
+  }
+
+  &--error .progress-fill {
+    background-color: $error;
+  }
+
+  &--retrying .progress-fill {
+    background-color: $warning;
+  }
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: $primary;
+  transform-origin: left;
+  transition: transform 0.5s ease-in-out;
+  border-radius: 3px;
+  will-change: transform;
+}
+
+.progress-percentage {
+  font-size: $font-size-xs;
+  font-weight: $font-semibold;
+  color: $text-secondary;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+// Responsive design for mobile
+@media (max-width: $breakpoint-md) {
+  .task-card {
+    flex-direction: column;
+    gap: $spacing-sm;
+
+    &__icon {
+      font-size: $font-size-xl;
+    }
+
+    &__retry-button {
+      width: 100%;
+      justify-content: center;
+    }
+
+    &__meta {
+      flex-direction: column;
+      gap: $spacing-xs;
+    }
+  }
+}
+
+// High contrast mode for accessibility
+@media (prefers-contrast: high) {
+  .task-card {
+    border-width: 2px;
+
+    &--pending {
+      border-color: $text-primary;
+    }
+
+    &--running {
+      border-color: $primary;
+    }
+
+    &--completed {
+      border-color: $success;
+    }
+
+    &--error {
+      border-color: $error;
+    }
+
+    &--retrying {
+      border-color: $warning;
+    }
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .task-card {
+    animation: none;
+  }
+
+  .task-card__icon {
+    animation: none !important;
+  }
+
+  .progress-fill {
+    transition: none;
+  }
+}

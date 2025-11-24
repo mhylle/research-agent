@@ -18,7 +18,7 @@ export interface ActivityTask {
   };
   retryCount: number;
   canRetry: boolean;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 export interface MilestoneEventData {
@@ -32,11 +32,11 @@ export interface MilestoneEventData {
     milestoneId: string;
     stage: 1 | 2 | 3;
     template: string;
-    data: Record<string, any>;
+    data: Record<string, unknown>;
     progress: number;
     status: TaskStatus;
     timestamp: string;
   };
-  data?: any;
+  data?: Record<string, unknown>;
   status?: TaskStatus;
 }

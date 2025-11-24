@@ -1,16 +1,14 @@
 import { Module } from '@nestjs/common';
+import { ResearchService } from './research.service';
 import { ResearchController } from './research.controller';
 import { ResearchStreamController } from './research-stream.controller';
-import { ResearchService } from './research.service';
-import { PipelineExecutor } from './pipeline-executor.service';
-import { LLMModule } from '../llm/llm.module';
-import { ToolsModule } from '../tools/tools.module';
+import { OrchestrationModule } from '../orchestration/orchestration.module';
 import { LoggingModule } from '../logging/logging.module';
-import { LogsModule } from '../logs/logs.module';
 
 @Module({
-  imports: [LLMModule, ToolsModule, LoggingModule, LogsModule],
+  imports: [OrchestrationModule, LoggingModule],
   controllers: [ResearchController, ResearchStreamController],
-  providers: [ResearchService, PipelineExecutor],
+  providers: [ResearchService],
+  exports: [ResearchService],
 })
 export class ResearchModule {}

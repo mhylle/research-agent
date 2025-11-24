@@ -25,20 +25,12 @@
       [currentStage]="1"
     ></app-loading-indicator>
 
-    <div class="research__results">
-      <h2 class="research__results-title" *ngIf="researchService.hasResults()">
-        Research History
-      </h2>
-
-      <app-result-card
-        *ngFor="let result of researchService.history()"
-        [result]="result"
-      ></app-result-card>
-
-      <div class="research__empty" *ngIf="!researchService.hasResults() && !researchService.isLoading()">
-        <p>No research queries yet. Start by asking a question above!</p>
+    <!-- Research History Component - shows collapsible past queries -->
+    @if (!researchService.isLoading()) {
+      <div class="research__history-section">
+        <app-research-history></app-research-history>
       </div>
-    </div>
+    }
   }
 
   <!-- Agent activity view with answer (shown after research completes) -->

@@ -6,6 +6,7 @@ import { LoadingIndicatorComponent } from './components/loading-indicator/loadin
 import { ResultCardComponent } from './components/result-card/result-card';
 import { ErrorMessageComponent } from './components/error-message/error-message';
 import { AgentActivityViewComponent } from './components/agent-activity-view/agent-activity-view.component';
+import { ResearchHistoryComponent } from './components/research-history/research-history.component';
 
 @Component({
   selector: 'app-research',
@@ -16,7 +17,8 @@ import { AgentActivityViewComponent } from './components/agent-activity-view/age
     LoadingIndicatorComponent,
     ResultCardComponent,
     ErrorMessageComponent,
-    AgentActivityViewComponent
+    AgentActivityViewComponent,
+    ResearchHistoryComponent
   ],
   templateUrl: './research.html',
   styleUrl: './research.scss',

@@ -33,6 +33,7 @@
         [session]="logsService.selectedSession()!"
         [timelineNodes]="logsService.timelineNodes()"
         [isLoading]="logsService.isLoadingDetails()"
+        [result]="logsService.logDetail()?.result"
       />
 
       <app-timeline-graph

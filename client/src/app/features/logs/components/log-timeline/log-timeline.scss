@@ -77,6 +77,77 @@
     }
   }
 
+  &__result {
+    @include card;
+    margin-bottom: $spacing-xl;
+    border-left: 4px solid $success;
+  }
+
+  &__result-header {
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $border-color;
+    background: color.adjust($success, $lightness: 48%);
+
+    h3 {
+      margin: 0;
+      font-size: $font-size-lg;
+      font-weight: $font-semibold;
+      color: color.adjust($success, $lightness: -15%);
+    }
+  }
+
+  &__result-content {
+    padding: $spacing-lg;
+  }
+
+  &__answer {
+    font-size: $font-size-base;
+    line-height: $line-height-relaxed;
+    color: $text-primary;
+    white-space: pre-wrap;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__sources {
+    border-top: 1px solid $border-color;
+    padding-top: $spacing-md;
+
+    h4 {
+      margin: 0 0 $spacing-sm 0;
+      font-size: $font-size-sm;
+      font-weight: $font-semibold;
+      color: $text-secondary;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      padding: $spacing-xs 0;
+      font-size: $font-size-sm;
+
+      a {
+        color: $primary;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  &__source-relevance {
+    color: $text-tertiary;
+    font-size: $font-size-xs;
+    margin-left: $spacing-xs;
+  }
+
   &__stages {
     position: relative;
   }

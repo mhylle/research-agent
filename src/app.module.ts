@@ -13,6 +13,7 @@ import { HealthModule } from './health/health.module';
 import { LogsModule } from './logs/logs.module';
 import { OrchestrationModule } from './orchestration/orchestration.module';
 import { LogEntryEntity } from './logging/entities/log-entry.entity';
+import { ResearchResultEntity } from './research/entities/research-result.entity';
 
 @Module({
   imports: [
@@ -20,9 +21,9 @@ import { LogEntryEntity } from './logging/entities/log-entry.entity';
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: './data/logs/research.db',
-      entities: [LogEntryEntity],
+      entities: [LogEntryEntity, ResearchResultEntity],
       synchronize: true, // Auto-create tables
-      logging: false,
+      logging: true, // Enable logging to debug database issues
     }),
     ServeStaticModule.forRoot({
       rootPath: join(
@@ -34,7 +35,7 @@ import { LogEntryEntity } from './logging/entities/log-entry.entity';
         'client',
         'browser',
       ),
-      exclude: ['/api*'],
+      exclude: ['/api{*path}', '/research{*path}'],
     }),
     ConfigModule,
     LoggingModule,

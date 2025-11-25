@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import type { TimelineNode, LogSession } from '../../../../models';
+import type { TimelineNode, LogSession, ResearchResultData } from '../../../../models';
 import { StageNodeComponent } from '../stage-node/stage-node';
 
 @Component({
@@ -14,6 +14,7 @@ export class LogTimelineComponent {
   @Input() session!: LogSession;
   @Input() timelineNodes: TimelineNode[] = [];
   @Input() isLoading = false;
+  @Input() result?: ResearchResultData;
 
   copyLogId(): void {
     navigator.clipboard.writeText(this.session.logId).then(() => {

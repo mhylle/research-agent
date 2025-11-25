@@ -25,7 +25,7 @@ interface UIEvent {
   [key: string]: any;
 }
 
-@Controller('research')
+@Controller('api/research')
 export class ResearchStreamController {
   constructor(
     private eventEmitter: EventEmitter2,
@@ -45,10 +45,52 @@ export class ResearchStreamController {
         } as any as MessageEvent);
       };
 
+      // Listen for regular log events
       this.eventEmitter.on(`log.${logId}`, listener);
+
+      // Listen for tool call events
+      const toolStartedListener = (entry: LogEntry) => {
+        subscriber.next({
+          data: JSON.stringify(this.transformToUIEvent(entry)),
+          type: 'tool_call_started',
+          id: entry.id || '',
+        } as any as MessageEvent);
+      };
+
+      const toolCompletedListener = (entry: LogEntry) => {
+        subscriber.next({
+          data: JSON.stringify(this.transformToUIEvent(entry)),
+          type: 'tool_call_completed',
+          id: entry.id || '',
+        } as any as MessageEvent);
+      };
+
+      const toolFailedListener = (entry: LogEntry) => {
+        subscriber.next({
+          data: JSON.stringify(this.transformToUIEvent(entry)),
+          type: 'tool_call_failed',
+          id: entry.id || '',
+        } as any as MessageEvent);
+      };
+
+      this.eventEmitter.on(`tool.call.started.${logId}`, toolStartedListener);
+      this.eventEmitter.on(
+        `tool.call.completed.${logId}`,
+        toolCompletedListener,
+      );
+      this.eventEmitter.on(`tool.call.failed.${logId}`, toolFailedListener);
 
       return () => {
         this.eventEmitter.off(`log.${logId}`, listener);
+        this.eventEmitter.off(
+          `tool.call.started.${logId}`,
+          toolStartedListener,
+        );
+        this.eventEmitter.off(
+          `tool.call.completed.${logId}`,
+          toolCompletedListener,
+        );
+        this.eventEmitter.off(`tool.call.failed.${logId}`, toolFailedListener);
       };
     });
   }
@@ -193,6 +235,37 @@ export class ResearchStreamController {
           title: 'Research Failed',
           status: 'error',
           error: String(data.reason ?? ''),
+        };
+
+      case 'tool.call.started':
+        return {
+          title: `Calling ${String(data.toolName ?? '')}`,
+          toolName: String(data.toolName ?? ''),
+          description: this.truncate(JSON.stringify(data.input ?? {}), 150),
+          status: 'running',
+          timestamp: new Date().toISOString(),
+        };
+
+      case 'tool.call.completed':
+        return {
+          title: `Completed ${String(data.toolName ?? '')}`,
+          toolName: String(data.toolName ?? ''),
+          status: 'completed',
+          durationMs: data.durationMs as number,
+          outputPreview: this.truncate(JSON.stringify(data.output ?? {}), 200),
+          timestamp: new Date().toISOString(),
+        };
+
+      case 'tool.call.failed':
+        return {
+          title: `Failed ${String(data.toolName ?? '')}`,
+          toolName: String(data.toolName ?? ''),
+          status: 'error',
+          error: String(
+            (data.error as { message?: string })?.message ?? data.error ?? '',
+          ),
+          durationMs: data.durationMs as number,
+          timestamp: new Date().toISOString(),
         };
 
       default:

@@ -53,18 +53,22 @@ export class Orchestrator {
     let finalOutput = '';
     const sources: Array<{ url: string; title: string; relevance: string }> =
       [];
+    const allStepResults: StepResult[] = [];
 
     // 2. EXECUTION LOOP
     for (const phase of plan.phases) {
       if (phase.status === 'skipped') continue;
 
       const phaseStartTime = Date.now();
-      const phaseResult = await this.executePhase(phase, plan, logId);
+      const phaseResult = await this.executePhase(phase, plan, logId, allStepResults);
 
       phaseMetrics.push({
         phase: phase.name,
         executionTime: Date.now() - phaseStartTime,
       });
+
+      // Accumulate step results across all phases
+      allStepResults.push(...phaseResult.stepResults);
 
       // Store phase results for potential re-planning
       this.plannerService.setPhaseResults(phase.id, phaseResult);
@@ -76,6 +80,7 @@ export class Orchestrator {
 
       // 3. RE-PLAN CHECKPOINT
       if (phase.replanCheckpoint && phaseResult.status === 'completed') {
+        const stepsBeforeReplan = phase.steps.length;
         const { modified } = await this.plannerService.replan(
           plan,
           phase,
@@ -83,7 +88,59 @@ export class Orchestrator {
           logId,
         );
         if (modified) {
-          // Plan was modified - continue with updated phases
+          // Check if steps were added to the current phase during replanning
+          const stepsAfterReplan = phase.steps.length;
+          if (stepsAfterReplan > stepsBeforeReplan) {
+            // Re-execute the phase with the new steps
+            await this.emit(logId, 'phase_started', {
+              phaseId: phase.id,
+              phaseName: phase.name,
+              stepCount: phase.steps.length,
+              reason: 'replan_added_steps',
+            }, phase.id);
+
+            // Execute only the new steps (those with pending status)
+            const newSteps = phase.steps.filter(s => s.status === 'pending');
+            const stepQueue = this.buildExecutionQueue(newSteps);
+
+            for (const stepBatch of stepQueue) {
+              const batchResults = await Promise.all(
+                stepBatch.map((step) => this.executeStep(step, logId, plan, phaseResult.stepResults)),
+              );
+              phaseResult.stepResults.push(...batchResults);
+
+              const failed = batchResults.find((r) => r.status === 'failed');
+              if (failed) {
+                phase.status = 'failed';
+                await this.emit(logId, 'phase_failed', {
+                  phaseId: phase.id,
+                  phaseName: phase.name,
+                  failedStepId: failed.stepId,
+                  error: failed.error?.message,
+                }, phase.id);
+                phaseResult.status = 'failed';
+                phaseResult.error = failed.error;
+                break;
+              }
+            }
+
+            if (phaseResult.status !== 'failed') {
+              await this.emit(logId, 'phase_completed', {
+                phaseId: phase.id,
+                phaseName: phase.name,
+                stepsCompleted: phaseResult.stepResults.length,
+                reason: 'replan_execution',
+              }, phase.id);
+
+              // Update phase results for re-planning
+              this.plannerService.setPhaseResults(phase.id, phaseResult);
+
+              // Re-extract result data
+              this.extractResultData(phaseResult, sources, (output) => {
+                finalOutput = output;
+              });
+            }
+          }
         }
       }
 
@@ -127,6 +184,7 @@ export class Orchestrator {
     phase: Phase,
     plan: Plan,
     logId: string,
+    allPreviousResults: StepResult[] = [],
   ): Promise<PhaseResult> {
     phase.status = 'running';
 
@@ -145,8 +203,10 @@ export class Orchestrator {
     const stepQueue = this.buildExecutionQueue(phase.steps);
 
     for (const stepBatch of stepQueue) {
+      // Pass all previous results (from previous phases) + current phase results
+      const contextResults = [...allPreviousResults, ...stepResults];
       const batchResults = await Promise.all(
-        stepBatch.map((step) => this.executeStep(step, logId)),
+        stepBatch.map((step) => this.executeStep(step, logId, plan, contextResults)),
       );
       stepResults.push(...batchResults);
 
@@ -186,9 +246,16 @@ export class Orchestrator {
   private async executeStep(
     step: PlanStep,
     logId: string,
+    plan?: Plan,
+    phaseResults?: StepResult[],
   ): Promise<StepResult> {
     const startTime = Date.now();
     step.status = 'running';
+
+    // Enrich synthesize steps with query and accumulated results
+    if (step.toolName === 'synthesize' && plan && phaseResults) {
+      this.enrichSynthesizeStep(step, plan, phaseResults);
+    }
 
     await this.emit(
       logId,
@@ -204,8 +271,8 @@ export class Orchestrator {
     );
 
     try {
-      const executor = this.executorRegistry.getExecutor(step.type);
-      const result = await executor.execute(step);
+      const executor = this.executorRegistry.getExecutor(step.toolName);
+      const result = await executor.execute(step, logId);
       const durationMs = Date.now() - startTime;
 
       step.status = 'completed';
@@ -386,6 +453,56 @@ export class Orchestrator {
       typeof (item as Record<string, unknown>).url === 'string' &&
       typeof (item as Record<string, unknown>).title === 'string'
     );
+  }
+
+  private enrichSynthesizeStep(
+    step: PlanStep,
+    plan: Plan,
+    accumulatedResults: StepResult[],
+  ): void {
+    // Build context from all previous phase results
+    const searchResults: unknown[] = [];
+    const fetchResults: string[] = [];
+
+    for (const result of accumulatedResults) {
+      if (result.status === 'completed' && result.output) {
+        // Collect search results (arrays of search result objects)
+        if (Array.isArray(result.output)) {
+          searchResults.push(...result.output);
+        }
+        // Collect fetch results (string content)
+        else if (typeof result.output === 'string') {
+          fetchResults.push(result.output);
+        }
+      }
+    }
+
+    // Build a comprehensive context string
+    let contextString = '';
+
+    if (searchResults.length > 0) {
+      contextString += '## Search Results\n\n';
+      contextString += JSON.stringify(searchResults, null, 2);
+      contextString += '\n\n';
+    }
+
+    if (fetchResults.length > 0) {
+      contextString += '## Fetched Content\n\n';
+      contextString += fetchResults.join('\n\n---\n\n');
+    }
+
+    // Enrich the step config
+    step.config = {
+      ...step.config,
+      query: plan.query,
+      context: contextString,
+      systemPrompt:
+        step.config.systemPrompt ||
+        'You are a research synthesis assistant. Analyze the provided search results and fetched content to answer the user query comprehensively.',
+      prompt:
+        step.config.prompt ||
+        `Based on the research query and gathered information, provide a comprehensive answer.\n\nQuery: ${plan.query}`,
+    };
   }
 
   private async emit(

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { ExecutorRegistry } from './executor-registry.service';
 import { ToolExecutor } from './tool.executor';
 import { LLMExecutor } from './llm.executor';
@@ -10,4 +10,19 @@ import { LLMModule } from '../llm/llm.module';
   providers: [ExecutorRegistry, ToolExecutor, LLMExecutor],
   exports: [ExecutorRegistry, ToolExecutor, LLMExecutor],
 })
-export class ExecutorsModule {}
+export class ExecutorsModule implements OnModuleInit {
+  constructor(
+    private readonly executorRegistry: ExecutorRegistry,
+    private readonly toolExecutor: ToolExecutor,
+    private readonly llmExecutor: LLMExecutor,
+  ) {}
+
+  onModuleInit() {
+    // Register tool executors
+    this.executorRegistry.register('tavily_search', this.toolExecutor);
+    this.executorRegistry.register('web_fetch', this.toolExecutor);
+
+    // Register LLM executors
+    this.executorRegistry.register('synthesize', this.llmExecutor);
+  }
+}

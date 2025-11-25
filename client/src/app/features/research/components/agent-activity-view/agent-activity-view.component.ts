@@ -1,4 +1,4 @@
-import { Component, input, output, OnInit, OnDestroy, signal, effect, viewChild, ElementRef, afterNextRender, computed } from '@angular/core';
+import { Component, input, output, OnInit, OnDestroy, signal, effect, viewChild, ElementRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AgentActivityService } from '../../../../core/services/agent-activity.service';
 import { StageProgressHeaderComponent } from '../stage-progress-header/stage-progress-header';
@@ -37,13 +37,12 @@ export class AgentActivityViewComponent implements OnInit, OnDestroy {
   // Inject the AgentActivityService
   constructor(private activityService: AgentActivityService) {
     // Auto-scroll effect when new tasks appear
-    afterNextRender(() => {
-      effect(() => {
-        const activeTasks = this.activeTasks();
-        if (activeTasks.length > 0) {
-          this.scrollToBottom();
-        }
-      });
+    // Effect is called in injection context (constructor)
+    effect(() => {
+      const activeTasks = this.activeTasks();
+      if (activeTasks.length > 0) {
+        this.scrollToBottom();
+      }
     });
   }
 

@@ -16,6 +16,13 @@ export type LogEventType =
   // Re-planning events
   | 'replan_triggered'
   | 'replan_completed'
+  // Tool execution events
+  | 'tool_call_started'
+  | 'tool_call_completed'
+  | 'tool_call_failed'
+  // LLM execution events
+  | 'llm_call_started'
+  | 'llm_call_completed'
   // Session events
   | 'session_started'
   | 'session_completed'

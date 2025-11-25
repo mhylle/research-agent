@@ -1,9 +1,8 @@
-// @ts-nocheck
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { LogEntry } from '../logging/interfaces/log-entry.interface';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { LogEntryEntity } from '../logging/entities/log-entry.entity';
+import { ResearchResultEntity } from '../research/entities/research-result.entity';
 import { LogSessionDto } from './dto/log-session.dto';
 import { LogDetailDto } from './dto/log-detail.dto';
 import { QuerySessionsDto } from './dto/query-sessions.dto';
@@ -12,6 +11,8 @@ import {
   GraphNode,
   GraphEdge,
 } from '../research/interfaces/graph-node.interface';
+import { LogEntry } from '../logging/interfaces/log-entry.interface';
+import { LogEventType } from '../logging/interfaces/log-event-type.enum';
 
 export interface SessionsResult {
   sessions: LogSessionDto[];
@@ -20,76 +21,34 @@ export interface SessionsResult {
 
 @Injectable()
 export class LogsService {
-  private readonly logFilePath: string;
-  private sessionsCache: Map<string, LogSessionDto> = new Map();
-  private cacheExpiry = 0;
-
-  constructor(private configService: ConfigService) {
-    const logDir = this.configService.get<string>('LOG_DIR') || './logs';
-    this.logFilePath = path.join(logDir, 'research-combined.log');
-  }
+  constructor(
+    @InjectRepository(LogEntryEntity)
+    private logRepository: Repository<LogEntryEntity>,
+    @InjectRepository(ResearchResultEntity)
+    private resultRepository: Repository<ResearchResultEntity>,
+  ) {}
 
   async getAllSessions(options: QuerySessionsDto): Promise<SessionsResult> {
-    // Check cache validity
-    if (Date.now() < this.cacheExpiry && this.sessionsCache.size > 0) {
-      return this.filterAndPaginate(
-        Array.from(this.sessionsCache.values()),
-        options,
-      );
-    }
+    // Get distinct logIds with their session info
+    const subQuery = this.logRepository
+      .createQueryBuilder('log')
+      .select('DISTINCT log.logId', 'logId');
 
-    // Read and parse log file
-    const fileContent = await fs.readFile(this.logFilePath, 'utf-8');
-    const lines = fileContent.split('\n').filter((line) => line.trim());
-
-    const entries: LogEntry[] = lines
-      .map((line) => {
-        try {
-          return JSON.parse(line);
-        } catch (err) {
-          console.error('Failed to parse log line:', line);
-          return null;
-        }
-      })
-      .filter(Boolean);
-
-    // Group by logId
-    const sessionsMap = new Map<string, LogEntry[]>();
-    entries.forEach((entry) => {
-      if (!sessionsMap.has(entry.logId)) {
-        sessionsMap.set(entry.logId, []);
-      }
-      sessionsMap.get(entry.logId)!.push(entry);
-    });
+    const logIds = await subQuery.getRawMany();
 
     // Build session summaries
-    const sessions: LogSessionDto[] = Array.from(sessionsMap.entries()).map(
-      ([logId, entries]) => {
+    const sessions: LogSessionDto[] = await Promise.all(
+      logIds.map(async ({ logId }) => {
+        const entries = await this.getEntriesForLogId(logId);
         return this.buildSessionSummary(logId, entries);
-      },
+      }),
     );
-
-    // Update cache
-    this.sessionsCache = new Map(sessions.map((s) => [s.logId, s]));
-    this.cacheExpiry = Date.now() + 60000; // 60 second cache
 
     return this.filterAndPaginate(sessions, options);
   }
 
   async getSessionDetails(logId: string): Promise<LogDetailDto> {
-    const fileContent = await fs.readFile(this.logFilePath, 'utf-8');
-    const lines = fileContent.split('\n').filter((line) => line.trim());
-
-    const entries: LogEntry[] = lines
-      .map((line) => {
-        try {
-          const entry = JSON.parse(line);
-          return entry.logId === logId ? entry : null;
-        } catch {
-          return null;
-        }
-      })
-      .filter(Boolean);
+    const entries = await this.getEntriesForLogId(logId);
 
     if (entries.length === 0) {
       throw new NotFoundException(`No logs found for logId: ${logId}`);
@@ -97,12 +56,50 @@ export class LogsService {
 
     const session = this.buildSessionSummary(logId, entries);
 
-    return {
+    // Fetch the research result if available
+    const researchResult = await this.resultRepository.findOne({
+      where: { logId },
+    });
+
+    const result: LogDetailDto = {
       ...session,
       entries: entries.sort(
         (a, b) =>
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
       ),
+    };
+
+    // Include research result if found
+    if (researchResult) {
+      result.result = {
+        answer: researchResult.answer,
+        sources: researchResult.sources,
+        metadata: researchResult.metadata,
+      };
+    }
+
+    return result;
+  }
+
+  private async getEntriesForLogId(logId: string): Promise<LogEntry[]> {
+    const entities = await this.logRepository.find({
+      where: { logId },
+      order: { timestamp: 'ASC' },
+    });
+
+    return entities.map((entity) => this.fromEntity(entity));
+  }
+
+  private fromEntity(entity: LogEntryEntity): LogEntry {
+    return {
+      id: entity.id,
+      logId: entity.logId,
+      timestamp: entity.timestamp,
+      eventType: entity.eventType as LogEventType,
+      planId: entity.planId,
+      phaseId: entity.phaseId,
+      stepId: entity.stepId,
+      data: entity.data,
     };
   }
 
@@ -115,48 +112,55 @@ export class LogsService {
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
     );
 
-    // Extract query from Stage 1 input
-    const stage1Input = entries.find(
-      (e) => e.stage === 1 && e.operation === 'stage_input',
+    // Extract query from session_started event
+    const sessionStarted = entries.find(
+      (e) => e.eventType === 'session_started',
     );
-    const query = stage1Input?.input?.query || 'Unknown query';
+    const query = (sessionStarted?.data?.query as string) || 'Unknown query';
 
     // Calculate total duration
     const firstEntry = sortedEntries[0];
     const lastEntry = sortedEntries[sortedEntries.length - 1];
     const totalDuration =
-      new Date(lastEntry.timestamp).getTime() -
-      new Date(firstEntry.timestamp).getTime();
+      firstEntry && lastEntry
+        ? new Date(lastEntry.timestamp).getTime() -
+          new Date(firstEntry.timestamp).getTime()
+        : 0;
 
-    // Count stages and tools
-    const stageSet = new Set(
-      entries.filter((e) => e.stage).map((e) => e.stage),
-    );
-    const stageCount = stageSet.size;
-    const toolCallCount = entries.filter(
-      (e) => e.component !== 'pipeline',
+    // Count phases and steps
+    const phaseCount = entries.filter(
+      (e) => e.eventType === 'phase_completed',
+    ).length;
+    const stepCount = entries.filter(
+      (e) => e.eventType === 'step_completed',
     ).length;
 
-    // Determine status
-    const hasError = entries.some((e) => e.operation === 'stage_error');
-    const hasStage3Output = entries.some(
-      (e) => e.stage === 3 && e.operation === 'stage_output',
+    // Determine status based on events
+    const hasError = entries.some(
+      (e) =>
+        e.eventType === 'session_failed' ||
+        e.eventType === 'step_failed' ||
+        e.eventType === 'phase_failed',
+    );
+    const hasCompletion = entries.some(
+      (e) => e.eventType === 'session_completed',
     );
     const status = hasError
       ? 'error'
-      : hasStage3Output
+      : hasCompletion
         ? 'completed'
         : 'incomplete';
 
     return {
       logId,
       query,
-      timestamp: typeof firstEntry.timestamp === 'string'
-        ? firstEntry.timestamp
-        : firstEntry.timestamp.toISOString(),
+      timestamp:
+        typeof firstEntry?.timestamp === 'string'
+          ? firstEntry.timestamp
+          : firstEntry?.timestamp?.toISOString() || new Date().toISOString(),
       totalDuration,
-      stageCount,
-      toolCallCount,
+      stageCount: phaseCount,
+      toolCallCount: stepCount,
       status,
     };
   }
@@ -167,141 +171,157 @@ export class LogsService {
     const edges: GraphEdge[] = [];
     const nodeMap = new Map<string, GraphNode>();
 
-    // Process entries to build nodes
-    detail.entries.forEach((entry, index) => {
-      const nodeId = `${entry.component}-${entry.stage || index}`;
+    // Create root session node
+    const sessionNode: GraphNode = {
+      id: `session-${logId}`,
+      type: 'stage',
+      name: 'Research Session',
+      icon: '🔬',
+      color: '#6366f1',
+      size: 'large',
+      startTime: new Date(detail.timestamp),
+      status:
+        detail.status === 'completed'
+          ? 'completed'
+          : detail.status === 'error'
+            ? 'error'
+            : 'running',
+      childrenIds: [],
+      dependsOn: [],
+    };
+    nodes.push(sessionNode);
+    nodeMap.set(sessionNode.id, sessionNode);
 
-      let nodeType: 'stage' | 'tool' | 'llm' | 'retry' = 'stage';
-      if (entry.component === 'llm') {
-        nodeType = 'llm';
-      } else if (entry.component === 'pipeline') {
-        nodeType = 'stage';
-      } else {
-        nodeType = 'tool';
-      }
+    // Process entries to build phase and step nodes
+    const phaseNodes = new Map<string, GraphNode>();
 
-      // Check if we need to create/update the node
-      if (
-        entry.operation === 'stage_input' ||
-        entry.operation === 'execute' ||
-        entry.operation === 'chat'
-      ) {
-        const node: GraphNode = {
-          id: nodeId,
-          type: nodeType,
-          name:
-            entry.component === 'pipeline'
-              ? `Stage ${entry.stage}`
-              : entry.component,
-          icon: this.getNodeIcon(nodeType),
-          color: this.getNodeColor(nodeType),
+    detail.entries.forEach((entry) => {
+      // Handle phase events
+      if (entry.eventType === 'phase_added' && entry.phaseId) {
+        const phaseNode: GraphNode = {
+          id: `phase-${entry.phaseId}`,
+          type: 'stage',
+          name: (entry.data?.name as string) || 'Phase',
+          icon: '⚙️',
+          color: '#3b82f6',
           size: 'medium',
           startTime: new Date(entry.timestamp),
-          status: 'running',
-          parentId: entry.stage ? `pipeline-${entry.stage}` : undefined,
+          status: 'pending',
+          parentId: sessionNode.id,
           childrenIds: [],
           dependsOn: [],
-          input: entry.input,
+          input: entry.data,
         };
+        phaseNodes.set(entry.phaseId, phaseNode);
+        nodes.push(phaseNode);
+        nodeMap.set(phaseNode.id, phaseNode);
+        sessionNode.childrenIds.push(phaseNode.id);
 
-        nodeMap.set(nodeId, node);
-        nodes.push(node);
-      }
-
-      // Update node on completion
-      if (
-        entry.operation === 'stage_output' ||
-        entry.operation === 'execute' ||
-        entry.operation === 'chat'
-      ) {
-        const node = nodeMap.get(nodeId);
-        console.log(
-          `Update node: nodeId=${nodeId}, found=${!!node}, operation=${entry.operation}, component=${entry.component}`,
-        );
-        if (node) {
-          node.endTime = new Date(entry.timestamp);
-          node.duration = entry.executionTime || 0;
-          node.status = 'completed';
-          node.output = entry.output;
-
-          console.log(
-            `Node ${nodeId}: has metadata=${!!entry.metadata}, has toolLatency=${!!entry.metadata?.toolLatency}`,
-          );
-
-          // Extract metrics from LLM calls
-          if (entry.metadata?.tokensUsed) {
-            node.metrics = {
-              tokensUsed: entry.metadata.tokensUsed,
-              modelLatency: entry.executionTime || 0,
-              retryCount: 0,
-            };
-          }
-
-          // Extract metrics from tool calls
-          if (entry.metadata?.toolLatency) {
-            console.log(
-              `Setting tool metrics for ${node.id}: toolLatency=${entry.metadata.toolLatency}`,
-            );
-            node.metrics = {
-              ...node.metrics,
-              toolLatency: entry.metadata.toolLatency,
-              latency: entry.metadata.toolLatency,
-            };
-            console.log(`Tool metrics set:`, node.metrics);
-          }
-
-          // Extract web_fetch extraction metadata (from output)
-          if (entry.output?.extractionMetadata) {
-            console.log(`Setting extraction metadata for ${node.id}`);
-            node.metrics = {
-              ...node.metrics,
-              extractionMetadata: entry.output.extractionMetadata,
-              screenshotPath: entry.output.screenshotPath,
-            };
-            console.log(`Extraction metadata set for ${node.id}:`, {
-              hasReadability: !!entry.output.extractionMetadata.readability,
-              hasVision: !!entry.output.extractionMetadata.vision,
-              hasCheerio: !!entry.output.extractionMetadata.cheerio,
-              selectionReason: entry.output.extractionMetadata.selectionReason,
-            });
-          }
-        } else {
-          console.log(
-            `WARNING: Node not found in nodeMap for nodeId=${nodeId}`,
-          );
-        }
-      }
-
-      // Handle errors
-      if (entry.operation === 'stage_error') {
-        const node = nodeMap.get(nodeId);
-        if (node) {
-          node.status = 'error';
-          node.error = entry.metadata?.error || 'Unknown error';
-        }
-      }
-    });
-
-    // Build edges between nodes
-    nodes.forEach((node) => {
-      if (node.parentId) {
         edges.push({
-          id: `${node.parentId}-${node.id}`,
-          source: node.parentId,
-          target: node.id,
+          id: `${sessionNode.id}-${phaseNode.id}`,
+          source: sessionNode.id,
+          target: phaseNode.id,
           type: 'parent-child',
         });
+      }
 
-        // Update parent's children list
-        const parent = nodeMap.get(node.parentId);
-        if (parent) {
-          parent.childrenIds.push(node.id);
+      // Handle phase start
+      if (entry.eventType === 'phase_started' && entry.phaseId) {
+        const phaseNode = phaseNodes.get(entry.phaseId);
+        if (phaseNode) {
+          phaseNode.status = 'running';
+          phaseNode.startTime = new Date(entry.timestamp);
+        }
+      }
+
+      // Handle phase completion
+      if (
+        (entry.eventType === 'phase_completed' ||
+          entry.eventType === 'phase_failed') &&
+        entry.phaseId
+      ) {
+        const phaseNode = phaseNodes.get(entry.phaseId);
+        if (phaseNode) {
+          phaseNode.status =
+            entry.eventType === 'phase_completed' ? 'completed' : 'error';
+          phaseNode.endTime = new Date(entry.timestamp);
+          if (phaseNode.startTime) {
+            phaseNode.duration =
+              phaseNode.endTime.getTime() - phaseNode.startTime.getTime();
+          }
+        }
+      }
+
+      // Handle step events
+      if (entry.eventType === 'step_started' && entry.stepId) {
+        const parentPhase = entry.phaseId
+          ? phaseNodes.get(entry.phaseId)
+          : null;
+        const stepNode: GraphNode = {
+          id: `step-${entry.stepId}`,
+          type: 'tool',
+          name: (entry.data?.toolName as string) || 'Step',
+          icon: '🔧',
+          color: '#10b981',
+          size: 'small',
+          startTime: new Date(entry.timestamp),
+          status: 'running',
+          parentId: parentPhase?.id || sessionNode.id,
+          childrenIds: [],
+          dependsOn: [],
+          input: entry.data,
+        };
+        nodes.push(stepNode);
+        nodeMap.set(stepNode.id, stepNode);
+
+        if (parentPhase) {
+          parentPhase.childrenIds.push(stepNode.id);
+          edges.push({
+            id: `${parentPhase.id}-${stepNode.id}`,
+            source: parentPhase.id,
+            target: stepNode.id,
+            type: 'parent-child',
+          });
+        }
+      }
+
+      // Handle step completion
+      if (
+        (entry.eventType === 'step_completed' ||
+          entry.eventType === 'step_failed') &&
+        entry.stepId
+      ) {
+        const stepNode = nodeMap.get(`step-${entry.stepId}`);
+        if (stepNode) {
+          stepNode.status =
+            entry.eventType === 'step_completed' ? 'completed' : 'error';
+          stepNode.endTime = new Date(entry.timestamp);
+          stepNode.output = entry.data;
+          if (stepNode.startTime) {
+            stepNode.duration =
+              stepNode.endTime.getTime() - stepNode.startTime.getTime();
+          }
+          if (entry.data?.durationMs) {
+            stepNode.metrics = {
+              ...stepNode.metrics,
+              toolLatency: entry.data.durationMs,
+            };
+          }
         }
       }
     });
 
+    // Update session node end time
+    if (detail.entries.length > 0) {
+      const lastEntry = detail.entries[detail.entries.length - 1];
+      sessionNode.endTime = new Date(lastEntry.timestamp);
+      sessionNode.duration = detail.totalDuration;
+    }
+
     // Calculate metadata
-    const times = nodes.map((n) => n.startTime.getTime());
+    const times = nodes
+      .filter((n) => n.startTime)
+      .map((n) => n.startTime.getTime());
     const endTimes = nodes
       .filter((n) => n.endTime)
       .map((n) => n.endTime!.getTime());
@@ -316,26 +336,6 @@ export class LogsService {
         totalDuration: detail.totalDuration,
       },
     };
-  }
-
-  private getNodeIcon(type: string): string {
-    const iconMap = {
-      stage: '⚙️',
-      tool: '🔧',
-      llm: '🤖',
-      retry: '🔄',
-    };
-    return iconMap[type] || '●';
-  }
-
-  private getNodeColor(type: string): string {
-    const colorMap = {
-      stage: '#3b82f6', // blue
-      tool: '#10b981', // green
-      llm: '#8b5cf6', // purple
-      retry: '#f59e0b', // amber
-    };
-    return colorMap[type] || '#6b7280';
   }
 
   private filterAndPaginate(

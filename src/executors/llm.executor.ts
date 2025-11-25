@@ -9,7 +9,7 @@ import { ChatMessage } from '../llm/interfaces/chat-message.interface';
 export class LLMExecutor implements Executor {
   constructor(private llmService: OllamaService) {}
 
-  async execute(step: PlanStep): Promise<ExecutorResult> {
+  async execute(step: PlanStep, _logId?: string): Promise<ExecutorResult> {
     const startTime = Date.now();
 
     try {

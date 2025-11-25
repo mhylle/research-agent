@@ -257,12 +257,16 @@ export class AgentActivityService {
   private handleSessionCompleted(event: any): void {
     console.log('Session completed:', event);
     this.isComplete.set(true);
+    // Disconnect SSE to prevent reconnection attempts after completion
+    this.disconnect();
   }
 
   private handleSessionFailed(event: any): void {
     console.log('Session failed:', event);
     const { error } = event;
     this.connectionError.set(error || 'Research failed');
+    // Disconnect SSE to prevent reconnection attempts after failure
+    this.disconnect();
   }
 
   private formatDescription(template: string, data: Record<string, unknown>): string {

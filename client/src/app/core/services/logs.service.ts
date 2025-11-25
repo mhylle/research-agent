@@ -131,63 +131,115 @@ export class LogsService {
     if (!entries || entries.length === 0) return [];
 
     const stages: TimelineNode[] = [];
+    const phaseMap = new Map<string, any>();
 
-    // Process each stage (1, 2, 3)
-    for (let stageNum = 1; stageNum <= 3; stageNum++) {
-      const stageInput = entries.find(e =>
-        e.stage === stageNum && e.operation === 'stage_input'
-      );
-      const stageOutput = entries.find(e =>
-        e.stage === stageNum && e.operation === 'stage_output'
-      );
+    // First pass: collect phase information
+    entries.forEach(entry => {
+      if (entry.eventType === 'phase_added' && entry.phaseId) {
+        phaseMap.set(entry.phaseId, {
+          phaseId: entry.phaseId,
+          name: entry.data?.name || 'Phase',
+          addedAt: entry.timestamp,
+          startedAt: null,
+          completedAt: null,
+          steps: []
+        });
+      }
+      if (entry.eventType === 'phase_started' && entry.phaseId) {
+        const phase = phaseMap.get(entry.phaseId);
+        if (phase) phase.startedAt = entry.timestamp;
+      }
+      if ((entry.eventType === 'phase_completed' || entry.eventType === 'phase_failed') && entry.phaseId) {
+        const phase = phaseMap.get(entry.phaseId);
+        if (phase) phase.completedAt = entry.timestamp;
+      }
+    });
 
-      if (!stageInput) continue;
+    // Second pass: collect steps for each phase
+    entries.forEach(entry => {
+      if (entry.eventType === 'step_started' && entry.stepId && entry.phaseId) {
+        const phase = phaseMap.get(entry.phaseId);
+        if (phase) {
+          phase.steps.push({
+            stepId: entry.stepId,
+            toolName: entry.data?.toolName || 'Tool',
+            startedAt: entry.timestamp,
+            completedAt: null,
+            input: entry.data,
+            output: null,
+            duration: 0
+          });
+        }
+      }
+      if ((entry.eventType === 'step_completed' || entry.eventType === 'step_failed') && entry.stepId && entry.phaseId) {
+        const phase = phaseMap.get(entry.phaseId);
+        if (phase) {
+          const step = phase.steps.find((s: any) => s.stepId === entry.stepId);
+          if (step) {
+            step.completedAt = entry.timestamp;
+            step.output = entry.data;
+            step.duration = entry.data?.durationMs || 0;
+          }
+        }
+      }
+    });
 
-      // Find tool calls within this stage
-      const toolCalls = entries.filter(e =>
-        e.component !== 'pipeline' &&
-        e.operation === 'execute' &&
-        e.timestamp >= stageInput.timestamp &&
-        (!stageOutput || e.timestamp <= stageOutput.timestamp)
-      );
+    // Build timeline nodes from phases
+    let phaseIndex = 0;
+    phaseMap.forEach((phase) => {
+      phaseIndex++;
 
-      // Build tool nodes
-      const toolNodes: TimelineNode[] = toolCalls.map((tool, idx) => ({
+      // Build tool nodes from steps
+      const toolNodes: TimelineNode[] = phase.steps.map((step: any, idx: number) => ({
         type: 'tool',
-        id: `stage${stageNum}-tool${idx}`,
-        name: this.getToolDisplayName(tool.component),
-        icon: this.getToolIcon(tool.component),
+        id: `phase${phaseIndex}-tool${idx}`,
+        name: this.getToolDisplayName(step.toolName),
+        icon: this.getToolIcon(step.toolName),
         color: '#f59e0b',
-        duration: tool.executionTime || 0,
-        timestamp: tool.timestamp,
-        input: tool.input,
-        output: this.parseToolOutput(tool.output),
+        duration: step.duration || 0,
+        timestamp: step.startedAt,
+        input: step.input,
+        output: this.parseToolOutput(step.output),
         isExpanded: false
       }));
 
-      // Calculate duration
-      const duration = stageOutput?.executionTime ||
-        (stageOutput && stageInput ?
-          new Date(stageOutput.timestamp).getTime() - new Date(stageInput.timestamp).getTime() :
-          0);
+      // Calculate phase duration
+      const startTime = phase.startedAt || phase.addedAt;
+      const endTime = phase.completedAt;
+      const duration = startTime && endTime
+        ? new Date(endTime).getTime() - new Date(startTime).getTime()
+        : 0;
 
       // Build stage node
       stages.push({
         type: 'stage',
-        id: `stage${stageNum}`,
-        name: this.getStageName(stageNum),
-        icon: this.getStageIcon(stageNum),
-        color: this.getStageColor(stageNum),
+        id: `phase${phaseIndex}`,
+        name: this.getPhaseName(phase.name, phaseIndex),
+        icon: this.getStageIcon(phaseIndex),
+        color: this.getStageColor(phaseIndex),
         duration,
-        timestamp: stageInput.timestamp,
-        input: stageInput.input,
-        output: stageOutput?.output,
+        timestamp: startTime,
+        input: null,
+        output: null,
         children: toolNodes,
         isExpanded: false
       });
-    }
+    });
 
     return stages;
+  }
+
+  private getPhaseName(name: string, index: number): string {
+    // Use the phase name from the backend, or fallback to generic names
+    if (name && name !== 'Phase') {
+      return name;
+    }
+    const defaultNames: Record<number, string> = {
+      1: 'Query Analysis & Search',
+      2: 'Content Fetch & Selection',
+      3: 'Synthesis & Answer Generation'
+    };
+    return defaultNames[index] || `Phase ${index}`;
   }
 
   private getStageName(stage: number): string {
@@ -213,22 +265,51 @@ export class LogsService {
     return colors[stage] || '#6b7280';
   }
 
-  private getToolDisplayName(component: string): string {
+  private getToolDisplayName(toolName: string): string {
+    if (!toolName) return 'Tool';
+
     const names: Record<string, string> = {
       'tavily_search': 'Tavily Search',
+      'TavilySearch': 'Tavily Search',
       'web_fetch': 'Web Fetch',
-      'pdf_extract': 'PDF Extract'
+      'WebFetch': 'Web Fetch',
+      'pdf_extract': 'PDF Extract',
+      'PdfExtract': 'PDF Extract',
+      'llm': 'LLM',
+      'LLM': 'LLM'
     };
-    return names[component] || component;
+
+    // Try exact match first
+    if (names[toolName]) {
+      return names[toolName];
+    }
+
+    // Try case-insensitive match
+    const lowerToolName = toolName.toLowerCase();
+    const matchedKey = Object.keys(names).find(key => key.toLowerCase() === lowerToolName);
+    if (matchedKey) {
+      return names[matchedKey];
+    }
+
+    // Return the original name with proper casing
+    return toolName.charAt(0).toUpperCase() + toolName.slice(1);
   }
 
-  private getToolIcon(component: string): string {
+  private getToolIcon(toolName: string): string {
+    if (!toolName) return '🔧';
+
     const icons: Record<string, string> = {
       'tavily_search': '🔎',
+      'tavilysearch': '🔎',
       'web_fetch': '🌐',
-      'pdf_extract': '📑'
+      'webfetch': '🌐',
+      'pdf_extract': '📑',
+      'pdfextract': '📑',
+      'llm': '🤖'
     };
-    return icons[component] || '🔧';
+
+    const lowerToolName = toolName.toLowerCase();
+    return icons[lowerToolName] || '🔧';
   }
 
   private parseToolOutput(output: any): any {

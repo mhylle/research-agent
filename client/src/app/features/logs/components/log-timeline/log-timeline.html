@@ -15,6 +15,26 @@
     </div>
   </div>
 
+  <!-- Research Result Section -->
+  <div class="log-timeline__result" *ngIf="result">
+    <div class="log-timeline__result-header">
+      <h3>Research Answer</h3>
+    </div>
+    <div class="log-timeline__result-content">
+      <div class="log-timeline__answer">{{ result.answer }}</div>
+
+      <div class="log-timeline__sources" *ngIf="result.sources && result.sources.length > 0">
+        <h4>Sources</h4>
+        <ul>
+          <li *ngFor="let source of result.sources">
+            <a [href]="source.url" target="_blank" rel="noopener noreferrer">{{ source.title }}</a>
+            <span class="log-timeline__source-relevance">({{ source.relevance }})</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
   <div class="log-timeline__loading" *ngIf="isLoading">
     <div class="skeleton-stage" *ngFor="let i of [1,2,3]">
       <div class="skeleton-stage__header"></div>

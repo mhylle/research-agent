@@ -368,12 +368,23 @@ Extract and provide:
 
 Be concise but complete. Extract all readable text.`;
 
-      const response = await this.ollama.generate({
+      // Add 15-second timeout to vision processing to prevent SSE connection timeouts
+      const visionTimeout = 15000; // 15 seconds
+      const visionPromise = this.ollama.generate({
         model: this.visionModel,
         prompt,
         images: [base64Image],
         // Note: No format: 'json' - qwen3-vl:8b doesn't support it reliably
       });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Vision processing timeout after 15s')),
+          visionTimeout,
+        ),
+      );
+
+      const response = await Promise.race([visionPromise, timeoutPromise]);
 
       // Parse the response as plain text
       const responseText = response.response.trim();
@@ -424,7 +435,16 @@ Be concise but complete. Extract all readable text.`;
         visualElements,
       };
     } catch (error) {
-      console.warn('Vision extraction failed:', error.message);
+      const errorMessage = error.message || 'Unknown error';
+      this.logger.warn(`Vision extraction failed: ${errorMessage}`);
+
+      // Log timeout specifically to help debugging
+      if (errorMessage.includes('timeout')) {
+        this.logger.warn(
+          `Vision model ${this.visionModel} exceeded 15s timeout - consider using a faster model or disabling vision`,
+        );
+      }
+
       return {
         success: false,
         method: 'vision',

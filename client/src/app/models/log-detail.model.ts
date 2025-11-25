@@ -1,14 +1,29 @@
 export interface LogEntry {
+  id?: number;
   timestamp: string;
   logId: string;
-  stage?: number;
-  component: string;
-  operation: string;
-  input?: any;
-  output?: any;
-  executionTime?: number;
-  level: string;
-  message: string;
+  eventType: string;
+  planId?: string;
+  phaseId?: string;
+  stepId?: string;
+  data?: any;
+}
+
+export interface ResearchSource {
+  url: string;
+  title: string;
+  relevance: string;
+}
+
+export interface ResearchMetadata {
+  totalExecutionTime: number;
+  phases: Array<{ phase: string; executionTime: number }>;
+}
+
+export interface ResearchResultData {
+  answer: string;
+  sources: ResearchSource[];
+  metadata: ResearchMetadata;
 }
 
 export interface LogDetail {
@@ -18,4 +33,5 @@ export interface LogDetail {
   totalDuration: number;
   status: 'completed' | 'error' | 'incomplete';
   entries: LogEntry[];
+  result?: ResearchResultData;
 }

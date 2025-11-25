@@ -19,7 +19,101 @@ export class LogService {
     @InjectRepository(LogEntryEntity)
     private logRepository: Repository<LogEntryEntity>,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) {
+    // Listen for tool_call events and persist them to the database
+    this.setupToolCallListeners();
+  }
+
+  private setupToolCallListeners(): void {
+    // Listen for tool.call.started events
+    this.eventEmitter.on(
+      'tool.call.started',
+      (eventData: {
+        logId?: string;
+        stepId?: string;
+        phaseId?: string;
+        toolName: string;
+        input: string;
+        timestamp: Date;
+      }) => {
+        if (eventData.logId) {
+          void this.append({
+            logId: eventData.logId,
+            eventType: 'step_started',
+            stepId: eventData.stepId,
+            phaseId: eventData.phaseId,
+            data: {
+              toolName: eventData.toolName,
+              input: eventData.input,
+              timestamp: eventData.timestamp,
+            },
+          });
+        }
+      },
+    );
+
+    // Listen for tool.call.completed events
+    this.eventEmitter.on(
+      'tool.call.completed',
+      (eventData: {
+        logId?: string;
+        stepId?: string;
+        phaseId?: string;
+        toolName: string;
+        input: string;
+        output: string;
+        durationMs: number;
+        timestamp: Date;
+      }) => {
+        if (eventData.logId) {
+          void this.append({
+            logId: eventData.logId,
+            eventType: 'step_completed',
+            stepId: eventData.stepId,
+            phaseId: eventData.phaseId,
+            data: {
+              toolName: eventData.toolName,
+              input: eventData.input,
+              output: eventData.output,
+              durationMs: eventData.durationMs,
+              timestamp: eventData.timestamp,
+            },
+          });
+        }
+      },
+    );
+
+    // Listen for tool.call.failed events
+    this.eventEmitter.on(
+      'tool.call.failed',
+      (eventData: {
+        logId?: string;
+        stepId?: string;
+        phaseId?: string;
+        toolName: string;
+        input: string;
+        error: string;
+        durationMs: number;
+        timestamp: Date;
+      }) => {
+        if (eventData.logId) {
+          void this.append({
+            logId: eventData.logId,
+            eventType: 'step_failed',
+            stepId: eventData.stepId,
+            phaseId: eventData.phaseId,
+            data: {
+              toolName: eventData.toolName,
+              input: eventData.input,
+              error: eventData.error,
+              durationMs: eventData.durationMs,
+              timestamp: eventData.timestamp,
+            },
+          });
+        }
+      },
+    );
+  }
 
   async append(entry: CreateLogEntry): Promise<LogEntry> {
     const logEntry: LogEntry = {

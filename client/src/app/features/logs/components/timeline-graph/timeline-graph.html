@@ -1,0 +1,207 @@
+<div class="timeline-graph-container">
+  <div class="timeline-controls">
+    <div class="control-group">
+      <button class="btn-control" (click)="zoomIn()" title="Zoom In">
+        <span>🔍+</span>
+      </button>
+      <button class="btn-control" (click)="zoomOut()" title="Zoom Out">
+        <span>🔍−</span>
+      </button>
+      <button class="btn-control" (click)="resetZoom()" title="Reset Zoom">
+        <span>⟲</span>
+      </button>
+    </div>
+
+    <div class="control-group">
+      <label for="view-mode">View:</label>
+      <select
+        id="view-mode"
+        [(ngModel)]="viewMode"
+        (change)="onViewModeChange()"
+        class="view-mode-select"
+      >
+        <option value="gantt">Gantt Chart</option>
+        <option value="timeline">Timeline</option>
+        <option value="dependencies">Dependencies</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="timeline-svg-wrapper">
+    <svg #timelineSvg class="timeline-svg"></svg>
+  </div>
+
+  <div class="node-details-panel" *ngIf="selectedNode">
+    <div class="panel-header">
+      <h3>{{ selectedNode.name }}</h3>
+      <button class="close-btn" (click)="selectedNode = null">&times;</button>
+    </div>
+
+    <div class="panel-content">
+      <div class="detail-row">
+        <span class="label">Type:</span>
+        <span class="value">
+          <span class="node-icon">{{ selectedNode.icon }}</span>
+          {{ selectedNode.type }}
+        </span>
+      </div>
+
+      <div class="detail-row">
+        <span class="label">Status:</span>
+        <span class="value status" [class]="selectedNode.status">
+          {{ selectedNode.status }}
+        </span>
+      </div>
+
+      <div class="detail-row">
+        <span class="label">Start Time:</span>
+        <span class="value">{{ selectedNode.startTime | date: 'HH:mm:ss.SSS' }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="selectedNode.endTime">
+        <span class="label">End Time:</span>
+        <span class="value">{{ selectedNode.endTime | date: 'HH:mm:ss.SSS' }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="selectedNode.duration">
+        <span class="label">Duration:</span>
+        <span class="value">{{ formatDuration(selectedNode.duration) }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="selectedNode.metrics?.tokensUsed">
+        <span class="label">Tokens Used:</span>
+        <span class="value">{{ selectedNode.metrics?.tokensUsed }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="selectedNode.metrics?.latency">
+        <span class="label">Latency:</span>
+        <span class="value">{{ formatDuration(selectedNode.metrics?.latency!) }}</span>
+      </div>
+
+      <!-- Enhanced Extraction Metadata Section -->
+      <div class="detail-section extraction-metadata" *ngIf="selectedNode.metrics?.extractionMetadata">
+        <h4>📊 Extraction Metadata:</h4>
+
+        <div class="metadata-row">
+          <span class="label">Total Duration:</span>
+          <span class="value">{{ formatDuration(selectedNode.metrics!.extractionMetadata!.totalDuration!) }}</span>
+        </div>
+
+        <div class="metadata-row" *ngIf="selectedNode.metrics!.extractionMetadata!.downloadDuration">
+          <span class="label">Download Duration:</span>
+          <span class="value">{{ formatDuration(selectedNode.metrics!.extractionMetadata!.downloadDuration!) }}</span>
+        </div>
+
+        <div class="metadata-row">
+          <span class="label">Selection Method:</span>
+          <span class="value">{{ selectedNode.metrics!.extractionMetadata!.selectionReason }}</span>
+        </div>
+
+        <!-- Readability Extraction -->
+        <div class="extraction-method" *ngIf="selectedNode.metrics!.extractionMetadata!.readability">
+          <h5>🔖 Readability:</h5>
+          <div class="method-details">
+            <span class="status-badge" [class.success]="selectedNode.metrics!.extractionMetadata!.readability!.success" [class.failed]="!selectedNode.metrics!.extractionMetadata!.readability!.success">
+              {{ selectedNode.metrics!.extractionMetadata!.readability!.success ? '✓ Success' : '✗ Failed' }}
+            </span>
+            <span>Confidence: {{ (selectedNode.metrics!.extractionMetadata!.readability!.confidence! * 100).toFixed(1) }}%</span>
+            <span>Duration: {{ formatDuration(selectedNode.metrics!.extractionMetadata!.readability!.duration!) }}</span>
+            <span>Content Length: {{ selectedNode.metrics!.extractionMetadata!.readability!.contentLength }} chars</span>
+          </div>
+        </div>
+
+        <!-- Vision Extraction -->
+        <div class="extraction-method" *ngIf="selectedNode.metrics!.extractionMetadata!.vision">
+          <h5>👁️ Vision ({{ selectedNode.metrics!.extractionMetadata!.vision!.model }}):</h5>
+          <div class="method-details">
+            <span class="status-badge" [class.success]="selectedNode.metrics!.extractionMetadata!.vision!.success" [class.failed]="!selectedNode.metrics!.extractionMetadata!.vision!.success">
+              {{ selectedNode.metrics!.extractionMetadata!.vision!.success ? '✓ Success' : '✗ Failed' }}
+            </span>
+            <span>Confidence: {{ (selectedNode.metrics!.extractionMetadata!.vision!.confidence! * 100).toFixed(1) }}%</span>
+            <span>Duration: {{ formatDuration(selectedNode.metrics!.extractionMetadata!.vision!.duration!) }}</span>
+            <span>Response: {{ selectedNode.metrics!.extractionMetadata!.vision!.responseLength }} chars</span>
+            <span *ngIf="selectedNode.metrics!.extractionMetadata!.vision!.screenshotSize">Screenshot: {{ (selectedNode.metrics!.extractionMetadata!.vision!.screenshotSize! / 1024).toFixed(2) }} KB</span>
+          </div>
+        </div>
+
+        <!-- Cheerio Extraction -->
+        <div class="extraction-method" *ngIf="selectedNode.metrics!.extractionMetadata!.cheerio">
+          <h5>🧹 Cheerio:</h5>
+          <div class="method-details">
+            <span class="status-badge" [class.success]="selectedNode.metrics!.extractionMetadata!.cheerio!.success" [class.failed]="!selectedNode.metrics!.extractionMetadata!.cheerio!.success">
+              {{ selectedNode.metrics!.extractionMetadata!.cheerio!.success ? '✓ Success' : '✗ Failed' }}
+            </span>
+            <span>Duration: {{ formatDuration(selectedNode.metrics!.extractionMetadata!.cheerio!.duration!) }}</span>
+            <span>Content Length: {{ selectedNode.metrics!.extractionMetadata!.cheerio!.contentLength }} chars</span>
+          </div>
+        </div>
+
+        <!-- Screenshot Display -->
+        <div class="screenshot-section" *ngIf="selectedNode.metrics!.screenshotPath">
+          <h5>📸 Screenshot:</h5>
+          <div class="screenshot-container">
+            <img
+              [src]="getScreenshotUrl(selectedNode.metrics!.screenshotPath!)"
+              alt="Page screenshot"
+              class="screenshot-image"
+              (error)="onScreenshotError($event)"
+            />
+            <p class="screenshot-path-info">{{ selectedNode.metrics!.screenshotPath }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section" *ngIf="selectedNode.input">
+        <h4>Input:</h4>
+        <pre class="code-block">{{ selectedNode.input | json }}</pre>
+      </div>
+
+      <div class="detail-section" *ngIf="selectedNode.output">
+        <h4>Output:</h4>
+        <pre class="code-block">{{ selectedNode.output | json }}</pre>
+      </div>
+
+      <div class="detail-section error" *ngIf="selectedNode.error">
+        <h4>Error:</h4>
+        <pre class="code-block error-text">{{ selectedNode.error }}</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="hover-tooltip"
+       *ngIf="activeTooltipNode"
+       [class.pinned]="isTooltipPinned"
+       [style.left.px]="tooltipX"
+       [style.top.px]="tooltipY">
+    <div class="tooltip-content">
+      <div class="tooltip-header">
+        <strong>{{ activeTooltipNode.icon }} {{ activeTooltipNode.name }}</strong>
+        <button *ngIf="isTooltipPinned" class="tooltip-close" (click)="unpinTooltip()" title="Close (click node again to unpin)">×</button>
+      </div>
+
+      <div class="tooltip-meta">
+        <span class="status-badge" [class]="activeTooltipNode.status">{{ activeTooltipNode.status }}</span>
+        <span *ngIf="activeTooltipNode.duration">{{ formatDuration(activeTooltipNode.duration) }}</span>
+        <span *ngIf="isTooltipPinned" class="pin-indicator">📌 Pinned</span>
+      </div>
+
+      <div class="tooltip-section" *ngIf="activeTooltipNode.input">
+        <div class="section-header">Input:</div>
+        <pre class="tooltip-code">{{ formatTooltipData(activeTooltipNode.input) }}</pre>
+      </div>
+
+      <div class="tooltip-section" *ngIf="activeTooltipNode.output">
+        <div class="section-header">Output:</div>
+        <pre class="tooltip-code">{{ formatTooltipData(activeTooltipNode.output) }}</pre>
+      </div>
+
+      <div class="tooltip-section" *ngIf="activeTooltipNode.metrics">
+        <div class="section-header">Metrics:</div>
+        <div class="metrics-grid">
+          <span *ngIf="activeTooltipNode.metrics.tokensUsed">Tokens: {{ activeTooltipNode.metrics.tokensUsed }}</span>
+          <span *ngIf="activeTooltipNode.metrics.toolLatency">Latency: {{ activeTooltipNode.metrics.toolLatency }}ms</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

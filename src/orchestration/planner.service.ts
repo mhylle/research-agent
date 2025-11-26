@@ -348,8 +348,8 @@ export class PlannerService {
 
   private autoAddDefaultSteps(phase: Phase, logId: string): void {
     const phaseName = (phase.name || '').toLowerCase();
-    let toolName: string;
-    let stepType: string;
+    let toolName: string = 'tavily_search'; // Initialize with default
+    let stepType: string = 'search';
     let config: Record<string, any> = {};
 
     // Extract meaningful query from phase description or name
@@ -368,9 +368,7 @@ export class PlannerService {
       stepType = 'llm';
       config = { prompt: queryText };
     } else {
-      // Default fallback to search
-      toolName = 'tavily_search';
-      stepType = 'search';
+      // Default fallback to search (already initialized above)
       config = { query: queryText };
     }
 
@@ -471,6 +469,16 @@ export class PlannerService {
         );
         if (!targetPhase) {
           result = { error: `Phase ${args.phaseId} not found` };
+          break;
+        }
+
+        // CRITICAL VALIDATION: Ensure toolName is provided
+        if (!args.toolName || typeof args.toolName !== 'string' || args.toolName.trim() === '') {
+          result = {
+            error: 'toolName is required and must be a non-empty string. Available tools: tavily_search, web_fetch, synthesize',
+            availableTools: ['tavily_search', 'web_fetch', 'synthesize'],
+            providedToolName: args.toolName,
+          };
           break;
         }
 

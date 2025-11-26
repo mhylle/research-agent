@@ -19,6 +19,16 @@ export interface ActivityTask {
   retryCount: number;
   canRetry: boolean;
   data?: Record<string, unknown>;
+  // Step input/output fields
+  toolName?: string;           // The executor tool name (tavily_search, web_fetch, synthesize, etc.)
+  input?: Record<string, unknown>;   // Step configuration/input passed to executor
+  output?: unknown;            // Result from executor (can be string, array, or object)
+  tokensUsed?: {
+    prompt: number;
+    completion: number;
+    total: number;
+  };
+  metadata?: Record<string, unknown>; // Additional metadata from executor
 }
 
 export interface MilestoneEventData {

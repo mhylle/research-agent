@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivityTask, TaskStatus, TaskType } from '../../../../models/activity-task.model';
 
@@ -15,6 +15,9 @@ export class TaskCardComponent {
 
   // Output event for retry button
   retry = output<string>();
+
+  // State for expandable sections
+  showDetails = signal<boolean>(false);
 
   /**
    * Get CSS class based on task status
@@ -152,5 +155,87 @@ export class TaskCardComponent {
    */
   getProgressPercentage(): number {
     return Math.round(this.task().progress);
+  }
+
+  /**
+   * Toggle input/output details visibility
+   */
+  toggleDetails(): void {
+    this.showDetails.update(v => !v);
+  }
+
+  /**
+   * Check if task has displayable input/output data
+   */
+  hasDetails(): boolean {
+    const t = this.task();
+
+    // Check if input has content
+    const hasInput = t.input && typeof t.input === 'object' && Object.keys(t.input).length > 0;
+
+    // Check if output has content
+    let hasOutput = false;
+    if (t.output !== null && t.output !== undefined) {
+      if (typeof t.output === 'string') {
+        hasOutput = t.output.length > 0;
+      } else if (Array.isArray(t.output)) {
+        hasOutput = t.output.length > 0;
+      } else if (typeof t.output === 'object') {
+        hasOutput = Object.keys(t.output).length > 0;
+      } else {
+        // For primitives (numbers, booleans), always show
+        hasOutput = true;
+      }
+    }
+
+    return hasInput || hasOutput;
+  }
+
+  /**
+   * Format JSON for display (pretty print)
+   */
+  formatJson(data: unknown): string {
+    if (data === null || data === undefined) {
+      return 'null';
+    }
+    if (typeof data === 'string') {
+      // If it's a long string, truncate for preview
+      if (data.length > 500) {
+        return data.substring(0, 500) + '...';
+      }
+      return data;
+    }
+    try {
+      return JSON.stringify(data, null, 2);
+    } catch {
+      return String(data);
+    }
+  }
+
+  /**
+   * Get a short preview of the input for collapsed view
+   */
+  getInputPreview(): string {
+    const t = this.task();
+    if (!t.input || typeof t.input !== 'object') return '';
+    const keys = Object.keys(t.input);
+    if (keys.length === 0) return '';
+    if (keys.length <= 3) return keys.join(', ');
+    return `${keys.slice(0, 3).join(', ')} +${keys.length - 3} more`;
+  }
+
+  /**
+   * Get a short preview of the output for collapsed view
+   */
+  getOutputPreview(): string {
+    const t = this.task();
+    if (!t.output) return '';
+    if (typeof t.output === 'string') {
+      return t.output.length > 100 ? t.output.substring(0, 100) + '...' : t.output;
+    }
+    if (Array.isArray(t.output)) {
+      return `Array with ${t.output.length} items`;
+    }
+    return 'Object';
   }
 }

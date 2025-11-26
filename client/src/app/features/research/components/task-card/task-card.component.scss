@@ -268,6 +268,169 @@
   text-align: right;
 }
 
+// =============================================================================
+// Input/Output Details Section - Digital Hygge Style
+// =============================================================================
+
+// Details toggle button
+.task-card__details-toggle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  margin-top: $spacing-md;
+  background-color: $stone;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  color: $text-secondary;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background-color: $stone-300;
+    color: $charcoal;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $moss;
+    outline-offset: 2px;
+  }
+
+  .toggle-icon {
+    font-size: $font-size-xs;
+    flex-shrink: 0;
+  }
+
+  .toggle-text {
+    font-weight: $font-medium;
+    flex-shrink: 0;
+  }
+
+  .details-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+    margin-left: auto;
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+}
+
+// Preview badges
+.preview-badge {
+  padding: 2px 6px;
+  border-radius: $border-radius-sm;
+  font-family: monospace;
+  font-size: $font-size-xs;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &--input {
+    background-color: rgba($moss, 0.1);
+    color: $moss;
+  }
+
+  &--output {
+    background-color: rgba($clay, 0.1);
+    color: $clay;
+  }
+}
+
+// Details container
+.task-card__details {
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background-color: $stone;
+  border-radius: $border-radius;
+  animation: expandDown 0.3s ease-out;
+  overflow: hidden;
+}
+
+// Individual detail sections
+.details-section {
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  border-radius: $border-radius-sm;
+  background-color: $oatmeal;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &--input {
+    border-left: 3px solid $moss;
+  }
+
+  &--output {
+    border-left: 3px solid $clay;
+  }
+
+  &--metadata {
+    border-left: 3px solid $slate;
+  }
+
+  &__heading {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin: 0 0 $spacing-sm 0;
+    font-size: $font-size-sm;
+    font-weight: $font-semibold;
+    color: $charcoal;
+
+    .details-icon {
+      font-size: $font-size-base;
+    }
+  }
+
+  &__content {
+    margin: 0;
+    padding: $spacing-md;
+    background-color: $stone;
+    border-radius: $border-radius-sm;
+    overflow-x: auto;
+    max-height: 300px;
+    overflow-y: auto;
+
+    code {
+      font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+      font-size: $font-size-xs;
+      line-height: $line-height;
+      color: $charcoal;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  }
+}
+
+// Token badge
+.task-card__tokens {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  background-color: rgba($slate, 0.1);
+  border-radius: $border-radius-sm;
+  font-family: monospace;
+  font-size: $font-size-xs;
+  color: $slate;
+}
+
+// Animation for expanding details
+@keyframes expandDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 800px;
+  }
+}
+
 // Responsive design for mobile
 @media (max-width: $breakpoint-md) {
   .task-card {
@@ -329,5 +492,9 @@
 
   .progress-fill {
     transition: none;
+  }
+
+  .task-card__details {
+    animation: none;
   }
 }

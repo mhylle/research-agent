@@ -142,6 +142,8 @@ export class LogsService {
           addedAt: entry.timestamp,
           startedAt: null,
           completedAt: null,
+          input: entry.data,  // Store phase input data
+          output: null,
           steps: []
         });
       }
@@ -151,7 +153,10 @@ export class LogsService {
       }
       if ((entry.eventType === 'phase_completed' || entry.eventType === 'phase_failed') && entry.phaseId) {
         const phase = phaseMap.get(entry.phaseId);
-        if (phase) phase.completedAt = entry.timestamp;
+        if (phase) {
+          phase.completedAt = entry.timestamp;
+          phase.output = entry.data;  // Store phase output/completion data
+        }
       }
     });
 
@@ -169,6 +174,8 @@ export class LogsService {
             output: null,
             duration: 0
           });
+        } else {
+          console.warn(`Step ${entry.stepId} references unknown phase ${entry.phaseId}`);
         }
       }
       if ((entry.eventType === 'step_completed' || entry.eventType === 'step_failed') && entry.stepId && entry.phaseId) {
@@ -203,6 +210,8 @@ export class LogsService {
         isExpanded: false
       }));
 
+      console.log(`Phase ${phaseIndex} (${phase.name}): ${phase.steps.length} steps -> ${toolNodes.length} tool nodes`);
+
       // Calculate phase duration
       const startTime = phase.startedAt || phase.addedAt;
       const endTime = phase.completedAt;
@@ -219,8 +228,8 @@ export class LogsService {
         color: this.getStageColor(phaseIndex),
         duration,
         timestamp: startTime,
-        input: null,
-        output: null,
+        input: this.formatPhaseInput(phase.input),
+        output: this.formatPhaseOutput(phase.output, phase.steps),
         children: toolNodes,
         isExpanded: false
       });
@@ -322,6 +331,48 @@ export class LogsService {
       }
     }
     return output;
+  }
+
+  private formatPhaseInput(input: any): any {
+    if (!input) return null;
+
+    // Phase input contains name, description, replanCheckpoint
+    // Return a clean version for display
+    return {
+      name: input.name,
+      description: input.description,
+      replanCheckpoint: input.replanCheckpoint
+    };
+  }
+
+  private formatPhaseOutput(output: any, steps: any[]): any {
+    if (!output && (!steps || steps.length === 0)) return null;
+
+    // If we have phase completion data, use that
+    if (output) {
+      // Phase output may contain completion metadata
+      return {
+        phaseName: output.phaseName,
+        stepsCompleted: output.stepsCompleted,
+        reason: output.reason,
+        // Include any other relevant data from the phase completion
+        ...output
+      };
+    }
+
+    // Fallback: aggregate step outputs
+    // Get the last completed step's output as the phase result
+    const completedSteps = steps.filter((s: any) => s.output);
+    if (completedSteps.length > 0) {
+      const lastStep = completedSteps[completedSteps.length - 1];
+      return {
+        source: 'last_step',
+        stepCount: steps.length,
+        lastStepOutput: this.parseToolOutput(lastStep.output)
+      };
+    }
+
+    return null;
   }
 
   clearError(): void {

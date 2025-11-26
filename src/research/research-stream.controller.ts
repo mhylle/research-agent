@@ -209,6 +209,7 @@ export class ResearchStreamController {
           title: `Executing: ${String(data.toolName ?? '')}`,
           toolName: String(data.toolName ?? ''),
           status: 'running',
+          config: data.config,
         };
 
       case 'step_completed':
@@ -222,6 +223,9 @@ export class ResearchStreamController {
             completion: number;
             total: number;
           },
+          input: data.input,
+          output: data.output,
+          metadata: data.metadata,
           outputPreview: this.truncate(JSON.stringify(data.output ?? {}), 200),
         };
 
@@ -232,6 +236,7 @@ export class ResearchStreamController {
           status: 'error',
           error: String((data.error as { message?: string })?.message ?? ''),
           durationMs: data.durationMs as number,
+          input: data.input,
         };
 
       case 'replan_triggered':

@@ -49,7 +49,83 @@
       <span class="task-card__retry-count" *ngIf="task().retryCount > 0">
         Retry {{ task().retryCount }}
       </span>
+
+      <!-- Token usage (if available) -->
+      @if (task().tokensUsed) {
+        <span class="task-card__tokens">
+          {{ task().tokensUsed?.total }} tokens
+        </span>
+      }
     </div>
+
+    <!-- NEW: Input/Output Details Toggle -->
+    @if (hasDetails()) {
+      <button
+        type="button"
+        class="task-card__details-toggle"
+        (click)="toggleDetails()"
+        [attr.aria-expanded]="showDetails()"
+        aria-controls="task-details"
+      >
+        <span class="toggle-icon" aria-hidden="true">{{ showDetails() ? '▼' : '▶' }}</span>
+        <span class="toggle-text">
+          {{ showDetails() ? 'Hide' : 'Show' }} Details
+        </span>
+        @if (!showDetails()) {
+          <span class="details-preview">
+            @if (task().input) {
+              <span class="preview-badge preview-badge--input">Input: {{ getInputPreview() }}</span>
+            }
+            @if (task().output) {
+              <span class="preview-badge preview-badge--output">Output: {{ getOutputPreview() }}</span>
+            }
+          </span>
+        }
+      </button>
+
+      <!-- Expandable Details Section -->
+      @if (showDetails()) {
+        <div
+          id="task-details"
+          class="task-card__details"
+          role="region"
+          aria-label="Task input and output details"
+        >
+          <!-- Input Section -->
+          @if (task().input) {
+            <div class="details-section details-section--input">
+              <h4 class="details-section__heading">
+                <span class="details-icon">📥</span>
+                Input
+              </h4>
+              <pre class="details-section__content"><code>{{ formatJson(task().input) }}</code></pre>
+            </div>
+          }
+
+          <!-- Output Section -->
+          @if (task().output) {
+            <div class="details-section details-section--output">
+              <h4 class="details-section__heading">
+                <span class="details-icon">📤</span>
+                Output
+              </h4>
+              <pre class="details-section__content"><code>{{ formatJson(task().output) }}</code></pre>
+            </div>
+          }
+
+          <!-- Metadata Section (if available) -->
+          @if (task().metadata) {
+            <div class="details-section details-section--metadata">
+              <h4 class="details-section__heading">
+                <span class="details-icon">ℹ️</span>
+                Metadata
+              </h4>
+              <pre class="details-section__content"><code>{{ formatJson(task().metadata) }}</code></pre>
+            </div>
+          }
+        </div>
+      }
+    }
 
     <!-- Error Message (if error exists) -->
     <div class="task-card__error" *ngIf="task().error">

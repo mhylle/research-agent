@@ -293,7 +293,7 @@ export class Orchestrator {
         type: step.type,
         config: step.config,
       },
-      undefined,
+      step.phaseId,
       step.id,
     );
 
@@ -316,7 +316,7 @@ export class Orchestrator {
           durationMs,
           metadata: result.metadata,
         },
-        undefined,
+        step.phaseId,
         step.id,
       );
 
@@ -349,7 +349,7 @@ export class Orchestrator {
           },
           durationMs,
         },
-        undefined,
+        step.phaseId,
         step.id,
       );
 

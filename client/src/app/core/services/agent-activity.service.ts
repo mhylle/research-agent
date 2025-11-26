@@ -391,7 +391,7 @@ export class AgentActivityService {
   }
 
   private handleStepStarted(event: any): void {
-    const { stepId, toolName } = event;
+    const { stepId, toolName, config } = event;
 
     const newTask: ActivityTask = {
       id: stepId,
@@ -404,6 +404,9 @@ export class AgentActivityService {
       timestamp: new Date(event.timestamp),
       retryCount: 0,
       canRetry: false,
+      // NEW: Capture input data
+      toolName: toolName,
+      input: config,
     };
 
     this.activeTasks.update(tasks => [...tasks, newTask]);
@@ -413,16 +416,24 @@ export class AgentActivityService {
   }
 
   private handleStepCompleted(event: any): void {
-    const { stepId, toolName, durationMs } = event;
+    const { stepId, toolName, durationMs, input, output, tokensUsed, metadata } = event;
 
     this.activeTasks.update(tasks => {
       const index = tasks.findIndex(t => t.id === stepId);
       if (index >= 0) {
-        const completedTask = {
-          ...tasks[index],
+        const existingTask = tasks[index];
+        const completedTask: ActivityTask = {
+          ...existingTask,
           description: `Completed: ${toolName} (${durationMs}ms)`,
           status: 'completed' as TaskStatus,
           progress: 100,
+          duration: durationMs,
+          // NEW: Preserve input/output data
+          toolName: toolName,
+          input: input ?? existingTask.input,
+          output: output,
+          tokensUsed: tokensUsed,
+          metadata: metadata,
         };
         this.completedTasks.update(completed => [...completed, completedTask]);
         return tasks.filter((_, i) => i !== index);
@@ -437,21 +448,26 @@ export class AgentActivityService {
   }
 
   private handleStepFailed(event: any): void {
-    const { stepId, toolName, error } = event;
+    const { stepId, toolName, error, input, durationMs } = event;
 
     this.activeTasks.update(tasks => {
       const index = tasks.findIndex(t => t.id === stepId);
       if (index >= 0) {
+        const existingTask = tasks[index];
         const updated = [...tasks];
         updated[index] = {
           ...updated[index],
           description: `Failed: ${toolName}`,
           status: 'error' as TaskStatus,
+          duration: durationMs,
           error: {
             message: error?.message || 'Step failed',
             timestamp: new Date(),
           },
           canRetry: true,
+          // NEW: Preserve input for debugging
+          toolName: toolName,
+          input: input ?? existingTask.input,
         };
         return updated;
       }

@@ -14,22 +14,23 @@ export class LLMExecutor implements Executor {
 
     try {
       const messages: ChatMessage[] = [];
+      const config = step.config || {};
 
-      if (step.config.systemPrompt) {
+      if (config.systemPrompt) {
         messages.push({
           role: 'system',
-          content: String(step.config.systemPrompt),
+          content: String(config.systemPrompt),
         });
       }
 
-      if (step.config.context) {
+      if (config.context) {
         messages.push({
           role: 'user',
-          content: `Context:\n${String(step.config.context)}`,
+          content: `Context:\n${String(config.context)}`,
         });
       }
 
-      messages.push({ role: 'user', content: String(step.config.prompt) });
+      messages.push({ role: 'user', content: String(config.prompt || 'Please provide a response.') });
 
       const response = await this.llmService.chat(messages);
       const durationMs = Date.now() - startTime;

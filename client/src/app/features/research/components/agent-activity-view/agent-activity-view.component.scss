@@ -298,6 +298,215 @@
   }
 }
 
+// Planning indicator
+.planning-indicator {
+  @include card;
+  background: linear-gradient(135deg, $moss-bg 0%, color.adjust($moss-bg, $lightness: 3%) 100%);
+  border-left: 4px solid $moss;
+  padding: $spacing-md;
+  animation: fadeIn 0.3s ease-out;
+
+  &__content {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .planning-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid $stone-300;
+    border-top-color: $moss;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .planning-text {
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-medium;
+    color: $charcoal;
+  }
+
+  .planning-iteration {
+    color: $text-secondary;
+    font-size: $font-size-base;
+    font-weight: $font-normal;
+  }
+}
+
+// Planned phases section
+.planned-phases-section {
+  @include card;
+  background-color: $stone;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  animation: fadeIn 0.3s ease-out;
+
+  .section-heading {
+    @include button-reset;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    margin-bottom: $spacing-md;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: $moss;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $moss;
+      outline-offset: 2px;
+      border-radius: $border-radius;
+    }
+
+    h3 {
+      margin: 0;
+      font-family: $font-family-heading;
+      font-size: $font-size-lg;
+      font-weight: $font-semibold;
+      color: $charcoal;
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-xs;
+    }
+
+    .chevron-icon {
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      transition: transform $transition-base;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .task-count {
+      font-family: $font-family;
+      font-size: $font-size-sm;
+      font-weight: $font-normal;
+      color: $text-secondary;
+    }
+  }
+}
+
+.planned-phases-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  animation: slideDown 0.3s ease-out;
+}
+
+.planned-phase {
+  background-color: $stone;
+  border-radius: $border-radius;
+  padding: $spacing-sm $spacing-md;
+  border-left: 3px solid $moss;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+  }
+
+  &__order {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: $moss;
+    color: white;
+    border-radius: 50%;
+    font-size: $font-size-sm;
+    font-weight: $font-semibold;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__name {
+    font-family: $font-family-heading;
+    font-size: $font-size-base;
+    font-weight: $font-semibold;
+    color: $charcoal;
+  }
+
+  &__description {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    line-height: $line-height;
+  }
+
+  &__checkpoint {
+    font-size: $font-size-lg;
+    flex-shrink: 0;
+  }
+
+  &__steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    margin-top: $spacing-sm;
+    padding-left: calc(24px + $spacing-sm);
+  }
+}
+
+.planned-step {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  background-color: $stone;
+  border-radius: $border-radius;
+  font-size: $font-size-sm;
+
+  &__tool {
+    font-family: $font-family-mono;
+    color: $charcoal;
+    font-weight: $font-medium;
+  }
+
+  &__status {
+    font-size: $font-size-xs;
+    padding: 2px 6px;
+    border-radius: $border-radius;
+    text-transform: uppercase;
+    font-weight: $font-semibold;
+
+    &[data-status="pending"] {
+      background-color: $stone-300;
+      color: $text-secondary;
+    }
+
+    &[data-status="running"] {
+      background-color: $moss-bg;
+      color: $moss;
+    }
+
+    &[data-status="completed"] {
+      background-color: $success-bg;
+      color: $success;
+    }
+
+    &[data-status="failed"] {
+      background-color: $error-bg;
+      color: $error;
+    }
+  }
+}
+
 // Responsive design for mobile
 @media (max-width: $breakpoint-md) {
   .agent-activity-view {

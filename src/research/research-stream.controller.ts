@@ -34,10 +34,12 @@ export class ResearchStreamController {
 
   @Sse('stream/:logId')
   streamSession(@Param('logId') logId: string): Observable<MessageEvent> {
+    console.log(`[SSE] New connection for logId: ${logId}`);
     return new Observable((subscriber: Subscriber<MessageEvent>) => {
       void this.sendExistingLogs(logId, subscriber);
 
       const listener = (entry: LogEntry) => {
+        console.log(`[SSE] Received event for ${logId}: ${entry.eventType}`);
         subscriber.next({
           data: JSON.stringify(this.transformToUIEvent(entry)),
           type: entry.eventType || 'message',
@@ -46,6 +48,7 @@ export class ResearchStreamController {
       };
 
       // Listen for regular log events
+      console.log(`[SSE] Setting up listener for: log.${logId}`);
       this.eventEmitter.on(`log.${logId}`, listener);
 
       // Listen for tool call events
@@ -134,11 +137,32 @@ export class ResearchStreamController {
           status: 'running',
         };
 
+      case 'planning_started':
+        return {
+          title: '🤔 Planning Started',
+          description: String(data.message ?? 'LLM is generating research plan...'),
+          status: 'planning',
+          availableTools: data.availableTools as string[],
+        };
+
+      case 'planning_iteration':
+        return {
+          title: `Planning Iteration ${String(data.iteration ?? '')}/${String(data.maxIterations ?? '')}`,
+          description: String(data.message ?? ''),
+          status: 'planning',
+          iteration: data.iteration as number,
+          maxIterations: data.maxIterations as number,
+        };
+
       case 'plan_created':
         return {
           title: 'Plan Created',
           description: `${String(data.totalPhases ?? 0)} phases planned`,
           totalPhases: data.totalPhases as number,
+          // Include full plan details
+          planId: String(data.planId ?? ''),
+          query: String(data.query ?? ''),
+          phases: data.phases,
         };
 
       case 'phase_added':

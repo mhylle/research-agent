@@ -2,6 +2,7 @@
 // src/orchestration/planner.service.ts
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unused-vars */
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomUUID } from 'crypto';
 import { OllamaService } from '../llm/ollama.service';
 import { ToolExecutor } from '../executors/tool.executor';
@@ -29,6 +30,7 @@ export class PlannerService {
     private llmService: OllamaService,
     private toolExecutor: ToolExecutor,
     private logService: LogService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async createPlan(query: string, logId: string): Promise<Plan> {
@@ -39,6 +41,19 @@ export class PlannerService {
 
     const availableTools = this.toolExecutor.getAvailableTools();
     const systemPrompt = this.buildPlannerSystemPrompt(availableTools);
+
+    // Emit planning_started event so UI shows "Planning..." indicator
+    const planningStartEntry = await this.logService.append({
+      logId,
+      eventType: 'planning_started',
+      timestamp: new Date(),
+      data: {
+        query,
+        availableTools: availableTools.map((t) => t.name),
+        message: 'LLM is generating research plan...',
+      },
+    });
+    this.eventEmitter.emit(`log.${logId}`, planningStartEntry);
 
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
@@ -51,6 +66,19 @@ export class PlannerService {
 
     while (!planningComplete && iteration < maxIterations) {
       iteration++;
+
+      // Log each planning iteration
+      const iterationEntry = await this.logService.append({
+        logId,
+        eventType: 'planning_iteration',
+        timestamp: new Date(),
+        data: {
+          iteration,
+          maxIterations,
+          message: `Planning iteration ${iteration}/${maxIterations}`,
+        },
+      });
+      this.eventEmitter.emit(`log.${logId}`, iterationEntry);
 
       const response = await this.llmService.chat(messages, planningTools);
 
@@ -82,16 +110,34 @@ export class PlannerService {
       throw new Error('Planning failed: no plan created');
     }
 
-    // Final validation: ensure no phases are empty
+    // Auto-recovery: If any phases are empty, add default steps automatically
     const emptyPhases = this.currentPlan.phases.filter(
       (p) => p.steps.length === 0,
     );
     if (emptyPhases.length > 0) {
-      const phaseNames = emptyPhases.map((p) => p.name).join(', ');
-      throw new Error(
-        `Planning failed: The following phases have no steps: ${phaseNames}. Cannot execute a plan with empty phases.`,
-      );
+      console.log(`[PlannerService] Auto-recovering ${emptyPhases.length} empty phases by adding default steps`);
+
+      // Log the auto-recovery action
+      await this.logService.append({
+        logId,
+        eventType: 'auto_recovery',
+        timestamp: new Date(),
+        planId: this.currentPlan.id,
+        data: {
+          reason: 'LLM created phases without steps - auto-adding default steps',
+          emptyPhaseCount: emptyPhases.length,
+          emptyPhaseNames: emptyPhases.map(p => p.name),
+        },
+      });
+
+      // Auto-add default steps to all empty phases
+      for (const phase of emptyPhases) {
+        this.autoAddDefaultSteps(phase, logId);
+      }
     }
+
+    // CRITICAL VALIDATION: Ensure plan has a synthesis/answer generation phase
+    await this.ensureSynthesisPhase(this.currentPlan, logId);
 
     this.currentPlan.status = 'executing';
     return this.currentPlan;
@@ -219,24 +265,113 @@ export class PlannerService {
     this.phaseResults.set(phaseId, results);
   }
 
+  /**
+   * Ensures the plan has a synthesis/answer generation phase.
+   * This is CRITICAL - every research plan MUST produce a final answer.
+   */
+  private async ensureSynthesisPhase(plan: Plan, logId: string): Promise<void> {
+    // Check if plan already has a synthesis phase
+    const hasSynthesis = plan.phases.some((phase) => {
+      const phaseName = (phase.name || '').toLowerCase();
+      const hasNameMatch =
+        phaseName.includes('synth') ||
+        phaseName.includes('answer') ||
+        phaseName.includes('final') ||
+        phaseName.includes('summary') ||
+        phaseName.includes('conclusion');
+
+      // Also check if phase has synthesis steps
+      const hasSynthesisStep = phase.steps.some((step) => {
+        const toolName = (step.toolName || '').toLowerCase();
+        return (
+          toolName.includes('synth') ||
+          toolName === 'llm' ||
+          toolName === 'text_synthesis'
+        );
+      });
+
+      return hasNameMatch || hasSynthesisStep;
+    });
+
+    if (hasSynthesis) {
+      console.log('[PlannerService] Plan already has synthesis phase');
+      return; // Plan already has synthesis
+    }
+
+    // No synthesis phase found - automatically add one
+    console.log('[PlannerService] No synthesis phase found - adding default synthesis phase');
+
+    const synthesisPhase: Phase = {
+      id: randomUUID(),
+      planId: plan.id,
+      name: 'Synthesis & Answer Generation',
+      description: 'Generate comprehensive final answer based on all gathered research',
+      status: 'pending',
+      steps: [],
+      replanCheckpoint: false,
+      order: plan.phases.length,
+    };
+
+    // Add synthesis step to the phase
+    const synthesisStep: PlanStep = {
+      id: randomUUID(),
+      phaseId: synthesisPhase.id,
+      type: 'llm',
+      toolName: 'synthesize',
+      config: {
+        systemPrompt: 'You are a research synthesis assistant. Analyze all provided information to generate a comprehensive, well-structured answer to the user\'s query.',
+        prompt: `Based on all the research gathered, provide a comprehensive answer to the query: "${plan.query}"`,
+      },
+      dependencies: [],
+      status: 'pending',
+      order: 0,
+    };
+
+    synthesisPhase.steps.push(synthesisStep);
+    plan.phases.push(synthesisPhase);
+
+    // Log this critical auto-recovery
+    await this.logService.append({
+      logId,
+      eventType: 'synthesis_phase_auto_added',
+      timestamp: new Date(),
+      planId: plan.id,
+      phaseId: synthesisPhase.id,
+      data: {
+        reason: 'Plan did not include a synthesis/answer generation phase',
+        phaseName: synthesisPhase.name,
+        stepCount: synthesisPhase.steps.length,
+        message: 'CRITICAL: Automatically added synthesis phase to ensure research produces a final answer',
+      },
+    });
+  }
+
   private autoAddDefaultSteps(phase: Phase, logId: string): void {
-    const phaseName = phase.name.toLowerCase();
+    const phaseName = (phase.name || '').toLowerCase();
     let toolName: string;
     let stepType: string;
+    let config: Record<string, any> = {};
+
+    // Extract meaningful query from phase description or name
+    const queryText = phase.description || phase.name || 'research query';
 
     if (phaseName.includes('search')) {
       toolName = 'tavily_search';
       stepType = 'search';
+      config = { query: queryText };
     } else if (phaseName.includes('fetch')) {
       toolName = 'web_fetch';
       stepType = 'fetch';
+      config = { url: phase.description || '' };
     } else if (phaseName.includes('synthes')) {
       toolName = 'synthesize';
       stepType = 'llm';
+      config = { prompt: queryText };
     } else {
-      // Default fallback
+      // Default fallback to search
       toolName = 'tavily_search';
       stepType = 'search';
+      config = { query: queryText };
     }
 
     const step: PlanStep = {
@@ -244,7 +379,7 @@ export class PlannerService {
       phaseId: phase.id,
       type: stepType,
       toolName: toolName,
-      config: {},
+      config,
       dependencies: [],
       status: 'pending',
       order: 0,
@@ -314,7 +449,7 @@ export class PlannerService {
         this.currentPlan!.phases.push(phase);
         result = { phaseId: phase.id, status: 'added' };
 
-        await this.logService.append({
+        const phaseEntry = await this.logService.append({
           logId,
           eventType: 'phase_added',
           timestamp: new Date(),
@@ -326,6 +461,7 @@ export class PlannerService {
             description: phase.description,
           },
         });
+        this.eventEmitter.emit(`log.${logId}`, phaseEntry);
         break;
       }
 
@@ -351,7 +487,7 @@ export class PlannerService {
         targetPhase.steps.push(step);
         result = { stepId: step.id, status: 'added' };
 
-        await this.logService.append({
+        const stepEntry = await this.logService.append({
           logId,
           eventType: 'step_added',
           timestamp: new Date(),
@@ -364,6 +500,7 @@ export class PlannerService {
             config: args.config,
           },
         });
+        this.eventEmitter.emit(`log.${logId}`, stepEntry);
         break;
       }
 
@@ -597,29 +734,42 @@ ${toolList}
 3. Set replanCheckpoint=true on phases where results might change the approach
 4. Call finalize_plan when ALL phases have steps
 
-## CRITICAL REQUIREMENTS
+## CRITICAL REQUIREMENTS - ABSOLUTE MUST-HAVES
+- **EVERY PLAN MUST END WITH A SYNTHESIS/ANSWER GENERATION PHASE**
+- **The synthesis phase MUST use the "synthesize" tool to generate a final answer**
+- **Research without a final answer is INCOMPLETE and UNUSABLE**
 - **finalize_plan will REJECT the plan if ANY phase has zero steps**
 - **A phase without steps cannot execute and will fail**
 - **You MUST add at least one step to EVERY phase before calling finalize_plan**
 - Use the phaseId returned from add_phase when calling add_step
 - The replan checkpoint is for ADJUSTING the plan based on results, NOT for creating the initial steps
 
+## Mandatory Plan Structure
+1. Information Gathering Phase(s) - search, fetch, etc.
+2. **SYNTHESIS PHASE (MANDATORY)** - MUST use "synthesize" tool to create final answer
+
 ## Guidelines
 - Create atomic, granular steps. Each step should do ONE thing.
 - Consider dependencies between steps - use dependsOn when a step needs prior results.
 - For search tasks, create multiple search steps with different queries for thorough coverage.
 - For fetch tasks, plan to fetch from multiple sources.
-- Always include a synthesis phase at the end to combine results.
+- **ALWAYS end with a synthesis phase that uses the "synthesize" tool**
+- The synthesis step should combine all gathered information into a comprehensive answer
 
-## Example Flow
+## Example Flow (FOLLOW THIS PATTERN)
 1. create_plan
-2. add_phase("search", ...) -> returns {phaseId: "abc"}
+2. add_phase("Initial Search", ...) -> returns {phaseId: "abc"}
 3. add_step(phaseId="abc", toolName="tavily_search", ...) -> step added to search phase
 4. add_step(phaseId="abc", toolName="tavily_search", ...) -> another search step
-5. add_phase("fetch", ...) -> returns {phaseId: "def"}
+5. add_phase("Content Fetching", ...) -> returns {phaseId: "def"}
 6. add_step(phaseId="def", toolName="web_fetch", ...) -> step added to fetch phase
-7. ... continue adding phases and steps
-8. finalize_plan`;
+7. **add_phase("Synthesis & Answer Generation", ...) -> returns {phaseId: "xyz"}**
+8. **add_step(phaseId="xyz", toolName="synthesize", ...) -> CRITICAL FINAL STEP**
+9. finalize_plan
+
+## WARNING
+If you create a plan without a synthesis phase, the research will fail to produce an answer.
+The user expects a comprehensive answer, not just raw data.`;
   }
 
   private buildPlanningPrompt(query: string): string {
@@ -627,7 +777,13 @@ ${toolList}
 
 "${query}"
 
-Start by calling create_plan, then add phases and steps. Call finalize_plan when done.`;
+REQUIREMENTS:
+1. Start by calling create_plan
+2. Add information gathering phases (search, fetch, etc.) with their steps
+3. **MANDATORY: Add a final synthesis phase using the "synthesize" tool to generate the answer**
+4. Call finalize_plan when done
+
+Remember: The plan MUST end with a synthesis phase that produces a comprehensive answer to the query.`;
   }
 
   private buildReplannerSystemPrompt(): string {

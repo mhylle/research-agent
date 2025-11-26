@@ -1,6 +1,6 @@
 <div class="agent-activity-view" role="main" aria-label="Agent Activity View">
-  <!-- Loading State -->
-  @if (!isConnected() && !connectionError()) {
+  <!-- Loading State (only show when not connected, no error, and not complete) -->
+  @if (!isConnected() && !connectionError() && !isComplete()) {
     <div class="agent-activity-view__loading" role="status" aria-live="polite">
       <div class="loading-spinner"></div>
       <p class="loading-text">Connecting to research agent...</p>
@@ -27,15 +27,82 @@
     </div>
   }
 
-  <!-- Main Content (shown when connected) -->
-  @if (isConnected()) {
+  <!-- Main Content (shown when connected or complete) -->
+  @if (isConnected() || isComplete()) {
     <div class="agent-activity-view__content">
       <!-- Stage Progress Header -->
       <app-stage-progress-header
         [stage]="currentStage()"
+        [totalPhases]="totalPhases()"
+        [phaseName]="currentPhaseName()"
         [progress]="stageProgress()"
         aria-label="Research stage progress"
       />
+
+      <!-- Planning Phase Indicator -->
+      @if (isPlanning()) {
+        <div class="planning-indicator" role="status" aria-live="polite">
+          <div class="planning-indicator__content">
+            <span class="planning-spinner"></span>
+            <span class="planning-text">
+              🤔 Planning research strategy...
+              @if (planningIteration()) {
+                <span class="planning-iteration">
+                  (Iteration {{ planningIteration()?.current }}/{{ planningIteration()?.max }})
+                </span>
+              }
+            </span>
+          </div>
+        </div>
+      }
+
+      <!-- Planned Phases Section (shown after plan is created) -->
+      @if (plannedPhases().length > 0) {
+        <section class="planned-phases-section" aria-labelledby="planned-phases-heading">
+          <button
+            type="button"
+            class="section-heading section-heading--collapsible"
+            (click)="togglePlannedPhases()"
+            [attr.aria-expanded]="showPlannedPhases()"
+            aria-controls="planned-phases-list"
+          >
+            <span class="chevron-icon" aria-hidden="true">{{ showPlannedPhases() ? '▼' : '▶' }}</span>
+            <h3 id="planned-phases-heading">
+              📋 Research Plan
+              <span class="task-count">({{ plannedPhases().length }} phases)</span>
+            </h3>
+          </button>
+
+          @if (showPlannedPhases()) {
+            <div id="planned-phases-list" class="planned-phases-list">
+              @for (phase of plannedPhases(); track phase.id) {
+                <div class="planned-phase">
+                  <div class="planned-phase__header">
+                    <span class="planned-phase__order">{{ phase.order + 1 }}</span>
+                    <div class="planned-phase__info">
+                      <span class="planned-phase__name">{{ phase.name }}</span>
+                      <span class="planned-phase__description">{{ phase.description }}</span>
+                    </div>
+                    @if (phase.replanCheckpoint) {
+                      <span class="planned-phase__checkpoint" title="Re-plan checkpoint">🔄</span>
+                    }
+                  </div>
+                  <div class="planned-phase__steps">
+                    @for (step of phase.steps; track step.id) {
+                      <div class="planned-step">
+                        <span class="planned-step__tool">{{ step.toolName }}</span>
+                        <span class="planned-step__status" [attr.data-status]="step.status">
+                          {{ step.status }}
+                        </span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
 
       <!-- Tasks Container (scrollable) -->
       <div
@@ -133,9 +200,11 @@
               Research Complete
             </h3>
             <div class="answer-content">
-              <p class="answer-text">
-                The research has been completed successfully. View the full answer and sources in the results section.
-              </p>
+              @if (researchResult()?.answer) {
+                <div class="answer-text" [innerHTML]="researchResult()!.answer"></div>
+              } @else {
+                <p class="answer-text">The research has been completed successfully.</p>
+              }
             </div>
           </div>
         </section>

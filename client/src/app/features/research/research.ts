@@ -1,6 +1,7 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ResearchService } from '../../core/services/research.service';
+import { AgentActivityService } from '../../core/services/agent-activity.service';
 import { SearchInputComponent } from './components/search-input/search-input';
 import { LoadingIndicatorComponent } from './components/loading-indicator/loading-indicator';
 import { ResultCardComponent } from './components/result-card/result-card';
@@ -25,11 +26,12 @@ import { ResearchHistoryComponent } from './components/research-history/research
 })
 export class ResearchComponent {
   researchService = inject(ResearchService);
+  activityService = inject(AgentActivityService);
 
   // State for agent activity view integration
   currentLogId = signal<string | null>(null);
 
-  // Show activity view if we have a logId (after research completes)
+  // Show activity view if we have a logId (research started or running)
   showActivityView = computed(() => this.currentLogId() !== null);
 
   // Show current result with activity view
@@ -37,21 +39,33 @@ export class ResearchComponent {
     this.currentLogId() !== null && this.researchService.currentResult() !== null
   );
 
+  constructor() {
+    // Watch for research result from SSE and update ResearchService
+    effect(() => {
+      const result = this.activityService.researchResult();
+      if (result) {
+        // Add query and timestamp from current context
+        const fullResult = {
+          ...result,
+          query: this.researchService.currentQuery(),
+          timestamp: new Date()
+        };
+        this.researchService.setResult(fullResult);
+      }
+    });
+  }
+
   async onQuerySubmitted(query: string): Promise<void> {
-    // Clear previous logId and result before new research
+    // Clear previous logId before new research
     this.currentLogId.set(null);
 
     try {
-      // Submit query - this will complete when research is done
-      await this.researchService.submitQuery(query);
+      // Submit query - returns logId immediately for SSE connection
+      const logId = await this.researchService.submitQuery(query);
 
-      // Extract logId from result
-      // Note: Currently the API returns logId after research completes
-      // When SSE is implemented, we'll receive logId immediately and can
-      // show real-time progress during research
-      const result = this.researchService.currentResult();
-      if (result?.logId) {
-        this.currentLogId.set(result.logId);
+      // Set logId immediately so AgentActivityView can connect to SSE
+      if (logId) {
+        this.currentLogId.set(logId);
       }
     } catch (error) {
       // Error handling is done by ResearchService

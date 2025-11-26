@@ -25,34 +25,49 @@ export class ResearchService {
     this.loadHistoryFromStorage();
   }
 
-  async submitQuery(query: string): Promise<void> {
+  /**
+   * Submit a query and get logId immediately for SSE connection.
+   * Returns the logId so the caller can connect to SSE right away.
+   */
+  async submitQuery(query: string): Promise<string | null> {
     this.isLoading.set(true);
     this.error.set(null);
     this.currentQuery.set(query);
+    this.currentResult.set(null); // Clear previous result
 
     try {
       const requestBody: ResearchQuery = { query };
-      const result = await firstValueFrom(this.http.post<Omit<ResearchResult, 'query' | 'timestamp'>>(
+      // API now returns { logId } immediately (research runs in background)
+      const response = await firstValueFrom(this.http.post<{ logId: string }>(
         `${environment.apiUrl}/research/query`,
         requestBody
       ));
 
-      if (result) {
-        const fullResult: ResearchResult = {
-          ...result,
-          query,
-          timestamp: new Date()
-        };
-
-        this.currentResult.set(fullResult);
-        this.history.update(prev => [fullResult, ...prev].slice(0, 20));
-        this.saveHistoryToStorage();
-      }
+      return response?.logId || null;
     } catch (err: any) {
       this.error.set(err.message || 'An error occurred');
-    } finally {
       this.isLoading.set(false);
+      return null;
     }
+    // Note: isLoading will be set to false when SSE completes
+  }
+
+  /**
+   * Called when research completes via SSE to store the result
+   */
+  setResult(result: ResearchResult): void {
+    this.currentResult.set(result);
+    this.history.update(prev => [result, ...prev].slice(0, 20));
+    this.saveHistoryToStorage();
+    this.isLoading.set(false);
+  }
+
+  /**
+   * Called when research fails
+   */
+  setError(errorMessage: string): void {
+    this.error.set(errorMessage);
+    this.isLoading.set(false);
   }
 
   clearError(): void {

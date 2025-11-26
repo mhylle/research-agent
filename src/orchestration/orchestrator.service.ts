@@ -34,8 +34,8 @@ export class Orchestrator {
     private eventEmitter: EventEmitter2,
   ) {}
 
-  async executeResearch(query: string): Promise<ResearchResult> {
-    const logId = randomUUID();
+  async executeResearch(query: string, logId?: string): Promise<ResearchResult> {
+    logId = logId || randomUUID();
     const startTime = Date.now();
     const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
 
@@ -44,10 +44,34 @@ export class Orchestrator {
 
     const plan = await this.plannerService.createPlan(query, logId);
 
+    console.log(`[Orchestrator] Plan created with ${plan.phases.length} phases, entering execution loop...`);
+
+    // Log the FULL plan with all phases and steps
     await this.emit(logId, 'plan_created', {
       planId: plan.id,
+      query: plan.query,
+      status: plan.status,
       totalPhases: plan.phases.length,
-      phases: plan.phases.map((p) => p.name),
+      createdAt: plan.createdAt,
+      // Full plan structure with all details
+      phases: plan.phases.map((phase) => ({
+        id: phase.id,
+        name: phase.name,
+        description: phase.description,
+        status: phase.status,
+        order: phase.order,
+        replanCheckpoint: phase.replanCheckpoint,
+        totalSteps: phase.steps.length,
+        steps: phase.steps.map((step) => ({
+          id: step.id,
+          toolName: step.toolName,
+          type: step.type,
+          config: step.config,
+          dependencies: step.dependencies,
+          status: step.status,
+          order: step.order,
+        })),
+      })),
     });
 
     let finalOutput = '';
@@ -55,8 +79,11 @@ export class Orchestrator {
       [];
     const allStepResults: StepResult[] = [];
 
+    console.log(`[Orchestrator] Starting execution loop for ${plan.phases.length} phases`);
+
     // 2. EXECUTION LOOP
     for (const phase of plan.phases) {
+      console.log(`[Orchestrator] Processing phase: ${phase.name} (status: ${phase.status})`);
       if (phase.status === 'skipped') continue;
 
       const phaseStartTime = Date.now();
@@ -299,6 +326,7 @@ export class Orchestrator {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         output: result.output,
         input: step.config,
+        toolName: step.toolName, // Include toolName to identify synthesis steps
       };
     } catch (error: unknown) {
       const durationMs = Date.now() - startTime;
@@ -330,6 +358,7 @@ export class Orchestrator {
         stepId: step.id,
         error: error as Error,
         input: step.config,
+        toolName: step.toolName,
       };
     }
   }
@@ -416,6 +445,10 @@ export class Orchestrator {
     sources: Array<{ url: string; title: string; relevance: string }>,
     setOutput: (output: string) => void,
   ): void {
+    // Track synthesis outputs separately to prioritize them
+    let synthesisOutput: string | null = null;
+    let genericStringOutput: string | null = null;
+
     for (const stepResult of phaseResult.stepResults) {
       if (stepResult.output) {
         // Extract sources from search results
@@ -431,14 +464,30 @@ export class Orchestrator {
             }
           }
         }
-        // Extract final answer from synthesis step
-        if (
-          typeof stepResult.output === 'string' &&
-          stepResult.output.length > 100
-        ) {
-          setOutput(stepResult.output);
+
+        // Extract final answer - prioritize synthesis steps
+        if (typeof stepResult.output === 'string' && stepResult.output.trim().length > 0) {
+          // Check if this is a synthesis step (synthesis, synthesize, tavily_synthesize, etc.)
+          const isSynthesisStep = stepResult.toolName &&
+            (stepResult.toolName.toLowerCase().includes('synth') ||
+             stepResult.toolName === 'llm');
+
+          if (isSynthesisStep) {
+            // Always prefer synthesis step output
+            synthesisOutput = stepResult.output;
+          } else if (!synthesisOutput && stepResult.output.length > 50) {
+            // Fallback: use longer string outputs if no synthesis found
+            genericStringOutput = stepResult.output;
+          }
         }
       }
+    }
+
+    // Set the output, prioritizing synthesis results
+    if (synthesisOutput) {
+      setOutput(synthesisOutput);
+    } else if (genericStringOutput) {
+      setOutput(genericStringOutput);
     }
   }
 
@@ -491,16 +540,17 @@ export class Orchestrator {
       contextString += fetchResults.join('\n\n---\n\n');
     }
 
-    // Enrich the step config
+    // Enrich the step config (with null safety)
+    const existingConfig = step.config || {};
     step.config = {
-      ...step.config,
+      ...existingConfig,
       query: plan.query,
       context: contextString,
       systemPrompt:
-        step.config.systemPrompt ||
+        existingConfig.systemPrompt ||
         'You are a research synthesis assistant. Analyze the provided search results and fetched content to answer the user query comprehensively.',
       prompt:
-        step.config.prompt ||
+        existingConfig.prompt ||
         `Based on the research query and gathered information, provide a comprehensive answer.\n\nQuery: ${plan.query}`,
     };
   }
@@ -521,6 +571,7 @@ export class Orchestrator {
       data,
     });
 
+    console.log(`[Orchestrator] Emitting event: log.${logId} - ${eventType}`);
     this.eventEmitter.emit(`log.${logId}`, entry);
     this.eventEmitter.emit('log.all', entry);
   }

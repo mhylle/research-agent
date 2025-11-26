@@ -1,6 +1,6 @@
 import { Component, input, output, OnInit, OnDestroy, signal, effect, viewChild, ElementRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AgentActivityService } from '../../../../core/services/agent-activity.service';
+import { AgentActivityService, PlannedPhase } from '../../../../core/services/agent-activity.service';
 import { StageProgressHeaderComponent } from '../stage-progress-header/stage-progress-header';
 import { TaskCardComponent } from '../task-card/task-card.component';
 import { ActivityTask } from '../../../../models';
@@ -27,12 +27,24 @@ export class AgentActivityViewComponent implements OnInit, OnDestroy {
 
   // Expose readonly signals from service
   readonly currentStage = computed(() => this.activityService.currentStage());
+  readonly totalPhases = computed(() => this.activityService.totalPhases());
+  readonly currentPhaseName = computed(() => this.activityService.currentPhaseName());
   readonly stageProgress = computed(() => this.activityService.stageProgress());
   readonly activeTasks = computed(() => this.activityService.activeTasks());
   readonly completedTasks = computed(() => this.activityService.completedTasks());
   readonly isComplete = computed(() => this.activityService.isComplete());
   readonly isConnected = computed(() => this.activityService.isConnected());
   readonly connectionError = computed(() => this.activityService.connectionError());
+  readonly researchResult = computed(() => this.activityService.researchResult());
+
+  // Planning phase signals
+  readonly isPlanning = computed(() => this.activityService.isPlanning());
+  readonly planningIteration = computed(() => this.activityService.planningIteration());
+  readonly plannedPhases = computed(() => this.activityService.plannedPhases());
+  readonly planQuery = computed(() => this.activityService.planQuery());
+
+  // Local state for planned phases section
+  showPlannedPhases = signal<boolean>(true);
 
   // Inject the AgentActivityService
   constructor(private activityService: AgentActivityService) {
@@ -64,6 +76,13 @@ export class AgentActivityViewComponent implements OnInit, OnDestroy {
    */
   toggleCompletedTasks(): void {
     this.showCompletedTasks.update(value => !value);
+  }
+
+  /**
+   * Toggle planned phases section visibility
+   */
+  togglePlannedPhases(): void {
+    this.showPlannedPhases.update(value => !value);
   }
 
   /**

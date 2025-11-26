@@ -31,4 +31,5 @@ export interface StepResult {
   output?: any;
   error?: Error;
   input?: any;
+  toolName?: string; // Tool name to identify synthesis steps
 }

@@ -1,20 +1,54 @@
-import { Injectable, signal, computed } from '@angular/core';
-import { ActivityTask, MilestoneEventData, TaskStatus, TaskType } from '../../models';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { ActivityTask, MilestoneEventData, TaskStatus, TaskType, ResearchResult } from '../../models';
 import { environment } from '../../../environments/environment';
+
+// Interface for planned phases from plan_created event
+export interface PlannedPhase {
+  id: string;
+  name: string;
+  description: string;
+  status: string;
+  order: number;
+  replanCheckpoint: boolean;
+  totalSteps: number;
+  steps: PlannedStep[];
+}
+
+export interface PlannedStep {
+  id: string;
+  toolName: string;
+  type: string;
+  config: Record<string, unknown>;
+  dependencies: string[];
+  status: string;
+  order: number;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AgentActivityService {
+  private http = inject(HttpClient);
+
   // Signals for reactive state
-  currentStage = signal<number>(1);
+  currentStage = signal<number>(0); // Start at 0 for planning
   totalPhases = signal<number>(3); // Dynamic total phases
+  currentPhaseName = signal<string>('Planning'); // Current phase name for display
   activeTasks = signal<ActivityTask[]>([]);
   completedTasks = signal<ActivityTask[]>([]);
   stageProgress = signal<number>(0);
   isComplete = signal<boolean>(false);
   isConnected = signal<boolean>(false);
   connectionError = signal<string | null>(null);
+  researchResult = signal<ResearchResult | null>(null); // Final result when complete
+
+  // Planning phase signals
+  isPlanning = signal<boolean>(false);
+  planningIteration = signal<{ current: number; max: number } | null>(null);
+  plannedPhases = signal<PlannedPhase[]>([]); // Full plan structure
+  planQuery = signal<string>('');
 
   private phaseCounter = 0; // Track current phase index
 
@@ -48,6 +82,11 @@ export class AgentActivityService {
       this.isConnected.set(false);
       this.connectionError.set('Connection lost. Reconnecting...');
       // EventSource auto-reconnects, so just update status
+    };
+
+    // Debug: Log ALL incoming messages to diagnose event routing
+    this.eventSource.onmessage = (e: MessageEvent) => {
+      console.log('SSE generic message received:', e.type, e.data);
     };
 
     // NEW ORCHESTRATOR EVENT TYPES
@@ -90,6 +129,24 @@ export class AgentActivityService {
     this.eventSource.addEventListener('session_failed', (e: MessageEvent) => {
       this.handleSessionFailed(JSON.parse(e.data));
     });
+
+    // Planning phase events
+    this.eventSource.addEventListener('phase_added', (e: MessageEvent) => {
+      this.handlePhaseAdded(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('step_added', (e: MessageEvent) => {
+      this.handleStepAdded(JSON.parse(e.data));
+    });
+
+    // Planning phase events (LLM thinking)
+    this.eventSource.addEventListener('planning_started', (e: MessageEvent) => {
+      this.handlePlanningStarted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('planning_iteration', (e: MessageEvent) => {
+      this.handlePlanningIteration(JSON.parse(e.data));
+    });
   }
 
   disconnect(): void {
@@ -102,27 +159,162 @@ export class AgentActivityService {
   }
 
   private resetState(): void {
-    this.currentStage.set(1);
+    this.currentStage.set(0); // Start at 0 for planning phase
     this.totalPhases.set(3);
+    this.currentPhaseName.set('Planning');
     this.phaseCounter = 0;
     this.activeTasks.set([]);
     this.completedTasks.set([]);
     this.stageProgress.set(0);
     this.isComplete.set(false);
     this.connectionError.set(null);
+    this.researchResult.set(null);
+    // Reset planning state
+    this.isPlanning.set(false);
+    this.planningIteration.set(null);
+    this.plannedPhases.set([]);
+    this.planQuery.set('');
   }
 
   // NEW ORCHESTRATOR EVENT HANDLERS
   private handleSessionStarted(event: any): void {
     console.log('Session started:', event);
+    // Show we're starting research
+    this.currentStage.set(0);
+    this.isPlanning.set(true);
+  }
+
+  private handlePlanningStarted(event: any): void {
+    console.log('Planning started:', event);
+    this.isPlanning.set(true);
+    this.currentStage.set(0); // Stage 0 = Planning
+
+    // Create a planning task to show in the UI
+    const planningTask: ActivityTask = {
+      id: 'planning-llm',
+      nodeId: 'planning',
+      stage: 1,
+      type: 'milestone',
+      description: '🤔 Planning research strategy...',
+      progress: 0,
+      status: 'running',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+    this.activeTasks.update(tasks => [...tasks, planningTask]);
+  }
+
+  private handlePlanningIteration(event: any): void {
+    console.log('Planning iteration:', event);
+    const { iteration, maxIterations } = event;
+
+    this.planningIteration.set({ current: iteration, max: maxIterations });
+
+    // Update the planning task progress
+    this.activeTasks.update(tasks => {
+      const planningIdx = tasks.findIndex(t => t.id === 'planning-llm');
+      if (planningIdx >= 0) {
+        const updated = [...tasks];
+        const progress = Math.round((iteration / maxIterations) * 100);
+        updated[planningIdx] = {
+          ...updated[planningIdx],
+          description: `🤔 Planning iteration ${iteration}/${maxIterations}...`,
+          progress,
+        };
+        return updated;
+      }
+      return tasks;
+    });
   }
 
   private handlePlanCreated(event: any): void {
     console.log('Plan created:', event);
-    const { totalPhases } = event;
+    const { totalPhases, phases, query, planId } = event;
+
+    // End planning phase
+    this.isPlanning.set(false);
+    this.planningIteration.set(null);
+    this.currentPhaseName.set('Planning complete');
+
     if (totalPhases) {
       this.totalPhases.set(totalPhases);
     }
+
+    if (query) {
+      this.planQuery.set(query);
+    }
+
+    // Store the full plan structure
+    if (phases && Array.isArray(phases)) {
+      this.plannedPhases.set(phases as PlannedPhase[]);
+    }
+
+    // Complete the planning task and move to completed
+    this.activeTasks.update(tasks => {
+      const planningIdx = tasks.findIndex(t => t.id === 'planning-llm');
+      if (planningIdx >= 0) {
+        const completedTask = {
+          ...tasks[planningIdx],
+          description: `✅ Plan created: ${totalPhases} phases`,
+          status: 'completed' as TaskStatus,
+          progress: 100,
+        };
+        this.completedTasks.update(completed => [...completed, completedTask]);
+        return tasks.filter((_, i) => i !== planningIdx);
+      }
+      return tasks;
+    });
+  }
+
+  private handlePhaseAdded(event: any): void {
+    const { phaseId, phaseName, name } = event;
+    console.log('Phase added:', event);
+
+    const newTask: ActivityTask = {
+      id: `planning-phase-${phaseId}`,
+      nodeId: phaseId,
+      stage: 1,
+      type: 'milestone',
+      description: `Planning: ${phaseName || name}`,
+      progress: 100,
+      status: 'completed',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+
+    this.activeTasks.update(tasks => [...tasks, newTask]);
+    // Immediately move to completed since it's just a planning notification
+    setTimeout(() => {
+      this.activeTasks.update(tasks => tasks.filter(t => t.id !== newTask.id));
+      this.completedTasks.update(completed => [...completed, newTask]);
+    }, 500);
+  }
+
+  private handleStepAdded(event: any): void {
+    const { stepId, toolName } = event;
+    console.log('Step added:', event);
+
+    const newTask: ActivityTask = {
+      id: `planning-step-${stepId}`,
+      nodeId: stepId,
+      stage: 1,
+      type: 'tool',
+      description: `Planned: ${toolName}`,
+      progress: 100,
+      status: 'completed',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+
+    this.activeTasks.update(tasks => [...tasks, newTask]);
+    // Immediately move to completed since it's just a planning notification
+    setTimeout(() => {
+      this.activeTasks.update(tasks => tasks.filter(t => t.id !== newTask.id));
+      this.completedTasks.update(completed => [...completed, newTask]);
+    }, 500);
   }
 
   private handlePhaseStarted(event: any): void {
@@ -131,6 +323,7 @@ export class AgentActivityService {
     // Increment phase counter
     this.phaseCounter++;
     this.currentStage.set(this.phaseCounter);
+    this.currentPhaseName.set(phaseName);
 
     const newTask: ActivityTask = {
       id: phaseId,
@@ -147,6 +340,9 @@ export class AgentActivityService {
 
     this.activeTasks.update(tasks => [...tasks, newTask]);
     this.updateStageProgress();
+
+    // Update phase status in plannedPhases
+    this.updatePlannedPhaseStatus(phaseId, 'running');
   }
 
   private handlePhaseCompleted(event: any): void {
@@ -167,6 +363,9 @@ export class AgentActivityService {
     });
 
     this.updateStageProgress();
+
+    // Update phase status in plannedPhases
+    this.updatePlannedPhaseStatus(phaseId, 'completed');
   }
 
   private handlePhaseFailed(event: any): void {
@@ -208,6 +407,9 @@ export class AgentActivityService {
     };
 
     this.activeTasks.update(tasks => [...tasks, newTask]);
+
+    // Update step status in plannedPhases
+    this.updatePlannedStepStatus(stepId, 'running');
   }
 
   private handleStepCompleted(event: any): void {
@@ -229,6 +431,9 @@ export class AgentActivityService {
     });
 
     this.updateStageProgress();
+
+    // Update step status in plannedPhases
+    this.updatePlannedStepStatus(stepId, 'completed');
   }
 
   private handleStepFailed(event: any): void {
@@ -252,11 +457,29 @@ export class AgentActivityService {
       }
       return tasks;
     });
+
+    // Update step status in plannedPhases
+    this.updatePlannedStepStatus(stepId, 'failed');
   }
 
-  private handleSessionCompleted(event: any): void {
+  private async handleSessionCompleted(event: any): Promise<void> {
     console.log('Session completed:', event);
     this.isComplete.set(true);
+
+    // Fetch the final result from the API
+    if (this.currentLogId) {
+      try {
+        const result = await firstValueFrom(
+          this.http.get<ResearchResult>(`${environment.apiUrl}/research/results/${this.currentLogId}`)
+        );
+        if (result) {
+          this.researchResult.set(result);
+        }
+      } catch (error) {
+        console.error('Failed to fetch research result:', error);
+      }
+    }
+
     // Disconnect SSE to prevent reconnection attempts after completion
     this.disconnect();
   }
@@ -287,5 +510,24 @@ export class AgentActivityService {
     const totalProgress = tasks.reduce((sum, task) => sum + task.progress, 0);
     const avgProgress = totalProgress / tasks.length;
     this.stageProgress.set(Math.round(avgProgress));
+  }
+
+  private updatePlannedStepStatus(stepId: string, status: string): void {
+    this.plannedPhases.update(phases => {
+      return phases.map(phase => ({
+        ...phase,
+        steps: phase.steps.map(step =>
+          step.id === stepId ? { ...step, status } : step
+        )
+      }));
+    });
+  }
+
+  private updatePlannedPhaseStatus(phaseId: string, status: string): void {
+    this.plannedPhases.update(phases => {
+      return phases.map(phase =>
+        phase.id === phaseId ? { ...phase, status } : phase
+      );
+    });
   }
 }

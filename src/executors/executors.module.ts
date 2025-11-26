@@ -22,7 +22,10 @@ export class ExecutorsModule implements OnModuleInit {
     this.executorRegistry.register('tavily_search', this.toolExecutor);
     this.executorRegistry.register('web_fetch', this.toolExecutor);
 
-    // Register LLM executors
+    // Register LLM executors (all variations the LLM might generate)
     this.executorRegistry.register('synthesize', this.llmExecutor);
+    this.executorRegistry.register('synthesis', this.llmExecutor);
+    this.executorRegistry.register('text_synthesis', this.llmExecutor);
+    this.executorRegistry.register('tavily_synthesize', this.llmExecutor);
   }
 }

@@ -26,6 +26,7 @@ export class StageProgressHeaderComponent {
 
   private getDefaultStageName(stage: number): string {
     const names: Record<number, string> = {
+      0: 'Planning',
       1: 'Analyzing query & searching',
       2: 'Content fetch & selection',
       3: 'Synthesis & answer generation'

@@ -1,10 +1,15 @@
 export type LogEventType =
-  // Planning events
+  // Planning phase events
+  | 'planning_started'
+  | 'planning_iteration'
   | 'plan_created'
   | 'phase_added'
   | 'step_added'
   | 'step_modified'
   | 'step_removed'
+  | 'synthesis_phase_auto_added'
+  | 'auto_recovery'
+  | 'step_auto_added'
   // Execution events
   | 'phase_started'
   | 'phase_completed'

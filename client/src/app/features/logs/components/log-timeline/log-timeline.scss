@@ -1,4 +1,8 @@
-@use 'sass:color';
+// =============================================================================
+// Log Timeline - Digital Hygge Style
+// Warm, structured timeline display
+// =============================================================================
+
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
@@ -12,9 +16,10 @@
   }
 
   &__query {
+    font-family: $font-family-heading;
     font-size: $font-size-2xl;
     font-weight: $font-semibold;
-    color: $text-primary;
+    color: $charcoal;
     margin-bottom: $spacing-md;
     word-wrap: break-word;
     line-height: $line-height-tight;
@@ -28,7 +33,7 @@
   }
 
   &__logid {
-    font-family: 'Monaco', monospace;
+    font-family: $font-family-mono;
     font-size: $font-size-sm;
     color: $text-secondary;
     display: flex;
@@ -37,15 +42,9 @@
   }
 
   &__copy-btn {
-    @include button-reset;
-    color: $primary;
+    @include button-ghost;
     padding: 2px 4px;
-    border-radius: $border-radius-sm;
-    transition: background $transition-fast;
-
-    &:hover {
-      background: $bg-secondary;
-    }
+    color: $moss;
   }
 
   &__duration {
@@ -55,44 +54,45 @@
   }
 
   &__status {
-    padding: 4px 8px;
-    border-radius: $border-radius-sm;
+    padding: 4px 12px;
+    border-radius: $border-radius-full;
     font-size: $font-size-xs;
     font-weight: $font-semibold;
     text-transform: uppercase;
 
     &--completed {
-      background: color.adjust($success, $lightness: 45%);
-      color: color.adjust($success, $lightness: -10%);
+      background: $moss-bg;
+      color: $moss;
     }
 
     &--error {
-      background: color.adjust($error, $lightness: 45%);
-      color: color.adjust($error, $lightness: -10%);
+      background: $error-bg;
+      color: $error;
     }
 
     &--incomplete {
-      background: color.adjust($warning, $lightness: 45%);
-      color: color.adjust($warning, $lightness: -10%);
+      background: $warning-bg;
+      color: $clay;
     }
   }
 
   &__result {
     @include card;
     margin-bottom: $spacing-xl;
-    border-left: 4px solid $success;
+    border-left: 4px solid $moss;
   }
 
   &__result-header {
     padding: $spacing-md $spacing-lg;
-    border-bottom: 1px solid $border-color;
-    background: color.adjust($success, $lightness: 48%);
+    background: $moss-bg;
+    border-radius: $border-radius-lg $border-radius-lg 0 0;
 
     h3 {
       margin: 0;
+      font-family: $font-family-heading;
       font-size: $font-size-lg;
       font-weight: $font-semibold;
-      color: color.adjust($success, $lightness: -15%);
+      color: $moss;
     }
   }
 
@@ -102,14 +102,14 @@
 
   &__answer {
     font-size: $font-size-base;
-    line-height: $line-height-relaxed;
-    color: $text-primary;
+    line-height: $line-height-loose;
+    color: $charcoal;
     white-space: pre-wrap;
     margin-bottom: $spacing-lg;
   }
 
   &__sources {
-    border-top: 1px solid $border-color;
+    border-top: 1px solid $stone-300;
     padding-top: $spacing-md;
 
     h4 {
@@ -132,10 +132,11 @@
       font-size: $font-size-sm;
 
       a {
-        color: $primary;
+        color: $moss;
         text-decoration: none;
 
         &:hover {
+          color: $moss-light;
           text-decoration: underline;
         }
       }
@@ -143,7 +144,7 @@
   }
 
   &__source-relevance {
-    color: $text-tertiary;
+    color: $text-muted;
     font-size: $font-size-xs;
     margin-left: $spacing-xs;
   }
@@ -170,10 +171,7 @@
 
       &__header {
         height: 60px;
-        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s infinite;
-        border-radius: $border-radius-sm;
+        @include skeleton;
       }
     }
   }

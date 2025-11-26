@@ -1,3 +1,8 @@
+// =============================================================================
+// Error Message - Digital Hygge Style
+// Warm error handling with clear actions
+// =============================================================================
+
 @use 'sass:color';
 @use "../../../../../styles/variables" as *;
 @use "../../../../../styles/mixins" as *;
@@ -8,8 +13,8 @@
   align-items: flex-start;
   gap: $spacing-md;
   margin-bottom: $spacing-lg;
-  background-color: color.adjust($error, $lightness: 45%);
-  border-color: $error;
+  background-color: $error-bg;
+  border-left: 4px solid $error;
 
   &__icon {
     font-size: $font-size-2xl;
@@ -21,6 +26,7 @@
   }
 
   &__title {
+    font-family: $font-family-heading;
     font-size: $font-size-lg;
     font-weight: $font-semibold;
     color: color.adjust($error, $lightness: -10%);
@@ -29,7 +35,7 @@
 
   &__text {
     font-size: $font-size-sm;
-    color: $text-primary;
+    color: $charcoal;
     margin: 0;
   }
 
@@ -46,8 +52,8 @@
     color: white;
     font-weight: $font-medium;
     font-size: $font-size-sm;
-    border-radius: $border-radius-sm;
-    transition: background-color $transition-fast;
+    border-radius: $border-radius;
+    transition: all $transition-fast;
 
     &:hover {
       background-color: color.adjust($error, $lightness: -10%);
@@ -55,15 +61,6 @@
   }
 
   &__dismiss {
-    @include button-reset;
-    padding: $spacing-xs $spacing-sm;
-    font-size: $font-size-sm;
-    color: $text-secondary;
-    border-radius: $border-radius-sm;
-    transition: background-color $transition-fast;
-
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.05);
-    }
+    @include button-ghost;
   }
 }

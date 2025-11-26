@@ -1,36 +1,132 @@
+// =============================================================================
+// Digital Hygge Design System - Reset & Base Styles
+// Creates the warm, calm foundation for all components
+// =============================================================================
+
 @use 'variables' as *;
 @use 'mixins' as *;
 
-* {
+// Box sizing reset
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+// Root element
 html {
   font-size: 16px;
+  scroll-behavior: smooth;
+
+  // Subtle warm tint to the scrollbar
+  scrollbar-color: $stone-300 $oatmeal;
+  scrollbar-width: thin;
 }
 
+// Body - the warm canvas
 body {
   font-family: $font-family;
   font-size: $font-size-base;
   line-height: $line-height;
   color: $text-primary;
-  background: $bg-secondary;
+  background: $bg-primary;  // Oatmeal - warm, not sterile white
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
+// Reset buttons - matte, substantial feel
 button {
   @include button-reset;
+  font-family: $font-family;
 }
 
+// Links - organic accent color
 a {
   color: $primary;
   text-decoration: none;
+  transition: color $transition-fast;
 
   &:hover {
     color: $primary-hover;
-    text-decoration: underline;
+  }
+
+  // No underline on hover - cleaner aesthetic
+  &:focus-visible {
+    outline: 2px solid $primary;
+    outline-offset: 2px;
+    border-radius: $border-radius-sm;
+  }
+}
+
+// Images
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+// Lists
+ul, ol {
+  list-style: none;
+}
+
+// Tables
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+// Form elements - inherit typography
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+// Focus styles - moss green focus ring
+:focus-visible {
+  outline: 2px solid $border-focus;
+  outline-offset: 2px;
+}
+
+// Selection - warm highlight
+::selection {
+  background: rgba($moss, 0.2);
+  color: $charcoal;
+}
+
+// Scrollbar styling (Webkit browsers)
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: $oatmeal;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $stone-300;
+  border-radius: $border-radius-sm;
+
+  &:hover {
+    background: $stone-400;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -1,4 +1,8 @@
-@use 'sass:color';
+// =============================================================================
+// Research History - Digital Hygge Style
+// Warm, collapsible history display
+// =============================================================================
+
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
@@ -14,9 +18,10 @@
   }
 
   &__title {
+    font-family: $font-family-heading;
     font-size: $font-size-2xl;
     font-weight: $font-bold;
-    color: $text-primary;
+    color: $charcoal;
     margin: 0;
   }
 
@@ -33,8 +38,8 @@
     display: inline-block;
     width: 2rem;
     height: 2rem;
-    border: 3px solid rgba($primary, 0.2);
-    border-top-color: $primary;
+    border: 3px solid $stone-300;
+    border-top-color: $moss;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -71,7 +76,7 @@
     align-items: center;
     gap: $spacing-sm;
     padding: $spacing-md;
-    background-color: rgba($error, 0.1);
+    background-color: $error-bg;
     border-left: 4px solid $error;
     margin-top: $spacing-md;
   }
@@ -98,19 +103,11 @@
 .history-item {
   @include card;
   padding: $spacing-md;
-  background-color: $bg-primary;
-  border: 1px solid $border;
-  transition: all $transition-base;
   animation: fadeIn 0.3s ease-out;
-
-  &:hover {
-    border-color: color.adjust($border, $lightness: -10%);
-    box-shadow: $shadow-md;
-  }
 
   // Expanded state
   &--expanded {
-    border-color: $primary;
+    box-shadow: $shadow-lg;
   }
 
   // Toggle button
@@ -131,7 +128,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid $border-focus;
+      outline: 2px solid $moss;
       outline-offset: 2px;
       border-radius: $border-radius-sm;
     }
@@ -152,9 +149,10 @@
 
   // Query heading
   &__query {
+    font-family: $font-family-heading;
     font-size: $font-size-lg;
     font-weight: $font-semibold;
-    color: $text-primary;
+    color: $charcoal;
     margin: 0;
     line-height: $line-height;
     word-break: break-word;
@@ -177,16 +175,16 @@
   // Full answer (expanded)
   &__answer {
     padding: $spacing-md;
-    background-color: $bg-secondary;
-    border-radius: $border-radius-sm;
-    border-left: 3px solid $primary;
+    background-color: $stone;
+    border-radius: $border-radius;
+    border-left: 3px solid $moss;
     margin-left: calc($font-size-sm + $spacing-sm);
     animation: expandDown 0.3s ease-out;
   }
 
   .answer-text {
     font-size: $font-size-base;
-    color: $text-primary;
+    color: $charcoal;
     margin: 0;
     line-height: $line-height;
     white-space: pre-wrap;
@@ -213,18 +211,18 @@
   }
 
   .meta-link {
-    color: $primary;
+    color: $moss;
     text-decoration: none;
     font-weight: $font-medium;
     transition: color $transition-fast;
 
     &:hover {
-      color: $primary-hover;
+      color: $moss-light;
       text-decoration: underline;
     }
 
     &:focus-visible {
-      outline: 2px solid $border-focus;
+      outline: 2px solid $moss;
       outline-offset: 2px;
       border-radius: $border-radius-sm;
     }
@@ -241,22 +239,14 @@
     }
 
     &--incomplete {
-      color: $warning;
+      color: $clay;
     }
   }
 }
 
 // Screen reader only content
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+  @include visually-hidden;
 }
 
 // Animations
@@ -272,7 +262,7 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
@@ -328,7 +318,7 @@
 // High contrast mode
 @media (prefers-contrast: high) {
   .history-item {
-    border-width: 2px;
+    border: 2px solid $charcoal;
 
     &--expanded {
       border-width: 3px;

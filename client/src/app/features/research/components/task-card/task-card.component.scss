@@ -1,3 +1,8 @@
+// =============================================================================
+// Task Card - Digital Hygge Style
+// Warm, status-aware task cards with organic colors
+// =============================================================================
+
 @use 'sass:color';
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
@@ -6,7 +11,7 @@
 @keyframes fadeInSlide {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
@@ -15,25 +20,23 @@
 }
 
 @keyframes completePulse {
-  0%,
-  100% {
+  0%, 100% {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.02);
+    transform: scale(1.01);
   }
 }
 
 @keyframes errorShake {
-  0%,
-  100% {
+  0%, 100% {
     transform: translateX(0);
   }
   25% {
-    transform: translateX(-5px);
+    transform: translateX(-4px);
   }
   75% {
-    transform: translateX(5px);
+    transform: translateX(4px);
   }
 }
 
@@ -47,8 +50,7 @@
 }
 
 @keyframes pulse {
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
   }
   50% {
@@ -64,46 +66,42 @@
   gap: $spacing-md;
   padding: $spacing-md;
   margin-bottom: $spacing-sm;
-  background-color: $bg-primary;
-  border: 1px solid $border;
-  transition: all $transition-base;
   animation: fadeInSlide 0.3s ease-out;
 
-  // Status-specific styles
+  // Status-specific styles - using organic Digital Hygge colors
   &--pending {
-    background-color: color.adjust($text-secondary, $lightness: 40%);
-    border-left: 4px solid $text-secondary;
+    background-color: $stone;
+    border-left: 4px solid $slate;
 
     .task-card__icon {
-      color: $text-secondary;
+      color: $slate;
     }
   }
 
   &--running {
-    background-color: color.adjust($primary, $lightness: 45%);
-    border-left: 4px solid $primary;
+    background-color: color.mix($moss-bg, $oatmeal, 50%);
+    border-left: 4px solid $moss;
 
     .task-card__icon {
-      color: $primary;
+      color: $moss;
       animation: spin 2s linear infinite;
     }
   }
 
   &--completed {
-    background-color: color.adjust($success, $lightness: 48%);
-    border-left: 4px solid $success;
+    background-color: $moss-bg;
+    border-left: 4px solid $moss;
     animation: completePulse 0.5s ease-out;
 
     .task-card__icon {
-      color: $success;
+      color: $moss;
       font-weight: $font-bold;
     }
   }
 
   &--error {
-    background-color: color.adjust($error, $lightness: 45%);
+    background-color: $error-bg;
     border-left: 4px solid $error;
-    border-color: $error;
     animation: errorShake 0.5s ease-out;
 
     .task-card__icon {
@@ -112,11 +110,11 @@
   }
 
   &--retrying {
-    background-color: color.adjust($warning, $lightness: 40%);
-    border-left: 4px solid $warning;
+    background-color: $warning-bg;
+    border-left: 4px solid $clay;
 
     .task-card__icon {
-      color: $warning;
+      color: $clay;
       animation: pulse 1.5s ease-in-out infinite;
     }
   }
@@ -133,14 +131,14 @@
   // Content area
   &__content {
     flex: 1;
-    min-width: 0; // Prevent flex item from overflowing
+    min-width: 0;
   }
 
   // Description
   &__description {
     font-size: $font-size-base;
     font-weight: $font-medium;
-    color: $text-primary;
+    color: $charcoal;
     margin-bottom: $spacing-sm;
     line-height: $line-height;
     word-wrap: break-word;
@@ -171,7 +169,7 @@
   }
 
   &__retry-count {
-    color: $warning;
+    color: $clay;
   }
 
   // Error message
@@ -207,7 +205,7 @@
     color: white;
     font-weight: $font-medium;
     font-size: $font-size-sm;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius;
     transition: background-color $transition-fast;
     flex-shrink: 0;
     align-self: flex-start;
@@ -217,7 +215,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid $border-focus;
+      outline: 2px solid $moss;
       outline-offset: 2px;
     }
 
@@ -228,21 +226,20 @@
   }
 }
 
-// Progress bar
+// Progress bar - Digital Hygge style
 .progress-bar {
   flex: 1;
   height: 6px;
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 3px;
+  background-color: $stone-300;
+  border-radius: $border-radius-full;
   overflow: hidden;
 
-  // Status-specific colors
   &--running .progress-fill {
-    background-color: $primary;
+    background-color: $moss;
   }
 
   &--completed .progress-fill {
-    background-color: $success;
+    background-color: $moss;
   }
 
   &--error .progress-fill {
@@ -250,16 +247,16 @@
   }
 
   &--retrying .progress-fill {
-    background-color: $warning;
+    background-color: $clay;
   }
 }
 
 .progress-fill {
   height: 100%;
-  background-color: $primary;
+  background-color: $moss;
   transform-origin: left;
   transition: transform 0.5s ease-in-out;
-  border-radius: 3px;
+  border-radius: $border-radius-full;
   will-change: transform;
 }
 
@@ -299,15 +296,15 @@
     border-width: 2px;
 
     &--pending {
-      border-color: $text-primary;
+      border-color: $charcoal;
     }
 
     &--running {
-      border-color: $primary;
+      border-color: $moss;
     }
 
     &--completed {
-      border-color: $success;
+      border-color: $moss;
     }
 
     &--error {
@@ -315,7 +312,7 @@
     }
 
     &--retrying {
-      border-color: $warning;
+      border-color: $clay;
     }
   }
 }

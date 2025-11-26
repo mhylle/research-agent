@@ -1,3 +1,8 @@
+// =============================================================================
+// Search Input - Digital Hygge Style
+// Warm, inviting input area with organic curves
+// =============================================================================
+
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
@@ -7,6 +12,7 @@
 
   &__wrapper {
     @include card;
+    padding: $spacing-lg;
   }
 
   &__textarea {
@@ -14,16 +20,16 @@
     border: none;
     outline: none;
     font-family: $font-family;
-    font-size: $font-size-base;
+    font-size: $font-size-lg;
     line-height: $line-height;
+    color: $text-primary;
+    background: transparent;
     resize: vertical;
-    min-height: 80px;
-    margin-bottom: $spacing-sm;
+    min-height: 100px;
+    margin-bottom: $spacing-md;
 
     &:focus {
-      outline: 2px solid $border-focus;
-      outline-offset: -2px;
-      border-radius: $border-radius-sm;
+      outline: none;
     }
 
     &::placeholder {
@@ -31,64 +37,43 @@
     }
 
     &:disabled {
-      background: $bg-tertiary;
+      background: $stone;
+      border-radius: $border-radius;
+      padding: $spacing-sm;
       cursor: not-allowed;
     }
   }
 
   &__footer {
     @include flex-between;
+    padding-top: $spacing-sm;
+    border-top: 1px solid $stone-300;
   }
 
   &__counter {
     font-size: $font-size-sm;
-    color: $text-secondary;
+    color: $text-muted;
 
     &--warning {
-      color: $warning;
+      color: $clay;
     }
   }
 
   &__actions {
     display: flex;
-    gap: $spacing-xs;
+    gap: $spacing-sm;
   }
 
   &__clear {
-    @include button-reset;
-    padding: $spacing-xs $spacing-sm;
-    font-size: $font-size-sm;
-    color: $text-secondary;
-    border-radius: $border-radius-sm;
-    transition: background-color $transition-fast;
-
-    &:hover {
-      background-color: $bg-secondary;
-    }
+    @include button-ghost;
   }
 
   &__submit {
-    @include button-reset;
-    padding: $spacing-xs $spacing-md;
-    background-color: $primary;
-    color: white;
-    font-weight: $font-medium;
-    border-radius: $border-radius-sm;
-    transition: background-color $transition-fast;
-
-    &:hover:not(:disabled) {
-      background-color: $primary-hover;
-    }
-
-    &:disabled {
-      background-color: $border;
-      color: $text-muted;
-      cursor: not-allowed;
-    }
+    @include button-primary;
   }
 
   &__hint {
-    margin-top: $spacing-xs;
+    margin-top: $spacing-sm;
     font-size: $font-size-xs;
     color: $text-muted;
     text-align: center;

@@ -1,16 +1,23 @@
+// =============================================================================
+// Tool Node - Digital Hygge Style
+// Warm, compact tool call visualization
+// =============================================================================
+
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
 .tool-node {
-  background: $bg-primary;
-  border-left: 2px solid $timeline-tool;
-  padding: $spacing-sm;
+  background: $oatmeal;
+  border-left: 3px solid $slate;
+  padding: $spacing-sm $spacing-md;
   margin: $spacing-sm 0;
-  border-radius: $border-radius-sm;
-  transition: box-shadow $transition-fast;
+  border-radius: $border-radius;
+  box-shadow: $shadow-sm;
+  transition: all $transition-fast;
 
   &:hover {
-    box-shadow: $shadow-sm;
+    background: $stone;
+    box-shadow: $shadow-md;
   }
 
   &__header {
@@ -27,12 +34,13 @@
 
   &__icon {
     font-size: $font-size-base;
+    color: $slate;
   }
 
   &__name {
     font-weight: $font-medium;
     font-size: $font-size-sm;
-    color: $timeline-tool;
+    color: $charcoal;
   }
 
   &__meta {
@@ -44,7 +52,10 @@
   &__duration {
     font-size: $font-size-xs;
     color: $text-muted;
-    font-family: 'Monaco', monospace;
+    font-family: $font-family-mono;
+    background: $stone;
+    padding: 2px 6px;
+    border-radius: $border-radius-sm;
   }
 
   &__expand-icon {
@@ -59,7 +70,26 @@
 
   &__content {
     padding-top: $spacing-sm;
-    border-top: 1px solid $border;
+    border-top: 1px solid $stone-300;
     margin-top: $spacing-sm;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .tool-node {
+    transition: none;
+
+    &__expand-icon {
+      transition: none;
+    }
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .tool-node {
+    border-left-width: 4px;
+    border: 1px solid $charcoal;
   }
 }

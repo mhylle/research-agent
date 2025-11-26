@@ -1,10 +1,14 @@
-@use 'sass:color';
+// =============================================================================
+// Sources List - Digital Hygge Style
+// Clean, organized source display
+// =============================================================================
+
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
 .sources-list {
   margin-top: $spacing-md;
-  border-top: 1px solid $border;
+  border-top: 1px solid $stone-300;
   padding-top: $spacing-md;
 
   &__toggle {
@@ -12,13 +16,14 @@
     @include flex-between;
     width: 100%;
     padding: $spacing-sm;
-    background: $bg-secondary;
-    border-radius: $border-radius-sm;
+    background: $stone;
+    border-radius: $border-radius;
     font-weight: $font-medium;
+    color: $charcoal;
     transition: background-color $transition-fast;
 
     &:hover {
-      background-color: $bg-tertiary;
+      background-color: $stone-300;
     }
   }
 
@@ -33,7 +38,7 @@
 
   &__item {
     padding: $spacing-sm;
-    border-bottom: 1px solid $border;
+    border-bottom: 1px solid $stone-300;
 
     &:last-child {
       border-bottom: none;
@@ -47,10 +52,11 @@
 
   &__title {
     font-weight: $font-medium;
-    color: $primary;
+    color: $moss;
+    transition: color $transition-fast;
 
     &:hover {
-      color: $primary-hover;
+      color: $moss-light;
     }
   }
 
@@ -58,20 +64,20 @@
     padding: 2px 8px;
     font-size: $font-size-xs;
     font-weight: $font-medium;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-full;
 
     &--high {
-      background-color: color.adjust($success, $lightness: 40%);
-      color: color.adjust($success, $lightness: -20%);
+      background-color: $moss-bg;
+      color: $moss;
     }
 
     &--medium {
-      background-color: color.adjust($warning, $lightness: 40%);
-      color: color.adjust($warning, $lightness: -20%);
+      background-color: $warning-bg;
+      color: $clay;
     }
 
     &--low {
-      background-color: $bg-tertiary;
+      background-color: $stone;
       color: $text-secondary;
     }
   }

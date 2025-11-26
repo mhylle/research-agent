@@ -1,11 +1,19 @@
+// =============================================================================
+// Timeline Graph - Digital Hygge Style
+// Warm, informative visualization with organic colors
+// =============================================================================
+
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as *;
+
 .timeline-graph-container {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: $oatmeal;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-md;
   overflow: hidden;
 }
 
@@ -13,37 +21,27 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  padding: $spacing-sm $spacing-md;
+  background: $stone;
+
+  label {
+    font-size: $font-size-sm;
+    font-weight: $font-medium;
+    color: $charcoal;
+    margin-right: $spacing-xs;
+  }
 }
 
 .control-group {
   display: flex;
   align-items: center;
-  gap: 8px;
-
-  label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    margin-right: 4px;
-  }
+  gap: $spacing-xs;
 }
 
 .btn-control {
-  padding: 6px 12px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #f3f4f6;
-    border-color: #9ca3af;
-  }
+  @include button-secondary;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-base;
 
   &:active {
     transform: scale(0.95);
@@ -55,17 +53,18 @@
 }
 
 .view-mode-select {
-  padding: 6px 12px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: $spacing-xs $spacing-sm;
+  background: $oatmeal;
+  border: 1px solid $stone-300;
+  border-radius: $border-radius;
+  font-size: $font-size-sm;
   cursor: pointer;
   outline: none;
+  color: $charcoal;
 
   &:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: $moss;
+    box-shadow: 0 0 0 3px rgba($moss, 0.15);
   }
 }
 
@@ -73,7 +72,7 @@
   position: relative;
   flex: 1;
   overflow: hidden;
-  background: #ffffff;
+  background: $oatmeal;
 }
 
 .timeline-svg {
@@ -85,22 +84,22 @@
   :deep(.y-axis) {
     path,
     line {
-      stroke: #d1d5db;
+      stroke: $stone-300;
     }
 
     text {
-      fill: #6b7280;
+      fill: $text-secondary;
       font-size: 12px;
     }
   }
 
   :deep(.node-bar) {
-    stroke: rgba(0, 0, 0, 0.1);
+    stroke: rgba($charcoal, 0.1);
     stroke-width: 1px;
     transition: opacity 0.2s, stroke 0.2s;
 
     &:hover {
-      stroke: rgba(0, 0, 0, 0.3);
+      stroke: rgba($charcoal, 0.3);
       stroke-width: 2px;
     }
   }
@@ -131,13 +130,12 @@
 .node-details-panel {
   position: absolute;
   top: 70px;
-  right: 16px;
+  right: $spacing-md;
   width: 350px;
   max-height: calc(100% - 100px);
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: $oatmeal;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-elevated;
   overflow: hidden;
   z-index: 10;
 }
@@ -146,39 +144,37 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  padding: $spacing-sm $spacing-md;
+  background: $stone;
 
   h3 {
     margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #111827;
+    font-family: $font-family-heading;
+    font-size: $font-size-base;
+    font-weight: $font-semibold;
+    color: $charcoal;
   }
 
   .close-btn {
+    @include button-reset;
     padding: 0;
     width: 28px;
     height: 28px;
-    background: none;
-    border: none;
-    font-size: 24px;
+    font-size: 20px;
     line-height: 1;
-    color: #6b7280;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s;
+    color: $text-secondary;
+    border-radius: $border-radius-sm;
+    transition: all $transition-fast;
 
     &:hover {
-      background: #e5e7eb;
-      color: #111827;
+      background: $stone-300;
+      color: $charcoal;
     }
   }
 }
 
 .panel-content {
-  padding: 16px;
+  padding: $spacing-md;
   max-height: 500px;
   overflow-y: auto;
 }
@@ -187,68 +183,68 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f3f4f6;
+  padding: $spacing-xs 0;
+  border-bottom: 1px solid $stone-300;
 
   &:last-child {
     border-bottom: none;
   }
 
   .label {
-    font-size: 13px;
-    font-weight: 500;
-    color: #6b7280;
+    font-size: $font-size-sm;
+    font-weight: $font-medium;
+    color: $text-secondary;
   }
 
   .value {
-    font-size: 13px;
-    color: #111827;
-    font-weight: 400;
+    font-size: $font-size-sm;
+    color: $charcoal;
+    font-weight: $font-normal;
     text-align: right;
 
     &.status {
       padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
+      border-radius: $border-radius-full;
+      font-size: $font-size-xs;
+      font-weight: $font-medium;
 
       &.pending {
-        background: #f3f4f6;
-        color: #6b7280;
+        background: $stone;
+        color: $slate;
       }
 
       &.running {
-        background: #dbeafe;
-        color: #1e40af;
+        background: rgba($moss, 0.15);
+        color: $moss;
       }
 
       &.completed {
-        background: #d1fae5;
-        color: #065f46;
+        background: $moss-bg;
+        color: $moss;
       }
 
       &.error {
-        background: #fee2e2;
-        color: #991b1b;
+        background: $error-bg;
+        color: $error;
       }
 
       &.retrying {
-        background: #fef3c7;
-        color: #92400e;
+        background: $warning-bg;
+        color: $clay;
       }
     }
   }
 
   .node-icon {
-    font-size: 16px;
-    margin-right: 4px;
+    font-size: $font-size-base;
+    margin-right: $spacing-xs;
   }
 }
 
 .detail-section {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $stone-300;
 
   &:first-child {
     margin-top: 0;
@@ -257,21 +253,21 @@
   }
 
   h4 {
-    margin: 0 0 8px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #374151;
+    margin: 0 0 $spacing-xs 0;
+    font-family: $font-family-heading;
+    font-size: $font-size-sm;
+    font-weight: $font-semibold;
+    color: $charcoal;
   }
 
   .code-block {
     margin: 0;
-    padding: 12px;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    font-size: 12px;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    color: #111827;
+    padding: $spacing-sm;
+    background: $stone;
+    border-radius: $border-radius;
+    font-size: $font-size-xs;
+    font-family: $font-family-mono;
+    color: $charcoal;
     white-space: pre-wrap;
     word-break: break-word;
     max-height: 200px;
@@ -280,9 +276,8 @@
 
   &.error {
     .code-block {
-      background: #fef2f2;
-      border-color: #fecaca;
-      color: #991b1b;
+      background: $error-bg;
+      color: $error;
     }
   }
 }
@@ -290,21 +285,18 @@
 .hover-tooltip {
   position: fixed;
   max-width: 500px;
-  padding: 12px;
-  background: rgba(17, 24, 39, 0.98);
-  color: white;
-  border-radius: 8px;
-  font-size: 12px;
+  padding: $spacing-sm;
+  background: $charcoal;
+  color: $oatmeal;
+  border-radius: $border-radius;
+  font-size: $font-size-xs;
   pointer-events: none;
   z-index: 1000;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: box-shadow 0.2s, border-color 0.2s;
+  box-shadow: $shadow-floating;
 
   &.pinned {
     pointer-events: auto;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-    border: 2px solid #60a5fa;
+    box-shadow: $shadow-floating, 0 0 0 2px $moss;
     max-width: 600px;
   }
 
@@ -313,94 +305,94 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: $spacing-xs;
 
       strong {
-        font-size: 14px;
-        color: #60a5fa;
+        font-size: $font-size-sm;
+        color: $moss-light;
       }
 
       .tooltip-close {
+        @include button-reset;
         padding: 0;
         width: 24px;
         height: 24px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-        color: white;
-        font-size: 18px;
+        background: rgba($oatmeal, 0.1);
+        border: 1px solid rgba($oatmeal, 0.2);
+        border-radius: $border-radius-sm;
+        color: $oatmeal;
+        font-size: 16px;
         line-height: 1;
-        cursor: pointer;
-        transition: all 0.2s;
+        transition: all $transition-fast;
 
         &:hover {
-          background: rgba(239, 68, 68, 0.3);
-          border-color: #ef4444;
+          background: rgba($error, 0.3);
+          border-color: $error;
         }
       }
     }
 
     .tooltip-meta {
       display: flex;
-      gap: 12px;
+      gap: $spacing-sm;
       align-items: center;
-      margin-bottom: 8px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: $spacing-xs;
+      padding-bottom: $spacing-xs;
+      border-bottom: 1px solid rgba($oatmeal, 0.1);
 
       .status-badge {
         padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 500;
+        border-radius: $border-radius-full;
+        font-size: $font-size-xs;
+        font-weight: $font-medium;
 
         &.completed {
-          background: rgba(16, 185, 129, 0.3);
-          color: #6ee7b7;
+          background: rgba($moss, 0.3);
+          color: $moss-bg;
         }
 
         &.running {
-          background: rgba(59, 130, 246, 0.3);
-          color: #93c5fd;
+          background: rgba($moss, 0.3);
+          color: $moss-bg;
         }
 
         &.error {
-          background: rgba(239, 68, 68, 0.3);
+          background: rgba($error, 0.3);
           color: #fca5a5;
         }
       }
 
       .pin-indicator {
         padding: 2px 8px;
-        background: rgba(96, 165, 250, 0.2);
-        border: 1px solid rgba(96, 165, 250, 0.3);
-        border-radius: 12px;
-        font-size: 11px;
-        color: #93c5fd;
+        background: rgba($moss, 0.2);
+        border: 1px solid rgba($moss, 0.3);
+        border-radius: $border-radius-full;
+        font-size: $font-size-xs;
+        color: $moss-bg;
       }
     }
 
     .tooltip-section {
-      margin-top: 8px;
+      margin-top: $spacing-xs;
 
       .section-header {
-        font-weight: 600;
-        color: #9ca3af;
-        font-size: 11px;
+        font-weight: $font-semibold;
+        color: $slate-light;
+        font-size: $font-size-xs;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        margin-bottom: 4px;
+        margin-bottom: $spacing-xs;
       }
 
       .tooltip-code {
         margin: 0;
-        padding: 8px;
+        padding: $spacing-xs;
         background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        font-size: 11px;
-        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-        color: #e5e7eb;
+        border: 1px solid rgba($oatmeal, 0.1);
+        border-radius: $border-radius-sm;
+        font-size: $font-size-xs;
+        font-family: $font-family-mono;
+        color: $stone;
         white-space: pre-wrap;
         word-break: break-word;
         max-height: 200px;
@@ -410,14 +402,14 @@
 
       .metrics-grid {
         display: flex;
-        gap: 12px;
-        font-size: 11px;
-        color: #d1d5db;
+        gap: $spacing-sm;
+        font-size: $font-size-xs;
+        color: $stone;
 
         span {
-          padding: 4px 8px;
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 4px;
+          padding: $spacing-xs;
+          background: rgba($oatmeal, 0.05);
+          border-radius: $border-radius-sm;
         }
       }
     }
@@ -433,49 +425,48 @@
 
 .panel-content::-webkit-scrollbar-track,
 .code-block::-webkit-scrollbar-track {
-  background: #f3f4f6;
+  background: $stone;
 }
 
 .panel-content::-webkit-scrollbar-thumb,
 .code-block::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: $stone-300;
   border-radius: 3px;
 
   &:hover {
-    background: #9ca3af;
+    background: $stone-400;
   }
 }
 
 // Enhanced Extraction Metadata Styling
 .extraction-metadata {
-  background: #f0f9ff;
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #bae6fd;
+  background: rgba($moss, 0.08);
+  padding: $spacing-md;
+  border-radius: $border-radius;
 
   h4 {
-    color: #0369a1;
-    margin-bottom: 12px;
+    color: $moss;
+    margin-bottom: $spacing-sm;
   }
 
   .metadata-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 0;
-    font-size: 13px;
+    padding: $spacing-xs 0;
+    font-size: $font-size-sm;
 
     .label {
-      font-weight: 500;
-      color: #0c4a6e;
+      font-weight: $font-medium;
+      color: $charcoal;
     }
 
     .value {
-      color: #0369a1;
-      font-family: 'Monaco', 'Menlo', monospace;
+      color: $moss;
+      font-family: $font-family-mono;
 
       &.screenshot-path {
-        font-size: 11px;
+        font-size: $font-size-xs;
         max-width: 300px;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -485,83 +476,79 @@
   }
 
   .extraction-method {
-    margin-top: 12px;
-    padding: 12px;
-    background: white;
-    border-radius: 6px;
-    border: 1px solid #e0f2fe;
+    margin-top: $spacing-sm;
+    padding: $spacing-sm;
+    background: $oatmeal;
+    border-radius: $border-radius-sm;
 
     h5 {
-      margin: 0 0 8px 0;
-      font-size: 13px;
-      font-weight: 600;
-      color: #0c4a6e;
+      margin: 0 0 $spacing-xs 0;
+      font-size: $font-size-sm;
+      font-weight: $font-semibold;
+      color: $charcoal;
     }
 
     .method-details {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      font-size: 12px;
-      color: #64748b;
+      gap: $spacing-sm;
+      font-size: $font-size-xs;
+      color: $text-secondary;
 
       span {
-        padding: 4px 8px;
-        background: #f8fafc;
-        border-radius: 4px;
-        border: 1px solid #e2e8f0;
+        padding: $spacing-xs;
+        background: $stone;
+        border-radius: $border-radius-sm;
       }
 
       .status-badge {
-        font-weight: 500;
+        font-weight: $font-medium;
         border: none;
 
         &.success {
-          background: #d1fae5;
-          color: #065f46;
+          background: $moss-bg;
+          color: $moss;
         }
 
         &.failed {
-          background: #fee2e2;
-          color: #991b1b;
+          background: $error-bg;
+          color: $error;
         }
       }
     }
   }
 
   .screenshot-section {
-    margin-top: 16px;
-    padding: 12px;
-    background: white;
-    border-radius: 6px;
-    border: 1px solid #e0f2fe;
+    margin-top: $spacing-md;
+    padding: $spacing-sm;
+    background: $oatmeal;
+    border-radius: $border-radius-sm;
 
     h5 {
-      margin: 0 0 12px 0;
-      font-size: 13px;
-      font-weight: 600;
-      color: #0c4a6e;
+      margin: 0 0 $spacing-sm 0;
+      font-size: $font-size-sm;
+      font-weight: $font-semibold;
+      color: $charcoal;
     }
 
     .screenshot-container {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: $spacing-xs;
 
       .screenshot-image {
         max-width: 100%;
         height: auto;
-        border-radius: 4px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        background: #f8fafc;
+        border-radius: $border-radius-sm;
+        box-shadow: $shadow-sm;
+        background: $stone;
       }
 
       .screenshot-path-info {
         margin: 0;
-        font-size: 11px;
-        color: #94a3b8;
-        font-family: monospace;
+        font-size: $font-size-xs;
+        color: $text-muted;
+        font-family: $font-family-mono;
         word-break: break-all;
       }
     }

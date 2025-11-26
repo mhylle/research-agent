@@ -1,32 +1,37 @@
-@use 'sass:color';
+// =============================================================================
+// App Header - Digital Hygge Style
+// Warm, substantial header with serif branding
+// =============================================================================
+
 @use '../../../../styles/variables' as *;
 @use '../../../../styles/mixins' as *;
 
 .app-header {
   @include flex-between;
   padding: $spacing-md $spacing-lg;
-  background: $bg-primary;
-  border-bottom: 1px solid $border;
+  background: $oatmeal;
   box-shadow: $shadow-sm;
 
   &__title {
     margin: 0;
+    font-family: $font-family-heading;
     font-size: $font-size-xl;
     font-weight: $font-bold;
   }
 
   &__logo {
-    color: $text-primary;
+    color: $charcoal;
     text-decoration: none;
+    transition: color $transition-fast;
 
     &:hover {
-      color: $primary;
+      color: $moss;
     }
   }
 
   &__nav {
     display: flex;
-    gap: $spacing-md;
+    gap: $spacing-xs;
   }
 
   &__link {
@@ -34,17 +39,18 @@
     color: $text-secondary;
     text-decoration: none;
     font-weight: $font-medium;
-    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    border-radius: $border-radius;
     transition: all $transition-fast;
 
     &:hover {
-      color: $primary;
-      background: $bg-secondary;
+      color: $charcoal;
+      background: $stone;
     }
 
     &--active {
-      color: $primary;
-      background: color.adjust($primary, $lightness: 45%);
+      color: $moss;
+      background: $moss-bg;
     }
   }
 }

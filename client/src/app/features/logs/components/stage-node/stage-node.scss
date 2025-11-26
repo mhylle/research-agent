@@ -1,21 +1,26 @@
+// =============================================================================
+// Stage Node - Digital Hygge Style
+// Warm, structured stage visualization
+// =============================================================================
+
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
 .stage-node {
   @include card;
-  border-left: 4px solid var(--stage-color);
+  border-left: 4px solid var(--stage-color, $moss);
   margin-bottom: $spacing-lg;
   position: relative;
   transition: box-shadow $transition-base;
 
   &:hover {
-    box-shadow: $shadow-md;
+    box-shadow: $shadow-lg;
   }
 
   &__header {
     @include flex-between;
     cursor: pointer;
-    padding: $spacing-md;
+    padding: $spacing-md $spacing-lg;
   }
 
   &__title {
@@ -29,8 +34,9 @@
   }
 
   &__name {
+    font-family: $font-family-heading;
     font-weight: $font-semibold;
-    color: $text-primary;
+    color: $charcoal;
     font-size: $font-size-lg;
   }
 
@@ -43,10 +49,10 @@
   &__duration {
     font-size: $font-size-sm;
     color: $text-secondary;
-    padding: 4px 8px;
-    background: $bg-tertiary;
-    border-radius: $border-radius-sm;
-    font-family: 'Monaco', monospace;
+    padding: 4px 10px;
+    background: $stone;
+    border-radius: $border-radius;
+    font-family: $font-family-mono;
   }
 
   &__expand-icon {
@@ -59,8 +65,8 @@
   }
 
   &__content {
-    padding: 0 $spacing-md $spacing-md;
-    border-top: 1px solid $border;
+    padding: 0 $spacing-lg $spacing-lg;
+    border-top: 1px solid $stone-300;
   }
 
   &__io {
@@ -70,22 +76,69 @@
   &__children {
     margin-top: $spacing-md;
     padding-left: $spacing-md;
-    border-left: 2px dashed $timeline-line;
+    border-left: 2px dashed $stone-300;
   }
 
   &__children-title {
+    font-family: $font-family-heading;
     font-size: $font-size-sm;
     font-weight: $font-semibold;
     color: $text-secondary;
     margin-bottom: $spacing-sm;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   &__connector {
     position: absolute;
-    left: 20px;
+    left: 22px;
     bottom: -$spacing-lg;
     width: 2px;
     height: $spacing-lg;
-    background: $timeline-line;
+    background: $stone-300;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .stage-node {
+    transition: none;
+
+    &__expand-icon {
+      transition: none;
+    }
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .stage-node {
+    border-left-width: 5px;
+    border: 2px solid $charcoal;
+  }
+}
+
+// Responsive design
+@media (max-width: $breakpoint-md) {
+  .stage-node {
+    &__header {
+      padding: $spacing-sm $spacing-md;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-sm;
+    }
+
+    &__name {
+      font-size: $font-size-base;
+    }
+
+    &__meta {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    &__content {
+      padding: 0 $spacing-md $spacing-md;
+    }
   }
 }

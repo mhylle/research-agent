@@ -1,3 +1,8 @@
+// =============================================================================
+// Research Page - Digital Hygge Style
+// Calm, warm research experience
+// =============================================================================
+
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
 
@@ -11,13 +16,14 @@
   }
 
   &__title {
-    font-size: $font-size-3xl;
+    font-family: $font-family-heading;
+    font-size: $font-size-4xl;
     font-weight: $font-bold;
-    color: $text-primary;
+    color: $charcoal;
     margin-bottom: $spacing-sm;
 
     @include md {
-      font-size: calc($font-size-3xl * 1.5);
+      font-size: calc($font-size-4xl * 1.25);
     }
   }
 
@@ -25,6 +31,9 @@
     font-size: $font-size-lg;
     color: $text-secondary;
     margin: 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   &__history-section {
@@ -36,9 +45,10 @@
   }
 
   &__results-title {
+    font-family: $font-family-heading;
     font-size: $font-size-xl;
     font-weight: $font-semibold;
-    color: $text-primary;
+    color: $charcoal;
     margin-bottom: $spacing-md;
   }
 
@@ -76,20 +86,11 @@
   }
 
   &__back-button {
-    padding: $spacing-md $spacing-lg;
-    font-size: $font-size-base;
-    font-weight: $font-medium;
-    color: $text-primary;
-    background: $bg-secondary;
-    border: 1px solid $border;
-    border-radius: $border-radius;
-    cursor: pointer;
-    transition: all $transition-base;
+    @include button-secondary;
+    padding: $spacing-sm $spacing-lg;
 
     &:hover {
-      background: $bg-tertiary;
-      border-color: $primary;
-      color: $primary;
+      color: $moss;
     }
 
     &:active {

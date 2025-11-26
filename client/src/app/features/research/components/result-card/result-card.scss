@@ -1,24 +1,25 @@
+// =============================================================================
+// Result Card - Digital Hygge Style
+// Warm card with soft shadows, no harsh borders
+// =============================================================================
+
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
 .result-card {
   @include card;
   margin-bottom: $spacing-md;
-  transition: box-shadow $transition-base;
-
-  &:hover {
-    box-shadow: $shadow-md;
-  }
 
   &__header {
     @include flex-between;
-    margin-bottom: $spacing-sm;
+    margin-bottom: $spacing-md;
   }
 
   &__query {
-    font-size: $font-size-sm;
-    color: $text-secondary;
-    font-weight: $font-medium;
+    font-family: $font-family-heading;
+    font-size: $font-size-base;
+    font-weight: $font-semibold;
+    color: $charcoal;
     @include truncate;
     max-width: 70%;
     margin: 0;
@@ -38,8 +39,8 @@
 
   &__meta {
     @include flex-between;
-    padding-top: $spacing-sm;
-    border-top: 1px solid $border;
+    padding-top: $spacing-md;
+    border-top: 1px solid $stone-300;
   }
 
   &__execution-time {
@@ -53,20 +54,17 @@
   }
 
   &__action {
-    @include button-reset;
-    padding: $spacing-xs $spacing-sm;
-    font-size: $font-size-sm;
-    color: $primary;
-    border-radius: $border-radius-sm;
-    transition: background-color $transition-fast;
+    @include button-ghost;
+    color: $moss;
 
     &:hover {
-      background-color: $bg-secondary;
+      background: $moss-bg;
+      color: $moss;
     }
 
     &--link {
       text-decoration: none;
-      display: inline-block;
+      display: inline-flex;
     }
   }
 }

@@ -1,3 +1,8 @@
+// =============================================================================
+// Loading Indicator - Digital Hygge Style
+// Calm, warm loading experience
+// =============================================================================
+
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
@@ -12,16 +17,17 @@
   &__bar {
     width: 100%;
     height: 8px;
-    background-color: $bg-tertiary;
-    border-radius: $border-radius;
+    background-color: $stone-300;
+    border-radius: $border-radius-full;
     overflow: hidden;
     margin-bottom: $spacing-xs;
   }
 
   &__fill {
     height: 100%;
-    background: linear-gradient(90deg, $primary, $success);
+    background: linear-gradient(90deg, $moss, $moss-light);
     transition: width $transition-slow;
+    border-radius: $border-radius-full;
   }
 
   &__stage-number {
@@ -46,9 +52,10 @@
   }
 
   &__label {
+    font-family: $font-family-heading;
     font-size: $font-size-lg;
     font-weight: $font-semibold;
-    color: $text-primary;
+    color: $charcoal;
     margin-bottom: $spacing-xs;
   }
 
@@ -65,12 +72,12 @@
   }
 }
 
-// Spinner animation
+// Spinner animation - Digital Hygge moss green
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid $bg-tertiary;
-  border-top-color: $primary;
+  border: 3px solid $stone-300;
+  border-top-color: $moss;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

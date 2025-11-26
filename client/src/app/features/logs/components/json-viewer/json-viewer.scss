@@ -1,23 +1,27 @@
+// =============================================================================
+// JSON Viewer - Digital Hygge Style
+// Warm dark theme with organic syntax colors
+// =============================================================================
+
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
 .json-viewer {
-  background: #1e1e1e;
-  border-radius: $border-radius-sm;
+  background: $charcoal;
+  border-radius: $border-radius;
   overflow: hidden;
   margin: $spacing-sm 0;
 
   &__header {
     @include flex-between;
-    background: #2d2d2d;
+    background: rgba(255, 255, 255, 0.05);
     padding: $spacing-xs $spacing-sm;
-    border-bottom: 1px solid #3d3d3d;
   }
 
   &__title {
     font-size: $font-size-sm;
-    color: #9cdcfe;
-    font-family: 'Monaco', 'Courier New', monospace;
+    color: $moss-light;
+    font-family: $font-family-mono;
   }
 
   &__actions {
@@ -28,14 +32,14 @@
   &__copy-btn {
     @include button-reset;
     font-size: $font-size-xs;
-    color: #858585;
+    color: $slate-light;
     padding: 2px 8px;
     border-radius: $border-radius-sm;
-    transition: color $transition-fast;
+    transition: all $transition-fast;
 
     &:hover {
-      color: #d4d4d4;
-      background: rgba(255,255,255,0.1);
+      color: $oatmeal;
+      background: rgba(255, 255, 255, 0.1);
     }
   }
 
@@ -43,10 +47,10 @@
     padding: $spacing-sm;
     max-height: 300px;
     overflow: auto;
-    font-family: 'Monaco', 'Courier New', monospace;
+    font-family: $font-family-mono;
     font-size: $font-size-sm;
     line-height: 1.5;
-    color: #d4d4d4;
+    color: $oatmeal;
 
     &--expanded {
       max-height: none;
@@ -62,12 +66,11 @@
   &__expand {
     text-align: center;
     padding: $spacing-xs;
-    background: #2d2d2d;
-    border-top: 1px solid #3d3d3d;
+    background: rgba(255, 255, 255, 0.05);
 
     button {
       @include button-reset;
-      color: #9cdcfe;
+      color: $moss-light;
       font-size: $font-size-xs;
       padding: $spacing-xs;
 
@@ -78,11 +81,11 @@
   }
 }
 
-// JSON syntax highlighting
+// JSON syntax highlighting - Digital Hygge organic colors
 :host ::ng-deep {
-  .json-key { color: #9cdcfe; }
-  .json-string { color: #ce9178; }
-  .json-number { color: #b5cea8; }
-  .json-boolean { color: #569cd6; }
-  .json-null { color: #569cd6; }
+  .json-key { color: $moss-light; }        // Moss green for keys
+  .json-string { color: #d4a276; }          // Warm terracotta for strings
+  .json-number { color: #a8c686; }          // Soft sage for numbers
+  .json-boolean { color: #7eb8da; }         // Calm blue for booleans
+  .json-null { color: $slate-light; }       // Slate for null
 }

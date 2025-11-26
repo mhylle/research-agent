@@ -1,10 +1,13 @@
-@use 'sass:color';
+// =============================================================================
+// Logs List - Digital Hygge Style
+// Warm sidebar with clean log entries
+// =============================================================================
+
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
 
 .logs-list {
-  background: $bg-primary;
-  border-right: 1px solid $border;
+  background: $oatmeal;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -12,22 +15,11 @@
 
   &__search {
     padding: $spacing-md;
-    border-bottom: 1px solid $border;
     flex-shrink: 0;
   }
 
   &__search-input {
-    width: 100%;
-    padding: $spacing-sm;
-    border: 1px solid $border;
-    border-radius: $border-radius-sm;
-    font-size: $font-size-sm;
-    font-family: $font-family;
-
-    &:focus {
-      outline: 2px solid $primary;
-      border-color: $primary;
-    }
+    @include input-field;
   }
 
   &__count {
@@ -48,23 +40,23 @@
 
   &__session-item {
     padding: $spacing-sm $spacing-md;
-    border-bottom: 1px solid $border;
     cursor: pointer;
     transition: background-color $transition-fast;
+    border-bottom: 1px solid $stone-300;
 
     &:hover {
-      background-color: $bg-secondary;
+      background-color: $stone;
     }
 
     &--active {
-      background-color: color.adjust($primary, $lightness: 45%);
-      border-left: 3px solid $primary;
+      background-color: $moss-bg;
+      border-left: 3px solid $moss;
     }
   }
 
   &__query {
     font-weight: $font-medium;
-    color: $text-primary;
+    color: $charcoal;
     margin-bottom: $spacing-xs;
     word-wrap: break-word;
     line-height: $line-height-tight;
@@ -77,7 +69,7 @@
   }
 
   &__logid {
-    font-family: 'Monaco', monospace;
+    font-family: $font-family-mono;
     font-size: $font-size-xs;
     color: $text-muted;
   }
@@ -98,10 +90,10 @@
 
   &__duration {
     padding: 2px 6px;
-    background: $bg-tertiary;
+    background: $stone;
     border-radius: $border-radius-sm;
     font-weight: $font-medium;
-    font-family: 'Monaco', monospace;
+    font-family: $font-family-mono;
   }
 
   &__empty {
@@ -115,17 +107,14 @@
   }
 }
 
-// Loading skeletons
+// Loading skeletons - Digital Hygge style
 .skeleton-item {
   padding: $spacing-sm $spacing-md;
-  border-bottom: 1px solid $border;
+  border-bottom: 1px solid $stone-300;
 }
 
 .skeleton-line {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: $border-radius-sm;
+  @include skeleton;
 
   &--title {
     height: 18px;

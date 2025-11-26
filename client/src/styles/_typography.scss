@@ -1,29 +1,145 @@
+// =============================================================================
+// Digital Hygge Design System - Typography
+// Serif for structure (headings), Sans-serif for function (body)
+// =============================================================================
+
 @use 'variables' as *;
 @use 'mixins' as *;
 
+// Headings - Merriweather (Serif)
+// Adds sophistication, authority, and breaks the "tech" feel
 h1, h2, h3, h4, h5, h6 {
-  font-weight: $font-semibold;
+  font-family: $font-family-heading;
+  font-weight: $font-bold;
   line-height: $line-height-tight;
+  color: $charcoal;
   margin-bottom: $spacing-sm;
+  letter-spacing: -0.01em;
 }
 
 h1 {
-  font-size: $font-size-3xl;
+  font-size: $font-size-4xl;
+
+  @include md {
+    font-size: calc($font-size-4xl * 1.2);
+  }
 }
 
 h2 {
-  font-size: $font-size-2xl;
+  font-size: $font-size-3xl;
 }
 
 h3 {
+  font-size: $font-size-2xl;
+}
+
+h4 {
   font-size: $font-size-xl;
 }
 
-p {
-  margin-bottom: $spacing-sm;
+h5 {
+  font-size: $font-size-lg;
 }
 
+h6 {
+  font-size: $font-size-base;
+  font-weight: $font-semibold;
+}
+
+// Paragraphs
+p {
+  margin-bottom: $spacing-sm;
+  color: $text-primary;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// Small text
 small {
   font-size: $font-size-sm;
   color: $text-secondary;
+}
+
+// Strong/Bold
+strong, b {
+  font-weight: $font-semibold;
+}
+
+// Emphasis
+em, i {
+  font-style: italic;
+}
+
+// Code - monospace with warm background
+code {
+  font-family: $font-family-mono;
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+  background: $stone;
+  border-radius: $border-radius-sm;
+  color: $charcoal;
+}
+
+// Preformatted text
+pre {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  padding: $spacing-md;
+  background: $stone;
+  border-radius: $border-radius;
+  overflow-x: auto;
+  line-height: 1.5;
+
+  code {
+    padding: 0;
+    background: none;
+    border-radius: 0;
+  }
+}
+
+// Blockquotes - subtle left border with moss accent
+blockquote {
+  padding-left: $spacing-md;
+  margin: $spacing-md 0;
+  border-left: 3px solid $moss;
+  color: $text-secondary;
+  font-style: italic;
+}
+
+// Horizontal rule - subtle divider
+hr {
+  border: none;
+  height: 1px;
+  background: $stone-300;
+  margin: $spacing-lg 0;
+}
+
+// Links within text
+.text-link {
+  color: $moss;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $moss-light;
+  }
+}
+
+// Label text (for forms, metadata)
+.label {
+  font-size: $font-size-sm;
+  font-weight: $font-medium;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+// Caption text
+.caption {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  line-height: $line-height;
 }

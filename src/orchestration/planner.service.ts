@@ -49,7 +49,7 @@ export class PlannerService {
       timestamp: new Date(),
       data: {
         query,
-        availableTools: availableTools.map((t) => t.name),
+        availableTools: availableTools.map((t) => t.function.name),
         message: 'LLM is generating research plan...',
       },
     });

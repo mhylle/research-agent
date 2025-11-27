@@ -1,0 +1,355 @@
+// =============================================================================
+// Evaluation Display - Digital Hygge Style
+// Warm, status-aware evaluation cards with score visualization
+// =============================================================================
+
+@use 'sass:color';
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as *;
+
+// Animations
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes evaluating {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes slideInBar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+// Base evaluation display styles
+.evaluation-display {
+  @include card;
+  padding: $spacing-lg;
+  margin: $spacing-md 0;
+  animation: fadeInScale 0.4s ease-out;
+  border-left: 4px solid $slate;
+
+  // Status-specific styles
+  &--passed {
+    background-color: $moss-bg;
+    border-left-color: $moss;
+  }
+
+  &--failed {
+    background-color: $error-bg;
+    border-left-color: $error;
+  }
+
+  &--skipped {
+    background-color: $stone;
+    border-left-color: $slate;
+  }
+
+  &--in-progress {
+    background-color: color.mix($moss-bg, $oatmeal, 30%);
+    border-left-color: $moss;
+
+    .status-icon {
+      animation: evaluating 2s ease-in-out infinite;
+    }
+  }
+
+  // Header section
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-md;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin: 0;
+    font-size: $font-size-lg;
+    font-weight: $font-semibold;
+    color: $charcoal;
+
+    .status-icon {
+      font-size: $font-size-xl;
+      line-height: 1;
+    }
+
+    .title-text {
+      flex-shrink: 0;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      padding: 2px 8px;
+      font-size: $font-size-xs;
+      font-weight: $font-medium;
+      border-radius: $border-radius-sm;
+      background-color: $stone-300;
+      color: $text-secondary;
+    }
+  }
+
+  // Confidence indicator
+  .confidence-indicator {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    background-color: rgba($slate, 0.1);
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+
+    .confidence-label {
+      color: $text-secondary;
+      font-weight: $font-medium;
+    }
+
+    .confidence-value {
+      color: $charcoal;
+      font-weight: $font-semibold;
+      font-family: monospace;
+    }
+  }
+
+  // Skip reason
+  &__skip-reason {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    margin-bottom: $spacing-md;
+    background-color: rgba($slate, 0.1);
+    border-radius: $border-radius;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+
+    .skip-icon {
+      font-size: $font-size-base;
+      flex-shrink: 0;
+    }
+
+    .skip-text {
+      flex: 1;
+      line-height: $line-height;
+    }
+  }
+
+  // Error message
+  &__error {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    margin-bottom: $spacing-md;
+    background-color: rgba($error, 0.1);
+    border: 1px solid rgba($error, 0.2);
+    border-radius: $border-radius;
+    font-size: $font-size-sm;
+    color: color.adjust($error, $lightness: -10%);
+
+    .error-icon {
+      font-size: $font-size-base;
+      flex-shrink: 0;
+    }
+
+    .error-text {
+      flex: 1;
+      line-height: $line-height;
+      font-weight: $font-medium;
+    }
+  }
+
+  // Scores section
+  &__scores {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+  }
+
+  // Metadata section
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: 1px solid $stone-300;
+    font-size: $font-size-sm;
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: $spacing-xs;
+      color: $text-secondary;
+
+      &--warning {
+        color: $clay;
+        font-weight: $font-medium;
+      }
+
+      .meta-label {
+        font-weight: $font-medium;
+      }
+
+      .meta-value {
+        font-family: monospace;
+        color: $charcoal;
+      }
+
+      .meta-icon {
+        font-size: $font-size-base;
+      }
+    }
+  }
+}
+
+// Score item styles
+.score-item {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .score-label {
+    font-size: $font-size-sm;
+    font-weight: $font-medium;
+    color: $charcoal;
+  }
+
+  .score-value {
+    font-size: $font-size-sm;
+    font-weight: $font-semibold;
+    font-family: monospace;
+  }
+
+  &__bar {
+    height: 8px;
+    background-color: $stone-300;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .score-bar {
+    height: 100%;
+    border-radius: $border-radius-full;
+    transform-origin: left;
+    animation: slideInBar 0.6s ease-out;
+    transition: width 0.3s ease-out;
+  }
+}
+
+// Score level colors
+.score-level--high {
+  color: $moss;
+
+  &.score-bar {
+    background-color: $moss;
+  }
+}
+
+.score-level--medium {
+  color: $clay;
+
+  &.score-bar {
+    background-color: $clay;
+  }
+}
+
+.score-level--low {
+  color: $error;
+
+  &.score-bar {
+    background-color: $error;
+  }
+}
+
+// Status badge variations
+.evaluation-display--passed .status-badge {
+  background-color: rgba($moss, 0.2);
+  color: color.adjust($moss, $lightness: -15%);
+}
+
+.evaluation-display--failed .status-badge {
+  background-color: rgba($error, 0.2);
+  color: color.adjust($error, $lightness: -15%);
+}
+
+.evaluation-display--skipped .status-badge {
+  background-color: rgba($slate, 0.2);
+  color: color.adjust($slate, $lightness: -15%);
+}
+
+.evaluation-display--in-progress .status-badge {
+  background-color: rgba($moss, 0.2);
+  color: color.adjust($moss, $lightness: -15%);
+}
+
+// Responsive design
+@media (max-width: $breakpoint-md) {
+  .evaluation-display {
+    padding: $spacing-md;
+
+    &__header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    &__meta {
+      flex-direction: column;
+      gap: $spacing-sm;
+    }
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .evaluation-display {
+    border-width: 2px;
+
+    &__error {
+      border-width: 2px;
+    }
+  }
+
+  .score-bar {
+    opacity: 0.9;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .evaluation-display,
+  .score-bar {
+    animation: none;
+  }
+
+  .status-icon {
+    animation: none !important;
+  }
+}

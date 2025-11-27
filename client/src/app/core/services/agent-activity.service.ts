@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { ActivityTask, MilestoneEventData, MilestoneTask, TaskStatus, TaskType, ResearchResult } from '../../models';
+import { ActivityTask, MilestoneEventData, MilestoneTask, TaskStatus, TaskType, ResearchResult, EvaluationResult } from '../../models';
 import { environment } from '../../../environments/environment';
 
 // Interface for planned phases from plan_created event
@@ -53,6 +53,11 @@ export class AgentActivityService {
   // Milestone signals for granular progress feedback
   currentMilestone = signal<MilestoneTask | null>(null);
   milestoneHistory = signal<MilestoneTask[]>([]);
+
+  // Evaluation signals
+  planEvaluation = signal<EvaluationResult | null>(null);
+  retrievalEvaluation = signal<EvaluationResult | null>(null);
+  answerEvaluation = signal<EvaluationResult | null>(null);
 
   private phaseCounter = 0; // Track current phase index
 
@@ -164,6 +169,19 @@ export class AgentActivityService {
     this.eventSource.addEventListener('milestone_completed', (e: MessageEvent) => {
       this.handleMilestoneEvent(JSON.parse(e.data), 'completed');
     });
+
+    // Evaluation events
+    this.eventSource.addEventListener('evaluation_started', (e: MessageEvent) => {
+      this.handleEvaluationStarted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('evaluation_completed', (e: MessageEvent) => {
+      this.handleEvaluationCompleted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('evaluation_failed', (e: MessageEvent) => {
+      this.handleEvaluationFailed(JSON.parse(e.data));
+    });
   }
 
   disconnect(): void {
@@ -194,6 +212,10 @@ export class AgentActivityService {
     // Reset milestone state
     this.currentMilestone.set(null);
     this.milestoneHistory.set([]);
+    // Reset evaluation state
+    this.planEvaluation.set(null);
+    this.retrievalEvaluation.set(null);
+    this.answerEvaluation.set(null);
   }
 
   // NEW ORCHESTRATOR EVENT HANDLERS
@@ -614,5 +636,98 @@ export class AgentActivityService {
       return 'error';
     }
     return 'running';
+  }
+
+  // Evaluation event handlers
+  private handleEvaluationStarted(event: any): void {
+    console.log('Evaluation started:', event);
+    const { phase, query } = event;
+
+    // Set the evaluation status to in_progress
+    const evaluationResult: EvaluationResult = {
+      phase: phase as 'plan' | 'retrieval' | 'answer',
+      status: 'in_progress',
+      timestamp: event.timestamp
+    };
+
+    // Update the appropriate evaluation signal
+    switch (phase) {
+      case 'plan':
+        this.planEvaluation.set(evaluationResult);
+        break;
+      case 'retrieval':
+        this.retrievalEvaluation.set(evaluationResult);
+        break;
+      case 'answer':
+        this.answerEvaluation.set(evaluationResult);
+        break;
+    }
+  }
+
+  private handleEvaluationCompleted(event: any): void {
+    console.log('Evaluation completed:', event);
+    const {
+      phase,
+      passed,
+      scores,
+      confidence,
+      totalIterations,
+      escalatedToLargeModel,
+      evaluationSkipped,
+      skipReason
+    } = event;
+
+    // Create evaluation result
+    const evaluationResult: EvaluationResult = {
+      phase: phase as 'plan' | 'retrieval' | 'answer',
+      status: evaluationSkipped ? 'skipped' : (passed ? 'passed' : 'failed'),
+      passed,
+      scores,
+      confidence,
+      totalIterations,
+      escalatedToLargeModel,
+      evaluationSkipped,
+      skipReason,
+      timestamp: event.timestamp
+    };
+
+    // Update the appropriate evaluation signal
+    switch (phase) {
+      case 'plan':
+        this.planEvaluation.set(evaluationResult);
+        break;
+      case 'retrieval':
+        this.retrievalEvaluation.set(evaluationResult);
+        break;
+      case 'answer':
+        this.answerEvaluation.set(evaluationResult);
+        break;
+    }
+  }
+
+  private handleEvaluationFailed(event: any): void {
+    console.log('Evaluation failed:', event);
+    const { phase, error } = event;
+
+    // Create failed evaluation result
+    const evaluationResult: EvaluationResult = {
+      phase: phase as 'plan' | 'retrieval' | 'answer',
+      status: 'failed',
+      error: error || 'Evaluation failed',
+      timestamp: event.timestamp
+    };
+
+    // Update the appropriate evaluation signal
+    switch (phase) {
+      case 'plan':
+        this.planEvaluation.set(evaluationResult);
+        break;
+      case 'retrieval':
+        this.retrievalEvaluation.set(evaluationResult);
+        break;
+      case 'answer':
+        this.answerEvaluation.set(evaluationResult);
+        break;
+    }
   }
 }

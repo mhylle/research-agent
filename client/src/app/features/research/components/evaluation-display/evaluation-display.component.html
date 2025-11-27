@@ -1,0 +1,88 @@
+@if (evaluation()) {
+  <div
+    class="evaluation-display"
+    [class]="statusClass()"
+    role="region"
+    aria-labelledby="evaluation-heading"
+  >
+    <!-- Header with status -->
+    <div class="evaluation-display__header">
+      <h3 id="evaluation-heading" class="evaluation-display__title">
+        <span class="status-icon" aria-hidden="true">{{ statusIcon() }}</span>
+        <span class="title-text">{{ phaseLabel() }} Evaluation</span>
+        <span class="status-badge">{{ statusText() }}</span>
+      </h3>
+
+      <!-- Confidence indicator -->
+      @if (confidencePercentage()) {
+        <div class="confidence-indicator">
+          <span class="confidence-label">Confidence:</span>
+          <span class="confidence-value">{{ confidencePercentage() }}%</span>
+        </div>
+      }
+    </div>
+
+    <!-- Skip reason if skipped -->
+    @if (evaluation()?.status === 'skipped' && evaluation()?.skipReason) {
+      <div class="evaluation-display__skip-reason" role="status">
+        <span class="skip-icon">ℹ️</span>
+        <span class="skip-text">{{ evaluation()?.skipReason }}</span>
+      </div>
+    }
+
+    <!-- Error message if failed -->
+    @if (evaluation()?.status === 'failed' && evaluation()?.error) {
+      <div class="evaluation-display__error" role="alert">
+        <span class="error-icon">⚠️</span>
+        <span class="error-text">{{ evaluation()?.error }}</span>
+      </div>
+    }
+
+    <!-- Scores display -->
+    @if (hasScores()) {
+      <div class="evaluation-display__scores">
+        @for (score of scoreEntries(); track score.label) {
+          <div
+            class="score-item"
+            [attr.aria-label]="score.label + ': ' + score.percentage + '%'"
+          >
+            <div class="score-item__header">
+              <span class="score-label">{{ score.label }}</span>
+              <span class="score-value" [class]="getScoreLevelClass(score.level)">
+                {{ score.percentage }}%
+              </span>
+            </div>
+            <div class="score-item__bar">
+              <div
+                class="score-bar"
+                [class]="getScoreLevelClass(score.level)"
+                [style.width.%]="score.percentage"
+                role="progressbar"
+                [attr.aria-valuenow]="score.percentage"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              ></div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Additional metadata -->
+    <div class="evaluation-display__meta">
+      @if (evaluation()?.totalIterations && evaluation()!.totalIterations > 1) {
+        <span class="meta-item">
+          <span class="meta-label">Iterations:</span>
+          <span class="meta-value">{{ evaluation()?.totalIterations }}</span>
+        </span>
+      }
+
+      @if (evaluation()?.escalatedToLargeModel) {
+        <span class="meta-item meta-item--warning">
+          <span class="meta-icon">⚡</span>
+          <span class="meta-text">Escalated to larger model</span>
+        </span>
+      }
+    </div>
+  </div>
+}

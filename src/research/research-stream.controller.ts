@@ -22,6 +22,15 @@ interface UIEvent {
   outputPreview?: string;
   error?: string;
   phaseName?: string;
+  // Evaluation-specific fields
+  phase?: string;
+  passed?: boolean;
+  scores?: Record<string, number>;
+  confidence?: number;
+  totalIterations?: number;
+  escalatedToLargeModel?: boolean;
+  evaluationSkipped?: boolean;
+  skipReason?: string;
   [key: string]: any;
 }
 
@@ -312,9 +321,56 @@ export class ResearchStreamController {
           timestamp: new Date().toISOString(),
         };
 
+      case 'evaluation_started':
+        return {
+          title: `Evaluating ${String(data.phase ?? '')} phase`,
+          description: `Query: ${String(data.query ?? '')}`,
+          status: 'running',
+          phase: String(data.phase ?? ''),
+        };
+
+      case 'evaluation_completed':
+        return {
+          title: `Evaluation ${data.passed ? 'Passed' : 'Failed'}`,
+          description: this.formatEvaluationScores(data),
+          status: data.passed ? 'completed' : 'warning',
+          phase: String(data.phase ?? ''),
+          passed: Boolean(data.passed),
+          scores: data.scores as Record<string, number>,
+          confidence: data.confidence as number,
+          totalIterations: data.totalIterations as number,
+          escalatedToLargeModel: Boolean(data.escalatedToLargeModel),
+          evaluationSkipped: Boolean(data.evaluationSkipped),
+          skipReason: String(data.skipReason ?? ''),
+        };
+
+      case 'evaluation_failed':
+        return {
+          title: 'Evaluation Failed',
+          description: String(data.error ?? 'Unknown error'),
+          status: 'error',
+          phase: String(data.phase ?? ''),
+          error: String(data.error ?? ''),
+        };
+
       default:
         return { title: entry.eventType };
     }
+  }
+
+  private formatEvaluationScores(data: Record<string, any>): string {
+    if (data.evaluationSkipped) {
+      return `Skipped: ${String(data.skipReason ?? '')}`;
+    }
+
+    const scores = data.scores as Record<string, number>;
+    if (!scores) return '';
+
+    const scoreList = Object.entries(scores)
+      .map(([dim, score]) => `${dim}: ${((score as number) * 100).toFixed(0)}%`)
+      .join(', ');
+
+    return `${scoreList} (${data.totalIterations ?? 0} iteration${(data.totalIterations ?? 0) === 1 ? '' : 's'}${data.escalatedToLargeModel ? ', escalated' : ''})`;
   }
 
   private truncate(str: string, maxLen: number): string {

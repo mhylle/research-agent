@@ -8,6 +8,8 @@ import { PanelEvaluatorService } from './services/panel-evaluator.service';
 import { ScoreAggregatorService } from './services/score-aggregator.service';
 import { RetrievalEvaluatorService } from './services/retrieval-evaluator.service';
 import { AnswerEvaluatorService } from './services/answer-evaluator.service';
+import { EscalationHandlerService } from './services/escalation-handler.service';
+import { PlanEvaluationOrchestratorService } from './services/plan-evaluation-orchestrator.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([EvaluationRecordEntity]), LLMModule],
@@ -18,6 +20,8 @@ import { AnswerEvaluatorService } from './services/answer-evaluator.service';
     ScoreAggregatorService,
     RetrievalEvaluatorService,
     AnswerEvaluatorService,
+    EscalationHandlerService,
+    PlanEvaluationOrchestratorService,
   ],
   exports: [
     EvaluationService,
@@ -25,6 +29,8 @@ import { AnswerEvaluatorService } from './services/answer-evaluator.service';
     ScoreAggregatorService,
     RetrievalEvaluatorService,
     AnswerEvaluatorService,
+    EscalationHandlerService,
+    PlanEvaluationOrchestratorService,
   ],
 })
 export class EvaluationModule {}

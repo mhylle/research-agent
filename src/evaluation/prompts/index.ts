@@ -3,3 +3,4 @@ export * from './coverage-checker.prompt';
 export * from './faithfulness-judge.prompt';
 export * from './quality-assessor.prompt';
 export * from './fact-checker.prompt';
+export * from './escalation-meta.prompt';

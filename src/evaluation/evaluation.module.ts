@@ -6,11 +6,25 @@ import { EvaluationService } from './services/evaluation.service';
 import { EvaluationRecordEntity } from './entities/evaluation-record.entity';
 import { PanelEvaluatorService } from './services/panel-evaluator.service';
 import { ScoreAggregatorService } from './services/score-aggregator.service';
+import { RetrievalEvaluatorService } from './services/retrieval-evaluator.service';
+import { AnswerEvaluatorService } from './services/answer-evaluator.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([EvaluationRecordEntity]), LLMModule],
   controllers: [EvaluationController],
-  providers: [EvaluationService, PanelEvaluatorService, ScoreAggregatorService],
-  exports: [EvaluationService, PanelEvaluatorService, ScoreAggregatorService],
+  providers: [
+    EvaluationService,
+    PanelEvaluatorService,
+    ScoreAggregatorService,
+    RetrievalEvaluatorService,
+    AnswerEvaluatorService,
+  ],
+  exports: [
+    EvaluationService,
+    PanelEvaluatorService,
+    ScoreAggregatorService,
+    RetrievalEvaluatorService,
+    AnswerEvaluatorService,
+  ],
 })
 export class EvaluationModule {}

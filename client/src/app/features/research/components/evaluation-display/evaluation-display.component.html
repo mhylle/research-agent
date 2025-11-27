@@ -70,7 +70,7 @@
 
     <!-- Additional metadata -->
     <div class="evaluation-display__meta">
-      @if (evaluation()?.totalIterations && evaluation()!.totalIterations > 1) {
+      @if (evaluation()?.totalIterations && (evaluation()?.totalIterations ?? 0) > 1) {
         <span class="meta-item">
           <span class="meta-label">Iterations:</span>
           <span class="meta-value">{{ evaluation()?.totalIterations }}</span>

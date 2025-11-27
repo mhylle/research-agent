@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { AgentActivityService, PlannedPhase } from '../../../../core/services/agent-activity.service';
 import { StageProgressHeaderComponent } from '../stage-progress-header/stage-progress-header';
 import { TaskCardComponent } from '../task-card/task-card.component';
+import { EvaluationDisplayComponent } from '../evaluation-display/evaluation-display.component';
 import { ActivityTask } from '../../../../models';
 
 @Component({
   selector: 'app-agent-activity-view',
   standalone: true,
-  imports: [CommonModule, StageProgressHeaderComponent, TaskCardComponent],
+  imports: [CommonModule, StageProgressHeaderComponent, TaskCardComponent, EvaluationDisplayComponent],
   templateUrl: './agent-activity-view.component.html',
   styleUrls: ['./agent-activity-view.component.scss']
 })
@@ -45,6 +46,11 @@ export class AgentActivityViewComponent implements OnInit, OnDestroy {
 
   // Milestone signals for granular progress feedback
   readonly currentMilestone = computed(() => this.activityService.currentMilestone());
+
+  // Evaluation signals
+  readonly planEvaluation = computed(() => this.activityService.planEvaluation());
+  readonly retrievalEvaluation = computed(() => this.activityService.retrievalEvaluation());
+  readonly answerEvaluation = computed(() => this.activityService.answerEvaluation());
 
   // Local state for planned phases section
   showPlannedPhases = signal<boolean>(true);

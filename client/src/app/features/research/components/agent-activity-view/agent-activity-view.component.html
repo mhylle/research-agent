@@ -105,6 +105,21 @@
         </section>
       }
 
+      <!-- Plan Evaluation Display -->
+      @if (planEvaluation()) {
+        <app-evaluation-display [evaluation]="planEvaluation()" />
+      }
+
+      <!-- Retrieval Evaluation Display -->
+      @if (retrievalEvaluation()) {
+        <app-evaluation-display [evaluation]="retrievalEvaluation()" />
+      }
+
+      <!-- Answer Evaluation Display -->
+      @if (answerEvaluation()) {
+        <app-evaluation-display [evaluation]="answerEvaluation()" />
+      }
+
       <!-- Tasks Container (scrollable) -->
       <div
         #tasksContainer

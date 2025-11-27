@@ -49,11 +49,14 @@ export class ResearchStreamController {
 
       const listener = (entry: LogEntry) => {
         console.log(`[SSE] Received event for ${logId}: ${entry.eventType}`);
-        subscriber.next({
-          data: JSON.stringify(this.transformToUIEvent(entry)),
+        const uiEvent = this.transformToUIEvent(entry);
+        const messageEvent = {
+          data: JSON.stringify(uiEvent),
           type: entry.eventType || 'message',
           id: entry.id || '',
-        } as any as MessageEvent);
+        } as any as MessageEvent;
+        console.log(`[SSE] Sending event type="${messageEvent.type}" with data:`, JSON.stringify(uiEvent).substring(0, 100));
+        subscriber.next(messageEvent);
       };
 
       // Listen for regular log events

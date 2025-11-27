@@ -284,6 +284,11 @@ export class Orchestrator {
       this.enrichSynthesizeStep(step, plan, phaseResults);
     }
 
+    // Provide default config for tools if missing
+    if (!step.config || Object.keys(step.config).length === 0) {
+      step.config = this.getDefaultConfig(step.toolName, plan, phaseResults);
+    }
+
     await this.emit(
       logId,
       'step_started',
@@ -502,6 +507,37 @@ export class Orchestrator {
       typeof (item as Record<string, unknown>).url === 'string' &&
       typeof (item as Record<string, unknown>).title === 'string'
     );
+  }
+
+  private getDefaultConfig(
+    toolName: string,
+    plan?: Plan,
+    phaseResults?: StepResult[],
+  ): Record<string, unknown> {
+    switch (toolName) {
+      case 'tavily_search':
+        // Default to searching for the main query
+        return { query: plan?.query || 'research query', max_results: 5 };
+
+      case 'web_fetch':
+        // Try to get URL from previous search results
+        if (phaseResults) {
+          for (const result of phaseResults) {
+            if (Array.isArray(result.output)) {
+              for (const item of result.output) {
+                if (item && typeof item === 'object' && 'url' in item) {
+                  return { url: item.url };
+                }
+              }
+            }
+          }
+        }
+        // Fallback: return empty config (will cause tool to fail gracefully)
+        return {};
+
+      default:
+        return {};
+    }
   }
 
   private enrichSynthesizeStep(

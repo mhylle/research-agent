@@ -170,7 +170,8 @@ export class LogsService {
             toolName: entry.data?.toolName || 'Tool',
             startedAt: entry.timestamp,
             completedAt: null,
-            input: entry.data,
+            // For step_started, the input is in the 'config' field
+            input: entry.data?.config || entry.data?.input || null,
             output: null,
             duration: 0
           });
@@ -184,7 +185,9 @@ export class LogsService {
           const step = phase.steps.find((s: any) => s.stepId === entry.stepId);
           if (step) {
             step.completedAt = entry.timestamp;
-            step.output = entry.data;
+            // For step_completed, update the input from the 'input' field and output from 'output' field
+            step.input = entry.data?.input || step.input;  // Update input with actual input from completion event
+            step.output = entry.data?.output || null;
             step.duration = entry.data?.durationMs || 0;
           }
         }

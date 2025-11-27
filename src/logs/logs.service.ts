@@ -192,6 +192,52 @@ export class LogsService {
     nodes.push(sessionNode);
     nodeMap.set(sessionNode.id, sessionNode);
 
+    // Process planning phase first
+    const planCreatedEntry = detail.entries.find(
+      (e) => e.eventType === 'plan_created',
+    );
+    const planningStartedEntry = detail.entries.find(
+      (e) => e.eventType === 'planning_started',
+    );
+
+    if (planCreatedEntry || planningStartedEntry) {
+      const startTime = planningStartedEntry
+        ? new Date(planningStartedEntry.timestamp)
+        : new Date(detail.timestamp);
+      const endTime = planCreatedEntry
+        ? new Date(planCreatedEntry.timestamp)
+        : startTime;
+
+      const planningNode: GraphNode = {
+        id: `planning-${logId}`,
+        type: 'stage',
+        name: 'Planning Phase',
+        icon: '🧠',
+        color: '#8b5cf6',
+        size: 'medium',
+        startTime,
+        endTime,
+        duration: endTime.getTime() - startTime.getTime(),
+        status: planCreatedEntry ? 'completed' : 'running',
+        parentId: sessionNode.id,
+        childrenIds: [],
+        dependsOn: [],
+        input: planningStartedEntry?.data || {},
+        output: planCreatedEntry?.data || {},
+      };
+
+      nodes.push(planningNode);
+      nodeMap.set(planningNode.id, planningNode);
+      sessionNode.childrenIds.push(planningNode.id);
+
+      edges.push({
+        id: `${sessionNode.id}-${planningNode.id}`,
+        source: sessionNode.id,
+        target: planningNode.id,
+        type: 'parent-child',
+      });
+    }
+
     // Process entries to build phase and step nodes
     const phaseNodes = new Map<string, GraphNode>();
 
@@ -245,6 +291,7 @@ export class LogsService {
           phaseNode.status =
             entry.eventType === 'phase_completed' ? 'completed' : 'error';
           phaseNode.endTime = new Date(entry.timestamp);
+          phaseNode.output = entry.data?.output || entry.data;
           if (phaseNode.startTime) {
             phaseNode.duration =
               phaseNode.endTime.getTime() - phaseNode.startTime.getTime();
@@ -254,6 +301,17 @@ export class LogsService {
 
       // Handle step events
       if (entry.eventType === 'step_started' && entry.stepId) {
+        // Check if node already exists (to handle duplicate step_started events)
+        const existingNode = nodeMap.get(`step-${entry.stepId}`);
+        if (existingNode) {
+          // Update existing node with config if provided (prefer config over input)
+          if (entry.data?.config && !existingNode.input) {
+            existingNode.input = entry.data.config;
+          }
+          // Skip creating duplicate node
+          return;
+        }
+
         const parentPhase = entry.phaseId
           ? phaseNodes.get(entry.phaseId)
           : null;
@@ -269,7 +327,7 @@ export class LogsService {
           parentId: parentPhase?.id || sessionNode.id,
           childrenIds: [],
           dependsOn: [],
-          input: entry.data,
+          input: entry.data?.config || entry.data?.input,
         };
         nodes.push(stepNode);
         nodeMap.set(stepNode.id, stepNode);
@@ -291,22 +349,90 @@ export class LogsService {
           entry.eventType === 'step_failed') &&
         entry.stepId
       ) {
-        const stepNode = nodeMap.get(`step-${entry.stepId}`);
-        if (stepNode) {
-          stepNode.status =
-            entry.eventType === 'step_completed' ? 'completed' : 'error';
-          stepNode.endTime = new Date(entry.timestamp);
-          stepNode.output = entry.data;
-          if (stepNode.startTime) {
-            stepNode.duration =
-              stepNode.endTime.getTime() - stepNode.startTime.getTime();
+        let stepNode = nodeMap.get(`step-${entry.stepId}`);
+
+        // If node doesn't exist (missed step_started), create it now
+        if (!stepNode) {
+          const parentPhase = entry.phaseId
+            ? phaseNodes.get(entry.phaseId)
+            : null;
+          stepNode = {
+            id: `step-${entry.stepId}`,
+            type: 'tool',
+            name: (entry.data?.toolName as string) || 'Step',
+            icon: '🔧',
+            color: '#10b981',
+            size: 'small',
+            startTime: new Date(entry.timestamp), // Use completion time as best guess
+            status: 'running',
+            parentId: parentPhase?.id || sessionNode.id,
+            childrenIds: [],
+            dependsOn: [],
+            input: entry.data?.input || entry.data?.config,
+          };
+          nodes.push(stepNode);
+          nodeMap.set(stepNode.id, stepNode);
+
+          if (parentPhase) {
+            parentPhase.childrenIds.push(stepNode.id);
+            edges.push({
+              id: `${parentPhase.id}-${stepNode.id}`,
+              source: parentPhase.id,
+              target: stepNode.id,
+              type: 'parent-child',
+            });
           }
-          if (entry.data?.durationMs) {
-            stepNode.metrics = {
-              ...stepNode.metrics,
-              toolLatency: entry.data.durationMs,
-            };
+        }
+
+        // Update the node with completion data
+        stepNode.status =
+          entry.eventType === 'step_completed' ? 'completed' : 'error';
+        stepNode.endTime = new Date(entry.timestamp);
+
+        // Prefer entry.data.input if it's a non-string object, otherwise keep existing input
+        // This handles the case where tool executor sends truncated strings
+        if (entry.data?.input) {
+          if (typeof entry.data.input === 'string') {
+            // Try to parse string input (from tool executor)
+            try {
+              const parsed = JSON.parse(entry.data.input);
+              stepNode.input = parsed;
+            } catch {
+              // If parsing fails, only use string if we don't have input yet
+              if (!stepNode.input) {
+                stepNode.input = entry.data.input;
+              }
+            }
+          } else {
+            // Use object input directly (from orchestrator)
+            stepNode.input = entry.data.input;
           }
+        }
+
+        // Handle output similarly
+        if (entry.data?.output) {
+          if (typeof entry.data.output === 'string') {
+            try {
+              const parsed = JSON.parse(entry.data.output);
+              stepNode.output = parsed;
+            } catch {
+              // If parsing fails, use string as-is
+              stepNode.output = entry.data.output;
+            }
+          } else {
+            stepNode.output = entry.data.output;
+          }
+        }
+
+        if (stepNode.startTime) {
+          stepNode.duration =
+            stepNode.endTime.getTime() - stepNode.startTime.getTime();
+        }
+        if (entry.data?.durationMs) {
+          stepNode.metrics = {
+            ...stepNode.metrics,
+            toolLatency: entry.data.durationMs,
+          };
         }
       }
     });

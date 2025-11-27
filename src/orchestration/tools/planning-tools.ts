@@ -81,7 +81,7 @@ export const planningTools: ToolDefinition[] = [
             description: 'Step IDs that must complete before this step',
           },
         },
-        required: ['phaseId', 'type', 'toolName', 'config'],
+        required: ['phaseId', 'type', 'toolName'],
       },
     },
   },

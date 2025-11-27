@@ -12,6 +12,7 @@ import { ResearchModule } from './research/research.module';
 import { HealthModule } from './health/health.module';
 import { LogsModule } from './logs/logs.module';
 import { OrchestrationModule } from './orchestration/orchestration.module';
+import { EvaluationModule } from './evaluation/evaluation.module';
 import { LogEntryEntity } from './logging/entities/log-entry.entity';
 import { ResearchResultEntity } from './research/entities/research-result.entity';
 
@@ -45,6 +46,7 @@ import { ResearchResultEntity } from './research/entities/research-result.entity
     HealthModule,
     LogsModule,
     OrchestrationModule,
+    EvaluationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

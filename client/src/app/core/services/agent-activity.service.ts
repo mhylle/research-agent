@@ -171,15 +171,19 @@ export class AgentActivityService {
     });
 
     // Evaluation events
+    console.log('🔍 [EVALUATION] Registering evaluation event listeners');
     this.eventSource.addEventListener('evaluation_started', (e: MessageEvent) => {
+      console.log('🔍 [EVALUATION] evaluation_started SSE event received');
       this.handleEvaluationStarted(JSON.parse(e.data));
     });
 
     this.eventSource.addEventListener('evaluation_completed', (e: MessageEvent) => {
+      console.log('🔍 [EVALUATION] evaluation_completed SSE event received');
       this.handleEvaluationCompleted(JSON.parse(e.data));
     });
 
     this.eventSource.addEventListener('evaluation_failed', (e: MessageEvent) => {
+      console.log('🔍 [EVALUATION] evaluation_failed SSE event received');
       this.handleEvaluationFailed(JSON.parse(e.data));
     });
   }
@@ -640,7 +644,7 @@ export class AgentActivityService {
 
   // Evaluation event handlers
   private handleEvaluationStarted(event: any): void {
-    console.log('Evaluation started:', event);
+    console.log('🔍 [EVALUATION] Evaluation started event received:', event);
     const { phase, query } = event;
 
     // Set the evaluation status to in_progress
@@ -651,21 +655,25 @@ export class AgentActivityService {
     };
 
     // Update the appropriate evaluation signal
+    console.log(`🔍 [EVALUATION] Setting ${phase} evaluation signal to in_progress`);
     switch (phase) {
       case 'plan':
         this.planEvaluation.set(evaluationResult);
+        console.log('🔍 [EVALUATION] planEvaluation signal updated:', this.planEvaluation());
         break;
       case 'retrieval':
         this.retrievalEvaluation.set(evaluationResult);
+        console.log('🔍 [EVALUATION] retrievalEvaluation signal updated:', this.retrievalEvaluation());
         break;
       case 'answer':
         this.answerEvaluation.set(evaluationResult);
+        console.log('🔍 [EVALUATION] answerEvaluation signal updated:', this.answerEvaluation());
         break;
     }
   }
 
   private handleEvaluationCompleted(event: any): void {
-    console.log('Evaluation completed:', event);
+    console.log('🔍 [EVALUATION] Evaluation completed event received:', event);
     const {
       phase,
       passed,
@@ -692,21 +700,25 @@ export class AgentActivityService {
     };
 
     // Update the appropriate evaluation signal
+    console.log(`🔍 [EVALUATION] Setting ${phase} evaluation signal to completed with status: ${evaluationResult.status}`);
     switch (phase) {
       case 'plan':
         this.planEvaluation.set(evaluationResult);
+        console.log('🔍 [EVALUATION] planEvaluation signal updated:', this.planEvaluation());
         break;
       case 'retrieval':
         this.retrievalEvaluation.set(evaluationResult);
+        console.log('🔍 [EVALUATION] retrievalEvaluation signal updated:', this.retrievalEvaluation());
         break;
       case 'answer':
         this.answerEvaluation.set(evaluationResult);
+        console.log('🔍 [EVALUATION] answerEvaluation signal updated:', this.answerEvaluation());
         break;
     }
   }
 
   private handleEvaluationFailed(event: any): void {
-    console.log('Evaluation failed:', event);
+    console.log('🔍 [EVALUATION] Evaluation failed event received:', event);
     const { phase, error } = event;
 
     // Create failed evaluation result
@@ -718,15 +730,19 @@ export class AgentActivityService {
     };
 
     // Update the appropriate evaluation signal
+    console.log(`🔍 [EVALUATION] Setting ${phase} evaluation signal to failed`);
     switch (phase) {
       case 'plan':
         this.planEvaluation.set(evaluationResult);
+        console.log('🔍 [EVALUATION] planEvaluation signal updated:', this.planEvaluation());
         break;
       case 'retrieval':
         this.retrievalEvaluation.set(evaluationResult);
+        console.log('🔍 [EVALUATION] retrievalEvaluation signal updated:', this.retrievalEvaluation());
         break;
       case 'answer':
         this.answerEvaluation.set(evaluationResult);
+        console.log('🔍 [EVALUATION] answerEvaluation signal updated:', this.answerEvaluation());
         break;
     }
   }

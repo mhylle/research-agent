@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as winston from 'winston';
 import * as fs from 'fs';
@@ -9,6 +9,9 @@ import {
   MilestoneEvent,
   MilestoneData,
 } from './interfaces/enhanced-log-entry.interface';
+import { LogService } from './log.service';
+import { formatMilestoneDescription } from './milestone-templates';
+import { LogEventType } from './interfaces/log-event-type.enum';
 
 @Injectable()
 export class ResearchLogger {
@@ -16,7 +19,11 @@ export class ResearchLogger {
   private eventEmitter: EventEmitter;
   private activeNodes = new Map<string, NodeLifecycleEvent>();
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @Inject(forwardRef(() => LogService))
+    private logService: LogService,
+  ) {
     const logDir: string =
       this.configService.get<string>('LOG_DIR') || './logs';
 
@@ -262,7 +269,7 @@ export class ResearchLogger {
     return this.activeNodes;
   }
 
-  logMilestone(
+  async logMilestone(
     logId: string,
     nodeId: string,
     milestoneId: string,
@@ -271,8 +278,9 @@ export class ResearchLogger {
     data: Record<string, any>,
     progress: number,
     status: 'pending' | 'running' | 'completed' | 'error' = 'running',
-  ): void {
+  ): Promise<void> {
     const timestamp = new Date().toISOString();
+    const formattedDescription = formatMilestoneDescription(template, data);
 
     const milestoneData: MilestoneData = {
       milestoneId,
@@ -284,7 +292,17 @@ export class ResearchLogger {
       timestamp,
     };
 
-    // 1. Persist to database (log to winston for now - matches existing pattern)
+    // Determine event type based on status
+    let eventType: LogEventType;
+    if (status === 'pending') {
+      eventType = 'milestone_started';
+    } else if (status === 'completed') {
+      eventType = 'milestone_completed';
+    } else {
+      eventType = 'milestone_progress';
+    }
+
+    // 1. Persist to Winston (for file logging)
     this.logger.info('Milestone', {
       logId,
       nodeId,
@@ -300,7 +318,24 @@ export class ResearchLogger {
       milestone: milestoneData,
     });
 
-    // 2. Emit SSE event
+    // 2. Route through LogService for SSE streaming (this emits to 'log.${logId}')
+    await this.logService.append({
+      logId,
+      eventType,
+      timestamp: new Date(),
+      data: {
+        nodeId,
+        milestoneId,
+        stage,
+        template,
+        templateData: data,
+        formattedDescription,
+        progress,
+        status,
+      },
+    });
+
+    // 3. Also emit to legacy event channel (for any existing listeners)
     const event: MilestoneEvent = {
       logId,
       nodeId,

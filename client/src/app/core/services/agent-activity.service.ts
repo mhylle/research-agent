@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { ActivityTask, MilestoneEventData, TaskStatus, TaskType, ResearchResult } from '../../models';
+import { ActivityTask, MilestoneEventData, MilestoneTask, TaskStatus, TaskType, ResearchResult } from '../../models';
 import { environment } from '../../../environments/environment';
 
 // Interface for planned phases from plan_created event
@@ -49,6 +49,10 @@ export class AgentActivityService {
   planningIteration = signal<{ current: number; max: number } | null>(null);
   plannedPhases = signal<PlannedPhase[]>([]); // Full plan structure
   planQuery = signal<string>('');
+
+  // Milestone signals for granular progress feedback
+  currentMilestone = signal<MilestoneTask | null>(null);
+  milestoneHistory = signal<MilestoneTask[]>([]);
 
   private phaseCounter = 0; // Track current phase index
 
@@ -147,6 +151,19 @@ export class AgentActivityService {
     this.eventSource.addEventListener('planning_iteration', (e: MessageEvent) => {
       this.handlePlanningIteration(JSON.parse(e.data));
     });
+
+    // Milestone events for granular progress feedback
+    this.eventSource.addEventListener('milestone_started', (e: MessageEvent) => {
+      this.handleMilestoneEvent(JSON.parse(e.data), 'started');
+    });
+
+    this.eventSource.addEventListener('milestone_progress', (e: MessageEvent) => {
+      this.handleMilestoneEvent(JSON.parse(e.data), 'progress');
+    });
+
+    this.eventSource.addEventListener('milestone_completed', (e: MessageEvent) => {
+      this.handleMilestoneEvent(JSON.parse(e.data), 'completed');
+    });
   }
 
   disconnect(): void {
@@ -174,6 +191,9 @@ export class AgentActivityService {
     this.planningIteration.set(null);
     this.plannedPhases.set([]);
     this.planQuery.set('');
+    // Reset milestone state
+    this.currentMilestone.set(null);
+    this.milestoneHistory.set([]);
   }
 
   // NEW ORCHESTRATOR EVENT HANDLERS
@@ -545,5 +565,54 @@ export class AgentActivityService {
         phase.id === phaseId ? { ...phase, status } : phase
       );
     });
+  }
+
+  /**
+   * Handle milestone events for granular progress feedback
+   */
+  private handleMilestoneEvent(event: any, eventType: 'started' | 'progress' | 'completed'): void {
+    console.log(`Milestone ${eventType}:`, event);
+
+    const milestone: MilestoneTask = {
+      id: `${event.milestoneId}-${Date.now()}`,
+      nodeId: event.nodeId || '',
+      milestoneId: event.milestoneId || '',
+      stage: event.stage || 1,
+      template: event.template || '',
+      templateData: event.templateData || {},
+      description: event.description || event.title || 'Processing...',
+      progress: event.progress || 0,
+      status: this.mapMilestoneStatus(eventType, event.status),
+      timestamp: new Date(event.timestamp || Date.now()),
+    };
+
+    if (eventType === 'started' || eventType === 'progress') {
+      // Set as current milestone
+      this.currentMilestone.set(milestone);
+    } else if (eventType === 'completed') {
+      // Move to history and clear current
+      this.milestoneHistory.update(history => [...history, milestone]);
+
+      // Clear current milestone after a brief display
+      setTimeout(() => {
+        const current = this.currentMilestone();
+        if (current?.milestoneId === milestone.milestoneId) {
+          this.currentMilestone.set(null);
+        }
+      }, 1000);
+    }
+  }
+
+  /**
+   * Map event type to task status
+   */
+  private mapMilestoneStatus(eventType: 'started' | 'progress' | 'completed', status?: string): TaskStatus {
+    if (eventType === 'completed' || status === 'completed') {
+      return 'completed';
+    }
+    if (status === 'error') {
+      return 'error';
+    }
+    return 'running';
   }
 }

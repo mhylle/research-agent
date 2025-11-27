@@ -43,6 +43,9 @@ export class AgentActivityViewComponent implements OnInit, OnDestroy {
   readonly plannedPhases = computed(() => this.activityService.plannedPhases());
   readonly planQuery = computed(() => this.activityService.planQuery());
 
+  // Milestone signals for granular progress feedback
+  readonly currentMilestone = computed(() => this.activityService.currentMilestone());
+
   // Local state for planned phases section
   showPlannedPhases = signal<boolean>(true);
 

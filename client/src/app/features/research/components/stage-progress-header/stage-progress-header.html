@@ -15,4 +15,9 @@
     </div>
     <span class="progress-text">{{ progress() }}%</span>
   </div>
+
+  <!-- Milestone indicator for granular progress feedback -->
+  @if (currentMilestone()) {
+    <app-milestone-indicator [milestone]="currentMilestone()" />
+  }
 </div>

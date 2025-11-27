@@ -35,11 +35,11 @@ export class PipelineExecutor {
 
       // Emit stage-specific milestones
       if (context.stageNumber === 1) {
-        this.emitStage1Milestones(context);
+        await this.emitStage1Milestones(context);
       } else if (context.stageNumber === 2) {
-        this.emitStage2Milestones(context);
+        await this.emitStage2Milestones(context);
       } else if (context.stageNumber === 3) {
-        this.emitStage3Milestones(context);
+        await this.emitStage3Milestones(context);
       }
 
       // Add system prompt to messages
@@ -101,7 +101,7 @@ export class PipelineExecutor {
       // Emit final milestone for Stage 1 (filtering)
       if (context.stageNumber === 1) {
         const stageTemplates = getMilestoneTemplates(1);
-        this.logger.logMilestone(
+        await this.logger.logMilestone(
           context.logId,
           `${stageNodeId}_milestone_4`,
           stageTemplates[3].id,
@@ -113,7 +113,7 @@ export class PipelineExecutor {
         );
       } else if (context.stageNumber === 2) {
         const stageTemplates = getMilestoneTemplates(2);
-        this.logger.logMilestone(
+        await this.logger.logMilestone(
           context.logId,
           `${stageNodeId}_milestone_3`,
           stageTemplates[2].id,
@@ -125,7 +125,7 @@ export class PipelineExecutor {
         );
       } else if (context.stageNumber === 3) {
         const stageTemplates = getMilestoneTemplates(3);
-        this.logger.logMilestone(
+        await this.logger.logMilestone(
           context.logId,
           `${stageNodeId}_milestone_4`,
           stageTemplates[3].id,
@@ -214,12 +214,12 @@ export class PipelineExecutor {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private emitStage1Milestones(context: StageContext): void {
+  private async emitStage1Milestones(context: StageContext): Promise<void> {
     const stageTemplates = getMilestoneTemplates(1);
     const stageNodeId = `stage-${context.stageNumber}`;
 
     // Milestone 1: Deconstructing query
-    this.logger.logMilestone(
+    await this.logger.logMilestone(
       context.logId,
       `${stageNodeId}_milestone_1`,
       stageTemplates[0].id,
@@ -236,7 +236,7 @@ export class PipelineExecutor {
 
     // Milestone 2: Identifying terms
     const terms = this.extractKeyTerms(query);
-    this.logger.logMilestone(
+    await this.logger.logMilestone(
       context.logId,
       `${stageNodeId}_milestone_2`,
       stageTemplates[1].id,
@@ -251,7 +251,7 @@ export class PipelineExecutor {
     const searchCount = context.tools.length > 0 ? 25 : 0; // Estimate based on tool availability
     const sources =
       'Tavily (aggregating NASA, arXiv, Nature, Science, and more)';
-    this.logger.logMilestone(
+    await this.logger.logMilestone(
       context.logId,
       `${stageNodeId}_milestone_3`,
       stageTemplates[2].id,
@@ -265,7 +265,7 @@ export class PipelineExecutor {
     // Note: Milestone 4 (filtering) emitted after stage completion (lines 97-110)
   }
 
-  private emitStage2Milestones(context: StageContext): void {
+  private async emitStage2Milestones(context: StageContext): Promise<void> {
     const stageTemplates = getMilestoneTemplates(2);
     const stageNodeId = `stage-${context.stageNumber}`;
 
@@ -273,7 +273,7 @@ export class PipelineExecutor {
     const sourceCount = 10; // Default estimate for sources to fetch
 
     // Milestone 1: Fetching sources
-    this.logger.logMilestone(
+    await this.logger.logMilestone(
       context.logId,
       `${stageNodeId}_milestone_1`,
       stageTemplates[0].id,
@@ -294,7 +294,7 @@ export class PipelineExecutor {
       const progress = progressStart + (i / sourceCount) * progressRange;
       const sourceUrl = `source-${i + 1}.example.com`; // Placeholder URL
 
-      this.logger.logMilestone(
+      await this.logger.logMilestone(
         context.logId,
         `${stageNodeId}_milestone_2_${i}`,
         stageTemplates[1].id,
@@ -309,7 +309,7 @@ export class PipelineExecutor {
     // Note: Milestone 3 (validating) emitted after stage completion
   }
 
-  private emitStage3Milestones(context: StageContext): void {
+  private async emitStage3Milestones(context: StageContext): Promise<void> {
     const stageTemplates = getMilestoneTemplates(3);
     const stageNodeId = `stage-${context.stageNumber}`;
 
@@ -317,7 +317,7 @@ export class PipelineExecutor {
     const sourceCount = 10; // Estimate based on Stage 2 output
 
     // Milestone 1: Analyzing sources
-    this.logger.logMilestone(
+    await this.logger.logMilestone(
       context.logId,
       `${stageNodeId}_milestone_1`,
       stageTemplates[0].id,
@@ -329,7 +329,7 @@ export class PipelineExecutor {
     );
 
     // Milestone 2: Synthesizing findings
-    this.logger.logMilestone(
+    await this.logger.logMilestone(
       context.logId,
       `${stageNodeId}_milestone_2`,
       stageTemplates[1].id,
@@ -341,7 +341,7 @@ export class PipelineExecutor {
     );
 
     // Milestone 3: Generating answer
-    this.logger.logMilestone(
+    await this.logger.logMilestone(
       context.logId,
       `${stageNodeId}_milestone_3`,
       stageTemplates[2].id,

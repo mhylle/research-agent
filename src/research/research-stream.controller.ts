@@ -266,6 +266,21 @@ export class ResearchStreamController {
           error: String(data.reason ?? ''),
         };
 
+      case 'milestone_started':
+      case 'milestone_progress':
+      case 'milestone_completed':
+        return {
+          title: String(data.formattedDescription ?? data.template ?? 'Processing...'),
+          description: String(data.formattedDescription ?? ''),
+          nodeId: String(data.nodeId ?? ''),
+          milestoneId: String(data.milestoneId ?? ''),
+          stage: data.stage as number,
+          template: String(data.template ?? ''),
+          templateData: data.templateData as Record<string, unknown>,
+          progress: data.progress as number,
+          status: entry.eventType === 'milestone_completed' ? 'completed' : 'running',
+        };
+
       case 'tool.call.started':
         return {
           title: `Calling ${String(data.toolName ?? '')}`,

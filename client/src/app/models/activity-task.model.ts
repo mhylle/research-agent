@@ -1,6 +1,22 @@
 export type TaskStatus = 'pending' | 'running' | 'completed' | 'error' | 'retrying';
 export type TaskType = 'stage' | 'tool' | 'milestone';
 
+/**
+ * Represents a milestone event for granular progress feedback
+ */
+export interface MilestoneTask {
+  id: string;
+  nodeId: string;
+  milestoneId: string;
+  stage: 1 | 2 | 3;
+  template: string;
+  templateData: Record<string, unknown>;
+  description: string;  // Formatted template with data substituted
+  progress: number;     // 0-100
+  status: TaskStatus;
+  timestamp: Date;
+}
+
 export interface ActivityTask {
   id: string;
   nodeId: string;

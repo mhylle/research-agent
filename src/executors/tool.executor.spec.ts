@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ToolExecutor } from './tool.executor';
 import { ToolRegistry } from '../tools/registry/tool-registry.service';
 import { PlanStep } from '../orchestration/interfaces/plan-step.interface';
@@ -20,6 +21,15 @@ describe('ToolExecutor', () => {
               .mockReturnValue([
                 { function: { name: 'tavily_search', description: 'Search' } },
               ]),
+            getTool: jest.fn().mockReturnValue({
+              definition: { function: { name: 'tavily_search', description: 'Search' } },
+            }),
+          },
+        },
+        {
+          provide: EventEmitter2,
+          useValue: {
+            emit: jest.fn(),
           },
         },
       ],
@@ -70,7 +80,6 @@ describe('ToolExecutor', () => {
 
       expect(result.error).toBeDefined();
       if (result.error) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         expect(result.error.message).toBe('Tool failed');
       }
     });

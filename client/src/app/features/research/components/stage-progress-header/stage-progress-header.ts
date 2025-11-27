@@ -1,9 +1,11 @@
 import { Component, input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MilestoneTask } from '../../../../models';
+import { MilestoneIndicatorComponent } from '../milestone-indicator/milestone-indicator.component';
 
 @Component({
   selector: 'app-stage-progress-header',
-  imports: [CommonModule],
+  imports: [CommonModule, MilestoneIndicatorComponent],
   templateUrl: './stage-progress-header.html',
   styleUrls: ['./stage-progress-header.scss']
 })
@@ -13,6 +15,9 @@ export class StageProgressHeaderComponent {
   totalPhases = input<number>(3);
   phaseName = input<string>('');
   progress = input.required<number>();
+
+  // Milestone support for granular progress feedback
+  currentMilestone = input<MilestoneTask | null>(null);
 
   // Backward compatibility with old "stage" input
   stage = input<number>();

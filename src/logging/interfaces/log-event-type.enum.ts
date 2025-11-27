@@ -18,6 +18,10 @@ export type LogEventType =
   | 'step_completed'
   | 'step_failed'
   | 'step_skipped'
+  // Milestone events (granular progress feedback)
+  | 'milestone_started'
+  | 'milestone_progress'
+  | 'milestone_completed'
   // Re-planning events
   | 'replan_triggered'
   | 'replan_completed'

@@ -1,0 +1,29 @@
+@if (milestone()) {
+  <div
+    class="milestone-indicator"
+    [attr.data-stage]="milestone()?.stage"
+    [class.milestone-indicator--complete]="isComplete()"
+    role="status"
+    aria-live="polite"
+    [attr.aria-label]="'Current progress: ' + milestone()?.description">
+    <div class="milestone-indicator__content">
+      <span class="milestone-indicator__icon" aria-hidden="true">{{ stageIcon() }}</span>
+      <span class="milestone-indicator__text">{{ milestone()?.description }}</span>
+    </div>
+    <div class="milestone-indicator__meta">
+      <span class="milestone-indicator__stage">{{ stageLabel() }}</span>
+      <span class="milestone-indicator__progress">{{ milestone()?.progress }}%</span>
+    </div>
+    <div
+      class="milestone-indicator__progress-bar"
+      role="progressbar"
+      [attr.aria-valuenow]="milestone()?.progress"
+      aria-valuemin="0"
+      aria-valuemax="100">
+      <div
+        class="milestone-indicator__progress-fill"
+        [style.width]="progressWidth()">
+      </div>
+    </div>
+  </div>
+}

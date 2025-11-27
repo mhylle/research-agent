@@ -22,9 +22,10 @@ export class OllamaService {
   async chat(
     messages: ChatMessage[],
     tools?: ToolDefinition[],
+    model?: string,
   ): Promise<ChatResponse> {
     const response = await this.ollama.chat({
-      model: this.model,
+      model: model || this.model,
       messages: messages as any,
       tools: tools as any,
     });

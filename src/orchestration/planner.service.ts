@@ -482,6 +482,46 @@ export class PlannerService {
           break;
         }
 
+        // CRITICAL VALIDATION: Ensure config is provided with meaningful parameters
+        if (!args.config || typeof args.config !== 'object' || Object.keys(args.config).length === 0) {
+          result = {
+            error: `config is REQUIRED and must be a non-empty object with specific parameters for ${args.toolName}. Examples:
+- tavily_search requires: {query: "specific search terms", max_results: 5}
+- web_fetch requires: {url: "https://specific-url.com"}
+- synthesize requires: {prompt: "detailed synthesis instructions"}`,
+            toolName: args.toolName,
+            providedConfig: args.config,
+          };
+          break;
+        }
+
+        // Tool-specific config validation
+        if (args.toolName === 'tavily_search') {
+          if (!args.config.query || typeof args.config.query !== 'string' || args.config.query.trim() === '') {
+            result = {
+              error: 'tavily_search requires a non-empty "query" field in config. Example: {query: "latest antimatter news 2024", max_results: 5}',
+              providedConfig: args.config,
+            };
+            break;
+          }
+        } else if (args.toolName === 'web_fetch') {
+          if (!args.config.url || typeof args.config.url !== 'string' || args.config.url.trim() === '') {
+            result = {
+              error: 'web_fetch requires a non-empty "url" field in config. Example: {url: "https://example.com/article"}',
+              providedConfig: args.config,
+            };
+            break;
+          }
+        } else if (args.toolName === 'synthesize') {
+          if (!args.config.prompt || typeof args.config.prompt !== 'string' || args.config.prompt.trim() === '') {
+            result = {
+              error: 'synthesize requires a non-empty "prompt" field in config. Example: {prompt: "Synthesize the research findings about antimatter"}',
+              providedConfig: args.config,
+            };
+            break;
+          }
+        }
+
         const step: PlanStep = {
           id: randomUUID(),
           phaseId: args.phaseId,
@@ -738,9 +778,13 @@ ${toolList}
 2. For each major phase (e.g., search, fetch, synthesize):
    a. Call add_phase to create the phase - NOTE THE RETURNED phaseId
    b. **IMMEDIATELY call add_step one or more times with that phaseId**
-   c. Only after adding steps, move to the next phase
+   c. **CRITICAL: ALWAYS provide the config parameter with specific, detailed parameters:**
+      - For tavily_search: include {query: "specific search terms", max_results: 5}
+      - For web_fetch: include {url: "https://specific-url.com"}
+      - For synthesize: include {prompt: "detailed synthesis instructions"}
+   d. Only after adding steps with complete configs, move to the next phase
 3. Set replanCheckpoint=true on phases where results might change the approach
-4. Call finalize_plan when ALL phases have steps
+4. Call finalize_plan when ALL phases have steps with complete configs
 
 ## CRITICAL REQUIREMENTS - ABSOLUTE MUST-HAVES
 - **EVERY PLAN MUST END WITH A SYNTHESIS/ANSWER GENERATION PHASE**
@@ -760,20 +804,21 @@ ${toolList}
 - Create atomic, granular steps. Each step should do ONE thing.
 - Consider dependencies between steps - use dependsOn when a step needs prior results.
 - For search tasks, create multiple search steps with different queries for thorough coverage.
+- **ALWAYS provide specific config parameters for EVERY step - never create a step without config**
 - For fetch tasks, plan to fetch from multiple sources.
 - **ALWAYS end with a synthesis phase that uses the "synthesize" tool**
 - The synthesis step should combine all gathered information into a comprehensive answer
 
 ## Example Flow (FOLLOW THIS PATTERN)
-1. create_plan
-2. add_phase("Initial Search", ...) -> returns {phaseId: "abc"}
-3. add_step(phaseId="abc", toolName="tavily_search", ...) -> step added to search phase
-4. add_step(phaseId="abc", toolName="tavily_search", ...) -> another search step
-5. add_phase("Content Fetching", ...) -> returns {phaseId: "def"}
-6. add_step(phaseId="def", toolName="web_fetch", ...) -> step added to fetch phase
-7. **add_phase("Synthesis & Answer Generation", ...) -> returns {phaseId: "xyz"}**
-8. **add_step(phaseId="xyz", toolName="synthesize", ...) -> CRITICAL FINAL STEP**
-9. finalize_plan
+1. create_plan({query: "user query", name: "Research Plan"})
+2. add_phase({name: "Initial Search", description: "Search for information"}) -> returns {phaseId: "abc"}
+3. add_step({phaseId: "abc", type: "tool_call", toolName: "tavily_search", config: {query: "latest antimatter news 2024", max_results: 5}})
+4. add_step({phaseId: "abc", type: "tool_call", toolName: "tavily_search", config: {query: "antimatter breakthrough research 2024", max_results: 5}})
+5. add_phase({name: "Content Fetching", description: "Fetch detailed articles"}) -> returns {phaseId: "def"}
+6. add_step({phaseId: "def", type: "tool_call", toolName: "web_fetch", config: {url: "https://example.com/article"}})
+7. **add_phase({name: "Synthesis & Answer Generation", description: "Generate final answer"}) -> returns {phaseId: "xyz"}**
+8. **add_step({phaseId: "xyz", type: "llm_call", toolName: "synthesize", config: {prompt: "Synthesize all gathered antimatter research into a comprehensive answer"}}) -> CRITICAL FINAL STEP**
+9. finalize_plan()
 
 ## WARNING
 If you create a plan without a synthesis phase, the research will fail to produce an answer.
@@ -788,10 +833,16 @@ The user expects a comprehensive answer, not just raw data.`;
 REQUIREMENTS:
 1. Start by calling create_plan
 2. Add information gathering phases (search, fetch, etc.) with their steps
-3. **MANDATORY: Add a final synthesis phase using the "synthesize" tool to generate the answer**
-4. Call finalize_plan when done
+3. **CRITICAL: EVERY add_step call MUST include a config parameter with specific details:**
+   - For tavily_search: provide {query: "specific search terms", max_results: 5}
+   - For web_fetch: provide {url: "https://specific-url.com"}
+   - For synthesize: provide {prompt: "detailed instructions"}
+4. **MANDATORY: Add a final synthesis phase using the "synthesize" tool to generate the answer**
+5. Call finalize_plan when done
 
-Remember: The plan MUST end with a synthesis phase that produces a comprehensive answer to the query.`;
+Remember:
+- EVERY step MUST have a config parameter with specific values
+- The plan MUST end with a synthesis phase that produces a comprehensive answer to the query.`;
   }
 
   private buildReplannerSystemPrompt(): string {

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ResearchLogger } from '../../src/logging/research-logger.service';
+import { LogService } from '../../src/logging/log.service';
 
 describe('ResearchLogger', () => {
   let service: ResearchLogger;
@@ -20,6 +21,12 @@ describe('ResearchLogger', () => {
               };
               return config[key];
             }),
+          },
+        },
+        {
+          provide: LogService,
+          useValue: {
+            append: jest.fn().mockResolvedValue({ id: 'log-1' }),
           },
         },
       ],

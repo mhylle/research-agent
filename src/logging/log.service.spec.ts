@@ -25,6 +25,7 @@ describe('LogService', () => {
 
     mockEventEmitter = {
       emit: jest.fn(),
+      on: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

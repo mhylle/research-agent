@@ -1,43 +1,76 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { LogsService } from './logs.service';
-import * as fs from 'fs/promises';
-
-jest.mock('fs/promises');
+import { LogEntryEntity } from '../logging/entities/log-entry.entity';
+import { ResearchResultEntity } from '../research/entities/research-result.entity';
 
 describe('LogsService', () => {
   let service: LogsService;
-  let configService: ConfigService;
+  let mockLogRepository: any;
+  let mockResultRepository: any;
 
   beforeEach(async () => {
+    mockLogRepository = {
+      createQueryBuilder: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      }),
+      find: jest.fn().mockResolvedValue([]),
+    };
+
+    mockResultRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LogsService,
         {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn((key) => {
-              if (key === 'LOG_DIR') return './logs';
-              return null;
-            }),
-          },
+          provide: getRepositoryToken(LogEntryEntity),
+          useValue: mockLogRepository,
+        },
+        {
+          provide: getRepositoryToken(ResearchResultEntity),
+          useValue: mockResultRepository,
         },
       ],
     }).compile();
 
     service = module.get<LogsService>(LogsService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  it('should parse log file and return sessions', async () => {
-    const mockLogContent = `{"timestamp":"2025-11-20T10:00:00.000Z","logId":"test-123","stage":1,"component":"pipeline","operation":"stage_input","input":{"query":"test query"},"level":"info","message":"Stage input"}
-{"timestamp":"2025-11-20T10:00:15.000Z","logId":"test-123","stage":1,"component":"pipeline","operation":"stage_output","executionTime":15000,"output":{},"level":"info","message":"Stage output"}`;
+  it('should get all sessions from repository', async () => {
+    // Mock the repository to return log entries
+    const mockLogEntries = [
+      {
+        id: 1,
+        logId: 'test-123',
+        timestamp: new Date('2025-11-20T10:00:00.000Z'),
+        eventType: 'session_started',
+        data: { query: 'test query' },
+      },
+      {
+        id: 2,
+        logId: 'test-123',
+        timestamp: new Date('2025-11-20T10:00:15.000Z'),
+        eventType: 'session_completed',
+        data: {},
+      },
+    ];
 
-    (fs.readFile as jest.Mock).mockResolvedValue(mockLogContent);
+    mockLogRepository.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([{ logId: 'test-123' }]),
+    });
+
+    mockLogRepository.find.mockResolvedValue(mockLogEntries);
 
     const result = await service.getAllSessions({});
 

@@ -92,7 +92,7 @@ describe('Orchestrator', () => {
       );
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockExecutorRegistry.getExecutor).toHaveBeenCalledWith(
-        'tool_call',
+        'tavily_search',
       );
       expect(result).toBeDefined();
       expect(result.logId).toBeDefined();

@@ -15,7 +15,13 @@ describe('PlannerService', () => {
 
   beforeEach(async () => {
     mockOllamaService = {
-      chat: jest.fn(),
+      chat: jest.fn().mockResolvedValue({
+        message: {
+          role: 'assistant',
+          content: '',
+          tool_calls: [],
+        },
+      }),
     };
 
     mockToolExecutor = {

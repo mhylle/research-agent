@@ -15,6 +15,7 @@ describe('ResearchController', () => {
           provide: ResearchService,
           useValue: {
             executeResearch: jest.fn(),
+            startResearchInBackground: jest.fn(),
           },
         },
       ],
@@ -29,17 +30,6 @@ describe('ResearchController', () => {
   });
 
   it('should execute research query', async () => {
-    const mockResult = {
-      logId: 'test-id',
-      answer: 'Test answer',
-      sources: [],
-      metadata: {
-        totalExecutionTime: 5000,
-        stages: [],
-      },
-    };
-    service.executeResearch.mockResolvedValue(mockResult);
-
     const dto: ResearchQueryDto = {
       query: 'What is AI?',
       maxSources: 5,
@@ -47,7 +37,10 @@ describe('ResearchController', () => {
 
     const result = await controller.query(dto);
 
-    expect(result.answer).toBe('Test answer');
-    expect(service.executeResearch).toHaveBeenCalledWith('What is AI?');
+    expect(result.logId).toBeDefined();
+    expect(service.startResearchInBackground).toHaveBeenCalledWith(
+      'What is AI?',
+      expect.any(String),
+    );
   });
 });

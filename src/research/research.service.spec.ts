@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ResearchService } from './research.service';
 import { Orchestrator } from '../orchestration/orchestrator.service';
+import { ResearchResultService } from './research-result.service';
 
 jest.mock('jsdom');
 jest.mock('@mozilla/readability');
@@ -20,6 +21,12 @@ describe('ResearchService', () => {
             executeResearch: jest.fn(),
           },
         },
+        {
+          provide: ResearchResultService,
+          useValue: {
+            save: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
@@ -33,7 +40,10 @@ describe('ResearchService', () => {
 
   it('should execute research via orchestrator', async () => {
     const mockResult = {
+      logId: 'test-log-id',
+      planId: 'test-plan-id',
       answer: 'Final answer',
+      sources: [],
       metadata: {
         totalExecutionTime: 4500,
         stages: [
@@ -50,6 +60,6 @@ describe('ResearchService', () => {
 
     expect(result.answer).toBe('Final answer');
     expect(result.metadata.totalExecutionTime).toBe(4500);
-    expect(orchestrator.executeResearch).toHaveBeenCalledWith('What is AI?');
+    expect(orchestrator.executeResearch).toHaveBeenCalledWith('What is AI?', undefined);
   });
 });

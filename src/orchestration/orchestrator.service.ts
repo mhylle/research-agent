@@ -17,6 +17,7 @@ import {
   getMilestoneTemplates,
   formatMilestoneDescription,
 } from '../logging/milestone-templates';
+import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
 
 export interface ResearchResult {
   logId: string;
@@ -36,6 +37,7 @@ export class Orchestrator {
     private executorRegistry: ExecutorRegistry,
     private logService: LogService,
     private eventEmitter: EventEmitter2,
+    private planEvaluationOrchestrator: PlanEvaluationOrchestratorService,
   ) {}
 
   async executeResearch(query: string, logId?: string): Promise<ResearchResult> {
@@ -49,6 +51,41 @@ export class Orchestrator {
     const plan = await this.plannerService.createPlan(query, logId);
 
     console.log(`[Orchestrator] Plan created with ${plan.phases.length} phases, entering execution loop...`);
+
+    // PLAN EVALUATION
+    await this.emit(logId, 'evaluation_started', {
+      phase: 'plan',
+      query: plan.query
+    });
+
+    const evaluationResult = await this.planEvaluationOrchestrator.evaluatePlan({
+      query: plan.query,
+      plan: {
+        id: plan.id,
+        phases: plan.phases,
+        searchQueries: this.extractSearchQueries(plan),
+      },
+    });
+
+    await this.emit(logId, 'evaluation_completed', {
+      phase: 'plan',
+      passed: evaluationResult.passed,
+      scores: evaluationResult.scores,
+      confidence: evaluationResult.confidence,
+      totalIterations: evaluationResult.totalIterations,
+      escalatedToLargeModel: evaluationResult.escalatedToLargeModel,
+      evaluationSkipped: evaluationResult.evaluationSkipped,
+      skipReason: evaluationResult.skipReason,
+    });
+
+    // Log evaluation result for user visibility
+    if (!evaluationResult.evaluationSkipped) {
+      const scoresSummary = Object.entries(evaluationResult.scores)
+        .map(([dim, score]) => `${dim}: ${((score as number) * 100).toFixed(0)}%`)
+        .join(', ');
+
+      console.log(`[Orchestrator] Plan evaluation: ${evaluationResult.passed ? 'PASSED' : 'FAILED'} (${scoresSummary})`);
+    }
 
     // Log the FULL plan with all phases and steps
     await this.emit(logId, 'plan_created', {
@@ -599,6 +636,18 @@ export class Orchestrator {
         existingConfig.prompt ||
         `Based on the research query and gathered information, provide a comprehensive answer.\n\nQuery: ${plan.query}`,
     };
+  }
+
+  private extractSearchQueries(plan: Plan): string[] {
+    const queries: string[] = [];
+    for (const phase of plan.phases) {
+      for (const step of phase.steps) {
+        if (step.toolName === 'web_search' && step.config?.query) {
+          queries.push(step.config.query);
+        }
+      }
+    }
+    return queries;
   }
 
   private async emit(

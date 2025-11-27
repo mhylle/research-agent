@@ -5,6 +5,7 @@ import { PlannerService } from './planner.service';
 import { ExecutorRegistry } from '../executors/executor-registry.service';
 import { LogService } from '../logging/log.service';
 import { Plan } from './interfaces/plan.interface';
+import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
 
 describe('Orchestrator', () => {
   let orchestrator: Orchestrator;
@@ -12,6 +13,7 @@ describe('Orchestrator', () => {
   let mockExecutorRegistry: jest.Mocked<ExecutorRegistry>;
   let mockLogService: jest.Mocked<LogService>;
   let mockEventEmitter: jest.Mocked<EventEmitter2>;
+  let mockPlanEvaluationOrchestrator: jest.Mocked<any>;
 
   const mockPlan: Plan = {
     id: 'plan-1',
@@ -68,6 +70,18 @@ describe('Orchestrator', () => {
       emit: jest.fn(),
     } as unknown as jest.Mocked<EventEmitter2>;
 
+    mockPlanEvaluationOrchestrator = {
+      evaluatePlan: jest.fn().mockResolvedValue({
+        passed: true,
+        scores: { intentAlignment: 0.9, queryCoverage: 0.85 },
+        confidence: 0.87,
+        totalIterations: 1,
+        escalatedToLargeModel: false,
+        evaluationSkipped: false,
+        attempts: [],
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         Orchestrator,
@@ -75,6 +89,7 @@ describe('Orchestrator', () => {
         { provide: ExecutorRegistry, useValue: mockExecutorRegistry },
         { provide: LogService, useValue: mockLogService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
+        { provide: PlanEvaluationOrchestratorService, useValue: mockPlanEvaluationOrchestrator },
       ],
     }).compile();
 

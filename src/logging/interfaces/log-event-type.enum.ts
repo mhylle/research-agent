@@ -25,6 +25,10 @@ export type LogEventType =
   // Re-planning events
   | 'replan_triggered'
   | 'replan_completed'
+  // Evaluation events
+  | 'evaluation_started'
+  | 'evaluation_completed'
+  | 'evaluation_failed'
   // Tool execution events
   | 'tool_call_started'
   | 'tool_call_completed'

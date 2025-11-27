@@ -23,20 +23,28 @@ export class EvaluationService {
     fallback: T,
     context: string,
   ): Promise<T> {
+    console.log(`[EvaluationService] evaluateWithFallback called for ${context}`);
+    console.log(`[EvaluationService] Evaluation enabled: ${this.config.enabled}`);
+
     if (!this.config.enabled) {
       this.logger.debug(`Evaluation disabled, using fallback for ${context}`);
+      console.log(`[EvaluationService] Returning fallback - evaluation disabled`);
       return fallback;
     }
 
     const timeout = this.getTimeoutForContext(context);
+    console.log(`[EvaluationService] Starting evaluation with timeout: ${timeout}ms`);
 
     try {
+      console.log(`[EvaluationService] Calling evaluation function...`);
       const result = await Promise.race([
         evaluationFn(),
         this.createTimeout<T>(timeout, context),
       ]);
+      console.log(`[EvaluationService] Evaluation completed successfully`);
       return result;
     } catch (error) {
+      console.error(`[EvaluationService] Evaluation failed:`, error);
       this.logger.warn(
         `Evaluation failed (${context}), continuing with fallback`,
         {

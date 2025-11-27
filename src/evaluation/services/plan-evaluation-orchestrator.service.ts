@@ -37,6 +37,9 @@ export class PlanEvaluationOrchestratorService {
   }
 
   private async doEvaluatePlan(input: PlanEvaluationInput): Promise<PlanEvaluationResult> {
+    console.log('[PlanEvaluationOrchestrator] doEvaluatePlan started');
+    console.log('[PlanEvaluationOrchestrator] Input:', JSON.stringify({ query: input.query, planId: input.plan.id }, null, 2));
+
     const attempts: PlanAttempt[] = [];
     let currentPlan = input.plan;
     let escalatedToLargeModel = false;
@@ -44,7 +47,10 @@ export class PlanEvaluationOrchestratorService {
     const maxAttempts = this.config.planEvaluation.maxAttempts;
     const passThreshold = this.config.planEvaluation.passThreshold;
 
+    console.log(`[PlanEvaluationOrchestrator] Config: maxAttempts=${maxAttempts}, passThreshold=${passThreshold}`);
+
     for (let attemptNumber = 1; attemptNumber <= maxAttempts; attemptNumber++) {
+      console.log(`[PlanEvaluationOrchestrator] Starting attempt ${attemptNumber}/${maxAttempts}`);
       this.logger.log(`Plan evaluation attempt ${attemptNumber}/${maxAttempts}`);
 
       // Step 1: Panel evaluation

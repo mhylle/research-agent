@@ -53,11 +53,14 @@ export class Orchestrator {
     console.log(`[Orchestrator] Plan created with ${plan.phases.length} phases, entering execution loop...`);
 
     // PLAN EVALUATION
+    console.log('[Orchestrator] Starting plan evaluation...');
     await this.emit(logId, 'evaluation_started', {
       phase: 'plan',
       query: plan.query
     });
+    console.log('[Orchestrator] evaluation_started event emitted');
 
+    console.log('[Orchestrator] Calling planEvaluationOrchestrator.evaluatePlan...');
     const evaluationResult = await this.planEvaluationOrchestrator.evaluatePlan({
       query: plan.query,
       plan: {
@@ -66,6 +69,7 @@ export class Orchestrator {
         searchQueries: this.extractSearchQueries(plan),
       },
     });
+    console.log('[Orchestrator] Plan evaluation completed:', JSON.stringify(evaluationResult, null, 2));
 
     await this.emit(logId, 'evaluation_completed', {
       phase: 'plan',

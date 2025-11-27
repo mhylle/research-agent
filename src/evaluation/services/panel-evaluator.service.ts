@@ -76,10 +76,16 @@ export class PanelEvaluatorService {
     roles: EvaluatorRole[],
     context: { query: string; plan: any; searchQueries?: string[] },
   ): Promise<EvaluatorResult[]> {
+    console.log(`[PanelEvaluatorService] evaluateWithPanel called with roles:`, roles);
+    console.log(`[PanelEvaluatorService] Context query:`, context.query);
+
     const evaluations = roles.map((role) =>
       this.evaluateWithRole(role, context),
     );
-    return Promise.all(evaluations);
+    const results = await Promise.all(evaluations);
+
+    console.log(`[PanelEvaluatorService] Panel evaluation completed, ${results.length} results`);
+    return results;
   }
 
   private buildPrompt(

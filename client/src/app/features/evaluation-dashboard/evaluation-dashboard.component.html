@@ -1,41 +1,138 @@
 <div class="evaluation-dashboard">
-  <div class="dashboard-header">
-    <h1>Evaluation Dashboard</h1>
-    <button class="refresh-btn" (click)="refreshData()" [disabled]="isLoading()">
-      <span class="icon">🔄</span>
-      Refresh
-    </button>
-  </div>
+  @if (viewMode() === 'detail') {
+    <!-- Detail View -->
+    <div class="detail-view">
+      <div class="detail-header">
+        <button class="back-btn" (click)="backToList()" routerLink="/evaluation-dashboard">
+          <span class="icon">←</span>
+          Back to Dashboard
+        </button>
+        <h1>Evaluation Details</h1>
+      </div>
 
-  @if (error(); as errorMsg) {
-    <div class="error-banner">
-      <span class="icon">⚠️</span>
-      {{ errorMsg }}
-    </div>
-  }
+      @if (error(); as errorMsg) {
+        <div class="error-banner">
+          <span class="icon">⚠️</span>
+          {{ errorMsg }}
+        </div>
+      }
 
-  @if (isLoadingStats()) {
-    <div class="loading-stats">
-      <div class="spinner"></div>
-      <p>Loading statistics...</p>
-    </div>
-  } @else if (stats(); as statsData) {
-    <app-evaluation-stats [stats]="statsData" />
-  }
+      @if (isLoadingDetail()) {
+        <div class="loading-detail">
+          <div class="spinner"></div>
+          <p>Loading evaluation details...</p>
+        </div>
+      } @else if (selectedEvaluation(); as evaluation) {
+        <div class="evaluation-detail">
+          <!-- Header -->
+          <div class="detail-section">
+            <h2>Overview</h2>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <label>Query</label>
+                <p>{{ evaluation.query }}</p>
+              </div>
+              <div class="detail-item">
+                <label>Status</label>
+                <p class="status" [class.passed]="evaluation.passed" [class.failed]="!evaluation.passed">
+                  {{ evaluation.overallStatus }}
+                </p>
+              </div>
+              <div class="detail-item">
+                <label>Timestamp</label>
+                <p>{{ evaluation.timestamp | date:'medium' }}</p>
+              </div>
+              <div class="detail-item">
+                <label>Session ID</label>
+                <p class="mono">{{ evaluation.sessionId }}</p>
+              </div>
+            </div>
+          </div>
 
-  @if (!hasData() && !isLoading()) {
-    <div class="no-data">
-      <span class="icon">📊</span>
-      <h2>No Evaluation Data Available</h2>
-      <p>Start running evaluations to see statistics and records here.</p>
+          <!-- Evaluation Phases -->
+          <div class="detail-section">
+            <h2>Evaluation Phases</h2>
+            @for (phase of evaluation.evaluations; track phase.phase) {
+              <div class="phase-detail">
+                <h3>{{ phase.phase | titlecase }} Phase</h3>
+                <div class="phase-status">
+                  <span class="badge" [class.passed]="phase.passed" [class.failed]="!phase.passed">
+                    {{ phase.passed ? 'Passed' : 'Failed' }}
+                  </span>
+                  <span class="confidence">Confidence: {{ ((phase.confidence ?? 0) * 100).toFixed(0) }}%</span>
+                </div>
+                <div class="scores-grid">
+                  @for (score of phase.scores | keyvalue; track score.key) {
+                    <div class="score-item">
+                      <label>{{ score.key }}</label>
+                      <div class="score-bar">
+                        <div class="score-fill" [style.width.%]="(score.value ?? 0) * 100"></div>
+                      </div>
+                      <span class="score-value">{{ ((score.value ?? 0) * 100).toFixed(0) }}%</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Metadata -->
+          @if (evaluation.metadata) {
+            <div class="detail-section">
+              <h2>Metadata</h2>
+              <div class="metadata-grid">
+                @for (meta of evaluation.metadata | keyvalue; track meta.key) {
+                  <div class="metadata-item">
+                    <label>{{ meta.key }}</label>
+                    <p>{{ meta.value }}</p>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
     </div>
   } @else {
-    <app-evaluation-list
-      [evaluations]="evaluations()"
-      [isLoading]="isLoadingRecords()"
-      [currentPage]="pagination().page"
-      (filterChange)="handleFilterChange($event)"
-      (pageChange)="handlePageChange($event)"
-    />
+    <!-- List View -->
+    <div class="dashboard-header">
+      <h1>Evaluation Dashboard</h1>
+      <button class="refresh-btn" (click)="refreshData()" [disabled]="isLoading()">
+        <span class="icon">🔄</span>
+        Refresh
+      </button>
+    </div>
+
+    @if (error(); as errorMsg) {
+      <div class="error-banner">
+        <span class="icon">⚠️</span>
+        {{ errorMsg }}
+      </div>
+    }
+
+    @if (isLoadingStats()) {
+      <div class="loading-stats">
+        <div class="spinner"></div>
+        <p>Loading statistics...</p>
+      </div>
+    } @else if (stats(); as statsData) {
+      <app-evaluation-stats [stats]="statsData" />
+    }
+
+    @if (!hasData() && !isLoading()) {
+      <div class="no-data">
+        <span class="icon">📊</span>
+        <h2>No Evaluation Data Available</h2>
+        <p>Start running evaluations to see statistics and records here.</p>
+      </div>
+    } @else {
+      <app-evaluation-list
+        [evaluations]="evaluations()"
+        [isLoading]="isLoadingRecords()"
+        [currentPage]="pagination().page"
+        (filterChange)="handleFilterChange($event)"
+        (pageChange)="handlePageChange($event)"
+      />
+    }
   }
 </div>

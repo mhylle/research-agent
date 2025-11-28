@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { EvaluationApiService } from '../../core/services/evaluation-api.service';
 import { EvaluationStatsComponent } from './evaluation-stats.component';
 import { EvaluationListComponent } from './evaluation-list.component';
@@ -8,7 +8,8 @@ import {
   EvaluationStats,
   EvaluationFilters,
   PaginationParams,
-  PaginatedEvaluations
+  PaginatedEvaluations,
+  EvaluationRecord
 } from '../../models/evaluation-record.model';
 
 @Component({
@@ -20,12 +21,15 @@ import {
 })
 export class EvaluationDashboardComponent implements OnInit {
   private evaluationApi = inject(EvaluationApiService);
+  private route = inject(ActivatedRoute);
 
   // State signals
   protected stats = signal<EvaluationStats | null>(null);
   protected evaluations = signal<PaginatedEvaluations | null>(null);
+  protected selectedEvaluation = signal<EvaluationRecord | null>(null);
   protected isLoadingStats = signal(false);
   protected isLoadingRecords = signal(false);
+  protected isLoadingDetail = signal(false);
   protected error = signal<string | null>(null);
 
   // Filter and pagination state
@@ -38,6 +42,11 @@ export class EvaluationDashboardComponent implements OnInit {
     limit: 10
   });
 
+  // View mode
+  protected viewMode = computed(() =>
+    this.selectedEvaluation() ? 'detail' : 'list'
+  );
+
   // Computed signals
   protected hasData = computed(() => {
     const stats = this.stats();
@@ -45,12 +54,18 @@ export class EvaluationDashboardComponent implements OnInit {
   });
 
   protected isLoading = computed(() =>
-    this.isLoadingStats() || this.isLoadingRecords()
+    this.isLoadingStats() || this.isLoadingRecords() || this.isLoadingDetail()
   );
 
   ngOnInit(): void {
-    this.loadStats();
-    this.loadRecords();
+    // Check if we have an ID parameter
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.loadDetail(id);
+    } else {
+      this.loadStats();
+      this.loadRecords();
+    }
   }
 
   protected handleFilterChange(filters: EvaluationFilters): void {
@@ -99,5 +114,25 @@ export class EvaluationDashboardComponent implements OnInit {
         this.isLoadingRecords.set(false);
       }
     });
+  }
+
+  private loadDetail(id: string): void {
+    this.isLoadingDetail.set(true);
+    this.error.set(null);
+
+    this.evaluationApi.getRecordById(id).subscribe({
+      next: (record) => {
+        this.selectedEvaluation.set(record);
+        this.isLoadingDetail.set(false);
+      },
+      error: (err) => {
+        this.error.set('Failed to load evaluation details: ' + err.message);
+        this.isLoadingDetail.set(false);
+      }
+    });
+  }
+
+  protected backToList(): void {
+    this.selectedEvaluation.set(null);
   }
 }

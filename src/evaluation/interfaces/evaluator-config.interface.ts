@@ -38,6 +38,14 @@ export interface EvaluationConfig {
     faithfulnessJudge: EvaluatorRoleConfig;
     qualityAssessor: EvaluatorRoleConfig;
     factChecker: EvaluatorRoleConfig;
+    // Retrieval-specific evaluators
+    sourceRelevance: EvaluatorRoleConfig;
+    sourceQuality: EvaluatorRoleConfig;
+    coverageCompleteness: EvaluatorRoleConfig;
+    // Answer-specific evaluators
+    faithfulness: EvaluatorRoleConfig;
+    answerRelevance: EvaluatorRoleConfig;
+    answerCompleteness: EvaluatorRoleConfig;
   };
 
   escalationModel: string;
@@ -95,6 +103,38 @@ export const DEFAULT_EVALUATION_CONFIG: EvaluationConfig = {
       model: 'qwen3:14b',
       dimensions: ['factualAccuracy'],
       promptTemplate: 'fact-checker',
+    },
+    // Retrieval-specific evaluators
+    sourceRelevance: {
+      model: 'llama3.1:8b',
+      dimensions: ['contextRecall', 'contextPrecision'],
+      promptTemplate: 'source-relevance',
+    },
+    sourceQuality: {
+      model: 'qwen3:14b',
+      dimensions: ['sourceQuality'],
+      promptTemplate: 'source-quality',
+    },
+    coverageCompleteness: {
+      model: 'qwen3:14b',
+      dimensions: ['coverageCompleteness'],
+      promptTemplate: 'coverage-completeness',
+    },
+    // Answer-specific evaluators
+    faithfulness: {
+      model: 'llama3.1:8b',
+      dimensions: ['faithfulness'],
+      promptTemplate: 'faithfulness',
+    },
+    answerRelevance: {
+      model: 'llama3.1:8b',
+      dimensions: ['answerRelevance'],
+      promptTemplate: 'answer-relevance',
+    },
+    answerCompleteness: {
+      model: 'qwen3:14b',
+      dimensions: ['completeness', 'accuracy'],
+      promptTemplate: 'answer-completeness',
     },
   },
 

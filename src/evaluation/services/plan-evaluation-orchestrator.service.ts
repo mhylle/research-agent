@@ -53,91 +53,147 @@ export class PlanEvaluationOrchestratorService {
       console.log(`[PlanEvaluationOrchestrator] Starting attempt ${attemptNumber}/${maxAttempts}`);
       this.logger.log(`Plan evaluation attempt ${attemptNumber}/${maxAttempts}`);
 
-      // Step 1: Panel evaluation
-      const evaluatorResults = await this.panelEvaluator.evaluateWithPanel(
-        ['intentAnalyst', 'coverageChecker'],
-        {
-          query: input.query,
+      try {
+        // Step 1: Panel evaluation with timeout
+        const evaluatorResults = await Promise.race([
+          this.panelEvaluator.evaluateWithPanel(
+            ['intentAnalyst', 'coverageChecker'],
+            {
+              query: input.query,
+              plan: currentPlan,
+              searchQueries: currentPlan.searchQueries || [],
+            },
+          ),
+          this.createAttemptTimeout(30000, attemptNumber)
+        ]);
+
+        console.log(`[PlanEvaluationOrchestrator] Panel evaluation completed for attempt ${attemptNumber}`);
+
+        // Continue with the rest of the evaluation
+        await this.processAttemptResults(
+          evaluatorResults,
+          attemptNumber,
+          maxAttempts,
+          passThreshold,
+          attempts,
+          currentPlan,
+          escalatedToLargeModel
+        );
+
+        // Check if passed and can exit early
+        const lastAttempt = attempts[attempts.length - 1];
+        if (lastAttempt.passed) {
+          console.log(`[PlanEvaluationOrchestrator] Plan passed on attempt ${attemptNumber}, exiting early`);
+          break;
+        }
+      } catch (error) {
+        this.logger.error(`Attempt ${attemptNumber} failed: ${error.message}`);
+        console.error(`[PlanEvaluationOrchestrator] Attempt ${attemptNumber} error:`, error.message);
+
+        // Add failed attempt
+        attempts.push({
+          attemptNumber,
+          timestamp: new Date(),
           plan: currentPlan,
-          searchQueries: currentPlan.searchQueries || [],
-        },
-      );
-
-      // Step 2: Aggregate scores
-      const aggregated = this.scoreAggregator.aggregateScores(evaluatorResults);
-      const overallScore = this.scoreAggregator.calculateOverallScore(aggregated.scores);
-
-      // Step 3: Check escalation triggers
-      const escalationTrigger = this.scoreAggregator.checkEscalationTriggers(
-        aggregated,
-        evaluatorResults,
-        passThreshold,
-      );
-
-      let finalScores = aggregated.scores;
-      let finalConfidence = aggregated.confidence;
-      let passed = overallScore >= passThreshold;
-      let escalation;
-
-      // Step 4: Escalate if needed
-      if (escalationTrigger) {
-        this.logger.log(`Escalating due to: ${escalationTrigger}`);
-        escalatedToLargeModel = true;
-
-        escalation = await this.escalationHandler.escalate({
-          trigger: escalationTrigger,
-          query: input.query,
-          content: currentPlan,
-          panelResults: evaluatorResults,
+          evaluatorResults: [],
+          aggregatedScores: {},
+          aggregatedConfidence: 0,
+          passed: false,
         });
 
-        // Use escalation results
-        if (Object.keys(escalation.scores).length > 0) {
-          finalScores = { ...finalScores, ...escalation.scores };
+        // If this was the last attempt, break
+        if (attemptNumber >= maxAttempts) {
+          break;
         }
-        passed = escalation.finalVerdict === 'pass';
-      }
-
-      // Build attempt record
-      const attempt: PlanAttempt = {
-        attemptNumber,
-        timestamp: new Date(),
-        plan: currentPlan,
-        evaluatorResults,
-        aggregatedScores: finalScores,
-        aggregatedConfidence: finalConfidence,
-        passed,
-        escalation,
-      };
-
-      // Step 5: Decide on iteration
-      if (!passed && attemptNumber < maxAttempts) {
-        attempt.iterationDecision = this.decideIteration(evaluatorResults, finalScores, passThreshold);
-        this.logger.log(`Iteration decision: ${attempt.iterationDecision.mode}`);
-        // In real implementation, would regenerate plan here
-        // For now, we just continue with same plan (caller responsible for regeneration)
-      }
-
-      attempts.push(attempt);
-
-      // If passed, we're done
-      if (passed) {
-        this.logger.log(`Plan passed on attempt ${attemptNumber}`);
-        break;
       }
     }
 
     const lastAttempt = attempts[attempts.length - 1];
 
     return {
-      passed: lastAttempt.passed,
-      scores: lastAttempt.aggregatedScores,
-      confidence: lastAttempt.aggregatedConfidence,
+      passed: lastAttempt?.passed ?? false,
+      scores: lastAttempt?.aggregatedScores ?? {},
+      confidence: lastAttempt?.aggregatedConfidence ?? 0,
       evaluationSkipped: false,
       attempts,
       totalIterations: attempts.length,
       escalatedToLargeModel,
     };
+  }
+
+  private async processAttemptResults(
+    evaluatorResults: any[],
+    attemptNumber: number,
+    maxAttempts: number,
+    passThreshold: number,
+    attempts: PlanAttempt[],
+    currentPlan: any,
+    escalatedToLargeModel: boolean
+  ): Promise<void> {
+    // Step 2: Aggregate scores
+    const aggregated = this.scoreAggregator.aggregateScores(evaluatorResults);
+    const overallScore = this.scoreAggregator.calculateOverallScore(aggregated.scores);
+
+    // Step 3: Check escalation triggers
+    const escalationTrigger = this.scoreAggregator.checkEscalationTriggers(
+      aggregated,
+      evaluatorResults,
+      passThreshold,
+    );
+
+    let finalScores = aggregated.scores;
+    let finalConfidence = aggregated.confidence;
+    let passed = overallScore >= passThreshold;
+    let escalation;
+
+    // Step 4: Escalate if needed
+    if (escalationTrigger) {
+      this.logger.log(`Escalating due to: ${escalationTrigger}`);
+
+      escalation = await this.escalationHandler.escalate({
+        trigger: escalationTrigger,
+        query: currentPlan.query || '',
+        content: currentPlan,
+        panelResults: evaluatorResults,
+      });
+
+      // Use escalation results
+      if (Object.keys(escalation.scores).length > 0) {
+        finalScores = { ...finalScores, ...escalation.scores };
+      }
+      passed = escalation.finalVerdict === 'pass';
+    }
+
+    // Build attempt record
+    const attempt: PlanAttempt = {
+      attemptNumber,
+      timestamp: new Date(),
+      plan: currentPlan,
+      evaluatorResults,
+      aggregatedScores: finalScores,
+      aggregatedConfidence: finalConfidence,
+      passed,
+      escalation,
+    };
+
+    // Step 5: Decide on iteration
+    if (!passed && attemptNumber < maxAttempts) {
+      attempt.iterationDecision = this.decideIteration(evaluatorResults, finalScores, passThreshold);
+      this.logger.log(`Iteration decision: ${attempt.iterationDecision.mode}`);
+      // In real implementation, would regenerate plan here
+      // For now, we just continue with same plan (caller responsible for regeneration)
+    }
+
+    attempts.push(attempt);
+  }
+
+  private createAttemptTimeout(ms: number, attemptNumber: number): Promise<never> {
+    return new Promise((_, reject) => {
+      setTimeout(
+        () => reject(new Error(`Attempt ${attemptNumber} timeout (${ms}ms)`)),
+        ms,
+      );
+    });
   }
 
   private decideIteration(

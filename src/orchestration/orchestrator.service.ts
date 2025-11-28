@@ -18,6 +18,7 @@ import {
   formatMilestoneDescription,
 } from '../logging/milestone-templates';
 import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
+import { EvaluationService } from '../evaluation/services/evaluation.service';
 
 export interface ResearchResult {
   logId: string;
@@ -38,6 +39,7 @@ export class Orchestrator {
     private logService: LogService,
     private eventEmitter: EventEmitter2,
     private planEvaluationOrchestrator: PlanEvaluationOrchestratorService,
+    private evaluationService: EvaluationService,
   ) {}
 
   async executeResearch(query: string, logId?: string): Promise<ResearchResult> {
@@ -81,6 +83,29 @@ export class Orchestrator {
       evaluationSkipped: evaluationResult.evaluationSkipped,
       skipReason: evaluationResult.skipReason,
     });
+
+    // Save evaluation record to database
+    console.log('[Orchestrator] Saving evaluation record to database...');
+    try {
+      await this.evaluationService.saveEvaluationRecord({
+        logId,
+        userQuery: plan.query,
+        planEvaluation: {
+          attempts: evaluationResult.attempts || [],
+          finalScores: evaluationResult.scores,
+          passed: evaluationResult.passed,
+          totalIterations: evaluationResult.totalIterations,
+          escalatedToLargeModel: evaluationResult.escalatedToLargeModel,
+        },
+        overallScore: evaluationResult.confidence,
+        evaluationSkipped: evaluationResult.evaluationSkipped,
+        skipReason: evaluationResult.skipReason,
+      });
+      console.log('[Orchestrator] Evaluation record saved successfully');
+    } catch (error) {
+      console.error('[Orchestrator] Failed to save evaluation record:', error);
+      // Don't throw - evaluation storage failure shouldn't break research execution
+    }
 
     // Log evaluation result for user visibility
     if (!evaluationResult.evaluationSkipped) {

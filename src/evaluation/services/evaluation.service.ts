@@ -68,15 +68,11 @@ export class EvaluationService {
       return fallback;
     }
 
-    const timeout = this.getTimeoutForContext(context);
-    console.log(`[EvaluationService] Starting evaluation with timeout: ${timeout}ms`);
+    console.log(`[EvaluationService] Starting evaluation (no timeout)`);
 
     try {
       console.log(`[EvaluationService] Calling evaluation function...`);
-      const result = await Promise.race([
-        evaluationFn(),
-        this.createTimeout<T>(timeout, context),
-      ]);
+      const result = await evaluationFn();
       console.log(`[EvaluationService] Evaluation completed successfully`);
       return result;
     } catch (error) {
@@ -97,28 +93,6 @@ export class EvaluationService {
         skipReason: error.message,
       } as T;
     }
-  }
-
-  private getTimeoutForContext(context: string): number {
-    if (context.includes('plan')) {
-      return this.config.planEvaluation?.timeout || 60000;
-    }
-    if (context.includes('retrieval')) {
-      return this.config.retrievalEvaluation?.timeout || 30000;
-    }
-    if (context.includes('answer')) {
-      return this.config.answerEvaluation?.timeout || 45000;
-    }
-    return 60000;
-  }
-
-  private createTimeout<T>(ms: number, context: string): Promise<T> {
-    return new Promise((_, reject) => {
-      setTimeout(
-        () => reject(new Error(`Evaluation timeout (${ms}ms) for ${context}`)),
-        ms,
-      );
-    });
   }
 
   private async persistEvaluationError(

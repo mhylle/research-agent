@@ -12,14 +12,12 @@ export interface EvaluationConfig {
     enabled: boolean;
     iterationEnabled: boolean;
     maxAttempts: number;
-    timeout: number;
     passThreshold: number;
     failAction: 'continue' | 'warn' | 'block';
   };
 
   retrievalEvaluation: {
     enabled: boolean;
-    timeout: number;
     severeThreshold: number;
     failAction: 'continue' | 'warn' | 'block';
   };
@@ -27,7 +25,6 @@ export interface EvaluationConfig {
   answerEvaluation: {
     enabled: boolean;
     regenerationEnabled: boolean;
-    timeout: number;
     majorFailureThreshold: number;
     failAction: 'continue' | 'warn' | 'block';
   };
@@ -58,14 +55,12 @@ export const DEFAULT_EVALUATION_CONFIG: EvaluationConfig = {
     enabled: true,
     iterationEnabled: true,
     maxAttempts: 3,
-    timeout: 60000,
     passThreshold: 0.7,
     failAction: 'continue',
   },
 
   retrievalEvaluation: {
     enabled: true,
-    timeout: 30000,
     severeThreshold: 0.5,
     failAction: 'continue',
   },
@@ -73,7 +68,6 @@ export const DEFAULT_EVALUATION_CONFIG: EvaluationConfig = {
   answerEvaluation: {
     enabled: true,
     regenerationEnabled: true,
-    timeout: 45000,
     majorFailureThreshold: 0.5,
     failAction: 'continue',
   },

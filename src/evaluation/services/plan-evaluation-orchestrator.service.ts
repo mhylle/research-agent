@@ -54,18 +54,15 @@ export class PlanEvaluationOrchestratorService {
       this.logger.log(`Plan evaluation attempt ${attemptNumber}/${maxAttempts}`);
 
       try {
-        // Step 1: Panel evaluation with timeout
-        const evaluatorResults = await Promise.race([
-          this.panelEvaluator.evaluateWithPanel(
-            ['intentAnalyst', 'coverageChecker'],
-            {
-              query: input.query,
-              plan: currentPlan,
-              searchQueries: currentPlan.searchQueries || [],
-            },
-          ),
-          this.createAttemptTimeout(30000, attemptNumber)
-        ]);
+        // Step 1: Panel evaluation (no timeout)
+        const evaluatorResults = await this.panelEvaluator.evaluateWithPanel(
+          ['intentAnalyst', 'coverageChecker'],
+          {
+            query: input.query,
+            plan: currentPlan,
+            searchQueries: currentPlan.searchQueries || [],
+          },
+        );
 
         console.log(`[PlanEvaluationOrchestrator] Panel evaluation completed for attempt ${attemptNumber}`);
 
@@ -185,15 +182,6 @@ export class PlanEvaluationOrchestratorService {
     }
 
     attempts.push(attempt);
-  }
-
-  private createAttemptTimeout(ms: number, attemptNumber: number): Promise<never> {
-    return new Promise((_, reject) => {
-      setTimeout(
-        () => reject(new Error(`Attempt ${attemptNumber} timeout (${ms}ms)`)),
-        ms,
-      );
-    });
   }
 
   private decideIteration(

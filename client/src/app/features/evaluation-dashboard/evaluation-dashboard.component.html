@@ -59,7 +59,7 @@
                   <span class="badge" [class.passed]="phase.passed" [class.failed]="!phase.passed">
                     {{ phase.passed ? 'Passed' : 'Failed' }}
                   </span>
-                  <span class="confidence">Confidence: {{ ((phase.confidence ?? 0) * 100).toFixed(0) }}%</span>
+                  <span class="confidence">Confidence: {{ (phase.confidence ?? 0) * 100 | number:'1.0-0' }}%</span>
                 </div>
                 <div class="scores-grid">
                   @for (score of phase.scores | keyvalue; track score.key) {
@@ -68,7 +68,7 @@
                       <div class="score-bar">
                         <div class="score-fill" [style.width.%]="(score.value ?? 0) * 100"></div>
                       </div>
-                      <span class="score-value">{{ ((score.value ?? 0) * 100).toFixed(1) }}%</span>
+                      <span class="score-value">{{ (score.value ?? 0) * 100 | number:'1.1-1' }}%</span>
                       @if (phase.explanations && phase.explanations[score.key]) {
                         <div class="score-explanation">
                           <strong>Explanation:</strong> {{ phase.explanations[score.key] }}

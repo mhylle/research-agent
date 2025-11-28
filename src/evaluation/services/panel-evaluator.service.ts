@@ -1,14 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OllamaService } from '../../llm/ollama.service';
 import { EvaluatorResult, DEFAULT_EVALUATION_CONFIG } from '../interfaces';
-import { INTENT_ANALYST_PROMPT, COVERAGE_CHECKER_PROMPT } from '../prompts';
+import {
+  INTENT_ANALYST_PROMPT,
+  COVERAGE_CHECKER_PROMPT,
+  SOURCE_RELEVANCE_PROMPT,
+  SOURCE_QUALITY_PROMPT,
+  COVERAGE_COMPLETENESS_PROMPT
+} from '../prompts';
 
 type EvaluatorRole =
   | 'intentAnalyst'
   | 'coverageChecker'
   | 'faithfulnessJudge'
   | 'qualityAssessor'
-  | 'factChecker';
+  | 'factChecker'
+  | 'sourceRelevance'
+  | 'sourceQuality'
+  | 'coverageCompleteness';
 
 @Injectable()
 export class PanelEvaluatorService {
@@ -21,13 +30,16 @@ export class PanelEvaluatorService {
     faithfulnessJudge: '', // To be added
     qualityAssessor: '', // To be added
     factChecker: '', // To be added
+    sourceRelevance: SOURCE_RELEVANCE_PROMPT,
+    sourceQuality: SOURCE_QUALITY_PROMPT,
+    coverageCompleteness: COVERAGE_COMPLETENESS_PROMPT,
   };
 
   constructor(private readonly ollamaService: OllamaService) {}
 
   async evaluateWithRole(
     role: EvaluatorRole,
-    context: { query: string; plan: any; searchQueries?: string[] },
+    context: { query: string; plan: any; searchQueries?: string[]; sources?: string },
   ): Promise<EvaluatorResult> {
     const startTime = Date.now();
     const roleConfig = this.config.evaluators[role];
@@ -74,7 +86,7 @@ export class PanelEvaluatorService {
 
   async evaluateWithPanel(
     roles: EvaluatorRole[],
-    context: { query: string; plan: any; searchQueries?: string[] },
+    context: { query: string; plan: any; searchQueries?: string[]; sources?: string },
   ): Promise<EvaluatorResult[]> {
     console.log(`[PanelEvaluatorService] evaluateWithPanel called with roles:`, roles);
     console.log(`[PanelEvaluatorService] Context query:`, context.query);
@@ -90,7 +102,7 @@ export class PanelEvaluatorService {
 
   private buildPrompt(
     role: EvaluatorRole,
-    context: { query: string; plan: any; searchQueries?: string[] },
+    context: { query: string; plan: any; searchQueries?: string[]; sources?: string },
   ): string {
     let template = this.prompts[role];
 
@@ -102,6 +114,10 @@ export class PanelEvaluatorService {
         '{searchQueries}',
         context.searchQueries.join('\n'),
       );
+    }
+
+    if (context.sources) {
+      template = template.replace('{sources}', context.sources);
     }
 
     return template;

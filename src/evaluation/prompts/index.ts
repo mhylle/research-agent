@@ -4,3 +4,6 @@ export * from './faithfulness-judge.prompt';
 export * from './quality-assessor.prompt';
 export * from './fact-checker.prompt';
 export * from './escalation-meta.prompt';
+export * from './source-relevance.prompt';
+export * from './source-quality.prompt';
+export * from './coverage-completeness.prompt';

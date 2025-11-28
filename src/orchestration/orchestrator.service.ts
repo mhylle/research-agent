@@ -19,6 +19,7 @@ import {
 } from '../logging/milestone-templates';
 import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
 import { EvaluationService } from '../evaluation/services/evaluation.service';
+import { RetrievalEvaluatorService } from '../evaluation/services/retrieval-evaluator.service';
 
 export interface ResearchResult {
   logId: string;
@@ -40,6 +41,7 @@ export class Orchestrator {
     private eventEmitter: EventEmitter2,
     private planEvaluationOrchestrator: PlanEvaluationOrchestratorService,
     private evaluationService: EvaluationService,
+    private retrievalEvaluator: RetrievalEvaluatorService,
   ) {}
 
   async executeResearch(query: string, logId?: string): Promise<ResearchResult> {
@@ -148,6 +150,7 @@ export class Orchestrator {
     const sources: Array<{ url: string; title: string; relevance: string }> =
       [];
     const allStepResults: StepResult[] = [];
+    let retrievalEvaluationComplete = false;
 
     console.log(`[Orchestrator] Starting execution loop for ${plan.phases.length} phases`);
 
@@ -174,6 +177,57 @@ export class Orchestrator {
       this.extractResultData(phaseResult, sources, (output) => {
         finalOutput = output;
       });
+
+      // RETRIEVAL EVALUATION - after retrieval phases (search/fetch)
+      if (!retrievalEvaluationComplete && this.isRetrievalPhase(phase)) {
+        const hasRetrievedContent = allStepResults.some(r =>
+          Array.isArray(r.output) && r.output.length > 0
+        );
+
+        if (hasRetrievedContent) {
+          console.log('[Orchestrator] Starting retrieval evaluation...');
+          await this.emit(logId, 'evaluation_started', {
+            phase: 'retrieval',
+            query: plan.query
+          });
+
+          try {
+            const retrievalContent = this.collectRetrievalContent(allStepResults);
+            const retrievalEvalResult = await this.retrievalEvaluator.evaluate({
+              query: plan.query,
+              retrievedContent: retrievalContent,
+            });
+
+            console.log('[Orchestrator] Retrieval evaluation completed:', JSON.stringify(retrievalEvalResult, null, 2));
+
+            await this.emit(logId, 'evaluation_completed', {
+              phase: 'retrieval',
+              passed: retrievalEvalResult.passed,
+              scores: retrievalEvalResult.scores,
+              confidence: retrievalEvalResult.confidence,
+              flaggedSevere: retrievalEvalResult.flaggedSevere,
+              sourceDetails: retrievalEvalResult.sourceDetails,
+              evaluationSkipped: retrievalEvalResult.evaluationSkipped,
+              skipReason: retrievalEvalResult.skipReason,
+            });
+
+            // Update evaluation record with retrieval evaluation
+            await this.evaluationService.updateEvaluationRecord(logId, {
+              retrievalEvaluation: {
+                scores: retrievalEvalResult.scores,
+                passed: retrievalEvalResult.passed,
+                flaggedSevere: retrievalEvalResult.flaggedSevere,
+                sourceDetails: retrievalEvalResult.sourceDetails,
+              },
+            });
+
+            retrievalEvaluationComplete = true;
+          } catch (error) {
+            console.error('[Orchestrator] Retrieval evaluation failed:', error);
+            // Don't throw - evaluation failure shouldn't break research execution
+          }
+        }
+      }
 
       // 3. RE-PLAN CHECKPOINT
       if (phase.replanCheckpoint && phaseResult.status === 'completed') {
@@ -574,14 +628,16 @@ export class Orchestrator {
 
   private isSearchResultItem(
     item: unknown,
-  ): item is { url: string; title: string; score?: number } {
+  ): item is { url: string; title: string; content: string; score?: number } {
     return (
       typeof item === 'object' &&
       item !== null &&
       'url' in item &&
       'title' in item &&
+      'content' in item &&
       typeof (item as Record<string, unknown>).url === 'string' &&
-      typeof (item as Record<string, unknown>).title === 'string'
+      typeof (item as Record<string, unknown>).title === 'string' &&
+      typeof (item as Record<string, unknown>).content === 'string'
     );
   }
 
@@ -870,5 +926,63 @@ export class Orchestrator {
    */
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Check if a phase is a retrieval phase (search/fetch)
+   */
+  private isRetrievalPhase(phase: Phase): boolean {
+    const phaseName = phase.name.toLowerCase();
+    return phaseName.includes('search') ||
+           phaseName.includes('fetch') ||
+           phaseName.includes('gather') ||
+           phaseName.includes('retriev');
+  }
+
+  /**
+   * Collect retrieval content from step results for evaluation
+   */
+  private collectRetrievalContent(stepResults: StepResult[]): Array<{
+    url: string;
+    content: string;
+    title?: string;
+    fetchedAt?: Date;
+  }> {
+    const retrievalContent: Array<{
+      url: string;
+      content: string;
+      title?: string;
+      fetchedAt?: Date;
+    }> = [];
+
+    for (const stepResult of stepResults) {
+      if (stepResult.status === 'completed' && stepResult.output) {
+        // Handle search results (arrays of search result objects)
+        if (Array.isArray(stepResult.output)) {
+          for (const item of stepResult.output) {
+            if (this.isSearchResultItem(item)) {
+              retrievalContent.push({
+                url: item.url,
+                title: item.title,
+                content: item.content || '',
+                fetchedAt: new Date(),
+              });
+            }
+          }
+        }
+        // Handle fetch results (string content)
+        else if (typeof stepResult.output === 'string' && stepResult.output.length > 50) {
+          // For fetch results, we might not have URL directly, use a placeholder
+          retrievalContent.push({
+            url: `fetched-content-${retrievalContent.length}`,
+            content: stepResult.output,
+            title: 'Fetched Content',
+            fetchedAt: new Date(),
+          });
+        }
+      }
+    }
+
+    return retrievalContent;
   }
 }

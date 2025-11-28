@@ -419,4 +419,22 @@ export class EvaluationService {
     const entity = this.evaluationRepository.create(record);
     return this.evaluationRepository.save(entity);
   }
+
+  async updateEvaluationRecord(
+    logId: string,
+    updates: Partial<EvaluationRecordEntity>,
+  ): Promise<void> {
+    const existing = await this.evaluationRepository.findOne({
+      where: { logId },
+    });
+
+    if (!existing) {
+      this.logger.warn(`No evaluation record found for logId: ${logId}`);
+      return;
+    }
+
+    // Merge the updates with existing record
+    Object.assign(existing, updates);
+    await this.evaluationRepository.save(existing);
+  }
 }

@@ -50,13 +50,16 @@ export class RetrievalEvaluatorService {
     this.logger.log(`Evaluating retrieval for query: ${input.query.substring(0, 50)}...`);
 
     try {
-      // Use relevant evaluator roles for retrieval
+      // Format sources for evaluation
+      const sourcesText = this.formatSourcesForEvaluation(input.retrievedContent);
+
+      // Use retrieval-specific evaluator roles
       const evaluatorResults = await this.panelEvaluator.evaluateWithPanel(
-        ['faithfulnessJudge', 'coverageChecker', 'qualityAssessor'],
+        ['sourceRelevance', 'sourceQuality', 'coverageCompleteness'],
         {
           query: input.query,
           plan: {}, // Not used for retrieval
-          searchQueries: input.retrievedContent.map(c => c.url),
+          sources: sourcesText,
         },
       );
 
@@ -95,16 +98,35 @@ export class RetrievalEvaluatorService {
     }
   }
 
+  private formatSourcesForEvaluation(content: RetrievalContent[]): string {
+    return content.map((source, index) => {
+      return `
+### Source ${index + 1}
+- URL: ${source.url}
+- Title: ${source.title || 'N/A'}
+- Content Preview: ${source.content.substring(0, 300)}...
+- Fetched At: ${source.fetchedAt ? source.fetchedAt.toISOString() : 'N/A'}
+`;
+    }).join('\n');
+  }
+
   private buildSourceDetails(
     content: RetrievalContent[],
     evaluatorResults: any[],
   ): Array<{ url: string; relevanceScore: number; qualityScore: number }> {
-    // For now, return basic source info
-    // In full implementation, would parse evaluator critiques for per-source scores
+    // Extract relevance and quality scores from evaluator results
+    const relevanceResult = evaluatorResults.find(r => r.role === 'sourceRelevance');
+    const qualityResult = evaluatorResults.find(r => r.role === 'sourceQuality');
+
+    const contextRecall = relevanceResult?.scores?.contextRecall || 0.5;
+    const contextPrecision = relevanceResult?.scores?.contextPrecision || 0.5;
+    const sourceQuality = qualityResult?.scores?.sourceQuality || 0.5;
+
+    // Build per-source details (simplified - using average scores)
     return content.map(c => ({
       url: c.url,
-      relevanceScore: 0.5, // Default placeholder
-      qualityScore: 0.5,
+      relevanceScore: (contextRecall + contextPrecision) / 2,
+      qualityScore: sourceQuality,
     }));
   }
 }

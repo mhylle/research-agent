@@ -110,13 +110,19 @@ export class PlanEvaluationOrchestratorService {
     // Extract explanations from the last attempt
     const explanations: Record<string, string> = {};
     if (lastAttempt?.evaluatorResults) {
+      this.logger.debug(`[doEvaluatePlan] Extracting explanations from ${lastAttempt.evaluatorResults.length} evaluator results`);
       for (const result of lastAttempt.evaluatorResults) {
+        this.logger.debug(`[doEvaluatePlan] Evaluator ${result.role}: explanation="${result.explanation?.substring(0, 100)}...", dimensions=${JSON.stringify(result.dimensions)}`);
         if (result.explanation) {
           for (const dimension of result.dimensions) {
             explanations[dimension] = result.explanation;
+            this.logger.debug(`[doEvaluatePlan] Added explanation for dimension ${dimension}`);
           }
+        } else {
+          this.logger.warn(`[doEvaluatePlan] No explanation found for evaluator ${result.role}`);
         }
       }
+      this.logger.debug(`[doEvaluatePlan] Final explanations object: ${JSON.stringify(Object.keys(explanations))}`);
     }
 
     return {

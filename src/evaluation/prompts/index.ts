@@ -7,3 +7,6 @@ export * from './escalation-meta.prompt';
 export * from './source-relevance.prompt';
 export * from './source-quality.prompt';
 export * from './coverage-completeness.prompt';
+export * from './faithfulness.prompt';
+export * from './answer-relevance.prompt';
+export * from './answer-completeness.prompt';

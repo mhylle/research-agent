@@ -16,8 +16,7 @@ export interface RetrievalDimensionScores extends DimensionScores {
 
 export interface AnswerDimensionScores extends DimensionScores {
   faithfulness: number;
-  relevance: number;
-  factualAccuracy: number;
+  answerRelevance: number;
   completeness: number;
-  coherence: number;
+  accuracy: number;
 }

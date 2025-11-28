@@ -6,7 +6,10 @@ import {
   COVERAGE_CHECKER_PROMPT,
   SOURCE_RELEVANCE_PROMPT,
   SOURCE_QUALITY_PROMPT,
-  COVERAGE_COMPLETENESS_PROMPT
+  COVERAGE_COMPLETENESS_PROMPT,
+  FAITHFULNESS_PROMPT,
+  ANSWER_RELEVANCE_PROMPT,
+  ANSWER_COMPLETENESS_PROMPT,
 } from '../prompts';
 
 type EvaluatorRole =
@@ -17,7 +20,10 @@ type EvaluatorRole =
   | 'factChecker'
   | 'sourceRelevance'
   | 'sourceQuality'
-  | 'coverageCompleteness';
+  | 'coverageCompleteness'
+  | 'faithfulness'
+  | 'answerRelevance'
+  | 'answerCompleteness';
 
 @Injectable()
 export class PanelEvaluatorService {
@@ -27,19 +33,22 @@ export class PanelEvaluatorService {
   private readonly prompts: Record<EvaluatorRole, string> = {
     intentAnalyst: INTENT_ANALYST_PROMPT,
     coverageChecker: COVERAGE_CHECKER_PROMPT,
-    faithfulnessJudge: '', // To be added
-    qualityAssessor: '', // To be added
-    factChecker: '', // To be added
+    faithfulnessJudge: '', // To be added (legacy)
+    qualityAssessor: '', // To be added (legacy)
+    factChecker: '', // To be added (legacy)
     sourceRelevance: SOURCE_RELEVANCE_PROMPT,
     sourceQuality: SOURCE_QUALITY_PROMPT,
     coverageCompleteness: COVERAGE_COMPLETENESS_PROMPT,
+    faithfulness: FAITHFULNESS_PROMPT,
+    answerRelevance: ANSWER_RELEVANCE_PROMPT,
+    answerCompleteness: ANSWER_COMPLETENESS_PROMPT,
   };
 
   constructor(private readonly ollamaService: OllamaService) {}
 
   async evaluateWithRole(
     role: EvaluatorRole,
-    context: { query: string; plan: any; searchQueries?: string[]; sources?: string },
+    context: { query: string; plan: any; searchQueries?: string[]; sources?: string; answer?: string },
   ): Promise<EvaluatorResult> {
     const startTime = Date.now();
     const roleConfig = this.config.evaluators[role];
@@ -86,7 +95,7 @@ export class PanelEvaluatorService {
 
   async evaluateWithPanel(
     roles: EvaluatorRole[],
-    context: { query: string; plan: any; searchQueries?: string[]; sources?: string },
+    context: { query: string; plan: any; searchQueries?: string[]; sources?: string; answer?: string },
   ): Promise<EvaluatorResult[]> {
     console.log(`[PanelEvaluatorService] evaluateWithPanel called with roles:`, roles);
     console.log(`[PanelEvaluatorService] Context query:`, context.query);
@@ -102,7 +111,7 @@ export class PanelEvaluatorService {
 
   private buildPrompt(
     role: EvaluatorRole,
-    context: { query: string; plan: any; searchQueries?: string[]; sources?: string },
+    context: { query: string; plan: any; searchQueries?: string[]; sources?: string; answer?: string },
   ): string {
     let template = this.prompts[role];
 
@@ -118,6 +127,10 @@ export class PanelEvaluatorService {
 
     if (context.sources) {
       template = template.replace('{sources}', context.sources);
+    }
+
+    if (context.answer) {
+      template = template.replace('{answer}', context.answer);
     }
 
     return template;

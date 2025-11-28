@@ -31,11 +31,10 @@ export class AnswerEvaluatorService {
   private readonly logger = new Logger(AnswerEvaluatorService.name);
 
   private readonly ANSWER_WEIGHTS: Record<string, number> = {
-    faithfulness: 0.30,
-    relevance: 0.25,
-    factualAccuracy: 0.20,
-    completeness: 0.15,
-    coherence: 0.10,
+    faithfulness: 0.35,
+    answerRelevance: 0.30,
+    completeness: 0.20,
+    accuracy: 0.15,
   };
 
   private readonly MAJOR_FAILURE_THRESHOLD = 0.5;
@@ -49,13 +48,32 @@ export class AnswerEvaluatorService {
     this.logger.log(`Evaluating answer for query: ${input.query.substring(0, 50)}...`);
 
     try {
-      // Use all relevant evaluator roles for answer evaluation
+      // Skip evaluation if no answer was generated
+      if (!input.answer || input.answer.trim().length === 0) {
+        this.logger.warn('No answer generated, skipping answer evaluation');
+        return {
+          passed: false,
+          scores: { faithfulness: 0, answerRelevance: 0, completeness: 0, accuracy: 0 },
+          confidence: 0,
+          shouldRegenerate: true,
+          critique: 'No answer was generated',
+          improvementSuggestions: ['Generate a comprehensive answer based on retrieved sources'],
+          evaluationSkipped: true,
+          skipReason: 'No answer generated',
+        };
+      }
+
+      // Format sources for evaluation
+      const sourcesText = this.formatSourcesForEvaluation(input.sources);
+
+      // Use answer-specific evaluator roles
       const evaluatorResults = await this.panelEvaluator.evaluateWithPanel(
-        ['faithfulnessJudge', 'intentAnalyst', 'factChecker', 'coverageChecker', 'qualityAssessor'],
+        ['faithfulness', 'answerRelevance', 'answerCompleteness'],
         {
           query: input.query,
-          plan: { answer: input.answer }, // Pass answer in plan for now
-          searchQueries: input.sources.map(s => s.content),
+          plan: {}, // Not used for answer evaluation
+          sources: sourcesText,
+          answer: input.answer,
         },
       );
 
@@ -90,10 +108,9 @@ export class AnswerEvaluatorService {
         passed: true, // Fail-safe: don't block on evaluation failure
         scores: {
           faithfulness: 0,
-          relevance: 0,
-          factualAccuracy: 0,
+          answerRelevance: 0,
           completeness: 0,
-          coherence: 0,
+          accuracy: 0,
         },
         confidence: 0,
         shouldRegenerate: false,
@@ -103,6 +120,23 @@ export class AnswerEvaluatorService {
         skipReason: error.message,
       };
     }
+  }
+
+  private formatSourcesForEvaluation(sources: AnswerSource[]): string {
+    if (!sources || sources.length === 0) {
+      return 'No sources available';
+    }
+
+    return sources
+      .map((source, index) => {
+        return `
+### Source ${index + 1}
+- URL: ${source.url}
+- Title: ${source.title || 'N/A'}
+- Content Preview: ${source.content.substring(0, 500)}...
+`;
+      })
+      .join('\n');
   }
 
   private buildCritique(results: EvaluatorResult[]): string {

@@ -20,6 +20,7 @@ import {
 import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
 import { EvaluationService } from '../evaluation/services/evaluation.service';
 import { RetrievalEvaluatorService } from '../evaluation/services/retrieval-evaluator.service';
+import { AnswerEvaluatorService } from '../evaluation/services/answer-evaluator.service';
 
 export interface ResearchResult {
   logId: string;
@@ -42,6 +43,7 @@ export class Orchestrator {
     private planEvaluationOrchestrator: PlanEvaluationOrchestratorService,
     private evaluationService: EvaluationService,
     private retrievalEvaluator: RetrievalEvaluatorService,
+    private answerEvaluator: AnswerEvaluatorService,
   ) {}
 
   async executeResearch(query: string, logId?: string): Promise<ResearchResult> {
@@ -310,7 +312,52 @@ export class Orchestrator {
       }
     }
 
-    // 5. COMPLETION
+    // 5. ANSWER EVALUATION
+    console.log('[Orchestrator] Starting answer evaluation phase');
+    try {
+      const answerEvalResult = await this.answerEvaluator.evaluate({
+        query: plan.query,
+        answer: finalOutput,
+        sources: sources.map(s => ({
+          url: s.url,
+          content: '', // Content not stored in sources array
+          title: s.title,
+        })),
+      });
+
+      console.log('[Orchestrator] Answer evaluation completed:', JSON.stringify(answerEvalResult, null, 2));
+
+      await this.emit(logId, 'evaluation_completed', {
+        phase: 'answer',
+        passed: answerEvalResult.passed,
+        scores: answerEvalResult.scores,
+        confidence: answerEvalResult.confidence,
+        shouldRegenerate: answerEvalResult.shouldRegenerate,
+        evaluationSkipped: answerEvalResult.evaluationSkipped,
+        skipReason: answerEvalResult.skipReason,
+      });
+
+      // Update evaluation record with answer evaluation
+      await this.evaluationService.updateEvaluationRecord(logId, {
+        answerEvaluation: {
+          attempts: [{
+            scores: answerEvalResult.scores,
+            passed: answerEvalResult.passed,
+            confidence: answerEvalResult.confidence,
+            critique: answerEvalResult.critique,
+            suggestions: answerEvalResult.improvementSuggestions,
+          }],
+          finalScores: answerEvalResult.scores,
+          passed: answerEvalResult.passed,
+          regenerated: false, // Future: implement answer regeneration
+        },
+      });
+    } catch (error) {
+      console.error('[Orchestrator] Answer evaluation failed:', error);
+      // Don't throw - evaluation failure shouldn't break research execution
+    }
+
+    // 6. COMPLETION
     const totalExecutionTime = Date.now() - startTime;
 
     await this.emit(logId, 'session_completed', {

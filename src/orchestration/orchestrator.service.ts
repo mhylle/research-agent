@@ -671,7 +671,7 @@ export class Orchestrator {
     const queries: string[] = [];
     for (const phase of plan.phases) {
       for (const step of phase.steps) {
-        if (step.toolName === 'web_search' && step.config?.query) {
+        if ((step.toolName === 'web_search' || step.toolName === 'tavily_search') && step.config?.query) {
           queries.push(step.config.query);
         }
       }

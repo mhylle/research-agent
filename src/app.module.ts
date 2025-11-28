@@ -15,6 +15,7 @@ import { OrchestrationModule } from './orchestration/orchestration.module';
 import { EvaluationModule } from './evaluation/evaluation.module';
 import { LogEntryEntity } from './logging/entities/log-entry.entity';
 import { ResearchResultEntity } from './research/entities/research-result.entity';
+import { EvaluationRecordEntity } from './evaluation/entities/evaluation-record.entity';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { ResearchResultEntity } from './research/entities/research-result.entity
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: './data/logs/research.db',
-      entities: [LogEntryEntity, ResearchResultEntity],
+      entities: [LogEntryEntity, ResearchResultEntity, EvaluationRecordEntity],
       synchronize: true, // Auto-create tables
       logging: true, // Enable logging to debug database issues
     }),

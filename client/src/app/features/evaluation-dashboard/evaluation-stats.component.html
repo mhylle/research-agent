@@ -1,0 +1,98 @@
+<div class="evaluation-stats">
+  <div class="stats-grid">
+    <!-- Overall Metrics -->
+    <div class="stat-card primary">
+      <div class="stat-label">Total Evaluations</div>
+      <div class="stat-value">{{ stats().totalRecords }}</div>
+    </div>
+
+    <div class="stat-card success">
+      <div class="stat-label">Passed</div>
+      <div class="stat-value">{{ stats().passedCount }}</div>
+    </div>
+
+    <div class="stat-card error">
+      <div class="stat-label">Failed</div>
+      <div class="stat-value">{{ stats().failedCount }}</div>
+    </div>
+
+    <div class="stat-card" [ngClass]="passRateClass()">
+      <div class="stat-label">Pass Rate</div>
+      <div class="stat-value">{{ stats().passRate.toFixed(1) }}%</div>
+    </div>
+  </div>
+
+  <!-- Average Scores Chart -->
+  <div class="scores-section">
+    <h2>Average Scores</h2>
+    <div class="scores-grid">
+      @for (score of averageScoreEntries(); track score.key) {
+        <div class="score-item">
+          <div class="score-header">
+            <span class="score-label">{{ score.label }}</span>
+            <span class="score-percentage" [ngClass]="getScoreClass(score.value)">
+              {{ getScorePercentage(score.value) }}%
+            </span>
+          </div>
+          <div class="score-bar">
+            <div
+              class="score-fill"
+              [ngClass]="getScoreClass(score.value)"
+              [style.width.%]="getScorePercentage(score.value)">
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Phase Breakdown -->
+  <div class="phase-section">
+    <h2>Phase Breakdown</h2>
+    <div class="phase-grid">
+      @for (phase of stats().phaseBreakdown; track phase.phase) {
+        <div class="phase-card">
+          <div class="phase-header">
+            <span class="phase-name">{{ phase.phase | titlecase }}</span>
+            <span class="phase-rate" [ngClass]="phase.passRate >= 70 ? 'good' : phase.passRate >= 50 ? 'fair' : 'poor'">
+              {{ phase.passRate.toFixed(1) }}%
+            </span>
+          </div>
+          <div class="phase-stats">
+            <div class="phase-stat">
+              <span class="label">Total:</span>
+              <span class="value">{{ phase.total }}</span>
+            </div>
+            <div class="phase-stat success">
+              <span class="label">Passed:</span>
+              <span class="value">{{ phase.passed }}</span>
+            </div>
+            <div class="phase-stat error">
+              <span class="label">Failed:</span>
+              <span class="value">{{ phase.failed }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Score Distribution -->
+  <div class="distribution-section">
+    <h2>Score Distribution</h2>
+    <div class="distribution-chart">
+      @for (bucket of stats().scoreDistribution; track bucket.range) {
+        <div class="distribution-bar">
+          <div class="bar-label">{{ bucket.range }}</div>
+          <div class="bar-container">
+            <div
+              class="bar-fill"
+              [style.width.%]="(bucket.count / stats().totalRecords) * 100">
+            </div>
+          </div>
+          <div class="bar-count">{{ bucket.count }}</div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

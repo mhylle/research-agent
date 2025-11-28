@@ -24,7 +24,7 @@ export class EvaluationRecordEntity {
   @Column()
   userQuery: string;
 
-  @Column('jsonb')
+  @Column('simple-json')
   planEvaluation: {
     attempts: any[];
     finalScores: Record<string, number>;
@@ -33,7 +33,7 @@ export class EvaluationRecordEntity {
     escalatedToLargeModel: boolean;
   };
 
-  @Column('jsonb', { nullable: true })
+  @Column('simple-json', { nullable: true })
   retrievalEvaluation: {
     scores: Record<string, number>;
     passed: boolean;
@@ -41,7 +41,7 @@ export class EvaluationRecordEntity {
     sourceDetails: any[];
   };
 
-  @Column('jsonb', { nullable: true })
+  @Column('simple-json', { nullable: true })
   answerEvaluation: {
     attempts: any[];
     finalScores: Record<string, number>;

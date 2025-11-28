@@ -1,0 +1,41 @@
+<div class="evaluation-dashboard">
+  <div class="dashboard-header">
+    <h1>Evaluation Dashboard</h1>
+    <button class="refresh-btn" (click)="refreshData()" [disabled]="isLoading()">
+      <span class="icon">🔄</span>
+      Refresh
+    </button>
+  </div>
+
+  @if (error(); as errorMsg) {
+    <div class="error-banner">
+      <span class="icon">⚠️</span>
+      {{ errorMsg }}
+    </div>
+  }
+
+  @if (isLoadingStats()) {
+    <div class="loading-stats">
+      <div class="spinner"></div>
+      <p>Loading statistics...</p>
+    </div>
+  } @else if (stats(); as statsData) {
+    <app-evaluation-stats [stats]="statsData" />
+  }
+
+  @if (!hasData() && !isLoading()) {
+    <div class="no-data">
+      <span class="icon">📊</span>
+      <h2>No Evaluation Data Available</h2>
+      <p>Start running evaluations to see statistics and records here.</p>
+    </div>
+  } @else {
+    <app-evaluation-list
+      [evaluations]="evaluations()"
+      [isLoading]="isLoadingRecords()"
+      [currentPage]="pagination().page"
+      (filterChange)="handleFilterChange($event)"
+      (pageChange)="handlePageChange($event)"
+    />
+  }
+</div>

@@ -31,6 +31,7 @@ export interface EvaluationResult {
   status: EvaluationStatus;
   passed?: boolean;
   scores?: EvaluationScores;
+  explanations?: { [key: string]: string };
   confidence?: number;
   totalIterations?: number;
   escalatedToLargeModel?: boolean;

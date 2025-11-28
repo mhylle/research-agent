@@ -33,14 +33,16 @@ export const COVERAGE_CHECKER_PROMPT = `You are a Coverage Checker evaluating wh
 ## Response Format (JSON)
 {
   "scores": {
-    "queryCoverage": <0.0-1.0>,
-    "scopeAppropriateness": <0.0-1.0>
+    "queryCoverage": <0.0-1.0 with 2 decimal places, e.g., 0.73, 0.85, 0.42>,
+    "scopeAppropriateness": <0.0-1.0 with 2 decimal places>
   },
-  "confidence": <0.0-1.0>,
+  "confidence": <0.0-1.0 with 2 decimal places>,
+  "explanation": "<detailed reasoning for why you gave these specific scores>",
   "critique": "<detailed explanation>",
   "coveredAspects": ["<list>"],
   "missingAspects": ["<list>"],
   "scopeIssues": "<narrow|broad|appropriate>"
 }
 
+IMPORTANT: Use precise decimal scores (e.g., 0.73, 0.85, 0.42) not rounded values (e.g., 0.7, 0.8, 0.4).
 Respond ONLY with valid JSON.`;

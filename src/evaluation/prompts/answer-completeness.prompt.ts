@@ -40,10 +40,11 @@ Measures whether the answer provides sufficient detail and explanation.
 ## Response Format (JSON)
 {
   "scores": {
-    "completeness": <0.0-1.0>,
-    "depth": <0.0-1.0>
+    "completeness": <0.0-1.0 with 2 decimal places, e.g., 0.73, 0.85, 0.42>,
+    "depth": <0.0-1.0 with 2 decimal places>
   },
-  "confidence": <0.0-1.0>,
+  "confidence": <0.0-1.0 with 2 decimal places>,
+  "explanation": "<detailed reasoning for why you gave these specific scores>",
   "critique": "<detailed explanation with specific examples>",
   "coveredAspects": ["<aspects that were adequately covered>"],
   "missingAspects": ["<important aspects that were missed>"],
@@ -52,4 +53,5 @@ Measures whether the answer provides sufficient detail and explanation.
   "suggestions": ["<how to improve completeness and depth>"]
 }
 
+IMPORTANT: Use precise decimal scores (e.g., 0.73, 0.85, 0.42) not rounded values (e.g., 0.7, 0.8, 0.4).
 Respond ONLY with valid JSON.`;

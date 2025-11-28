@@ -97,6 +97,7 @@ export class Orchestrator {
         planEvaluation: {
           attempts: evaluationResult.attempts || [],
           finalScores: evaluationResult.scores,
+          explanations: evaluationResult.explanations || {},
           passed: evaluationResult.passed,
           totalIterations: evaluationResult.totalIterations,
           escalatedToLargeModel: evaluationResult.escalatedToLargeModel,
@@ -217,6 +218,7 @@ export class Orchestrator {
             await this.evaluationService.updateEvaluationRecord(logId, {
               retrievalEvaluation: {
                 scores: retrievalEvalResult.scores,
+                explanations: retrievalEvalResult.explanations || {},
                 passed: retrievalEvalResult.passed,
                 flaggedSevere: retrievalEvalResult.flaggedSevere,
                 sourceDetails: retrievalEvalResult.sourceDetails,
@@ -348,6 +350,7 @@ export class Orchestrator {
             suggestions: answerEvalResult.improvementSuggestions,
           }],
           finalScores: answerEvalResult.scores,
+          explanations: answerEvalResult.explanations || {},
           passed: answerEvalResult.passed,
           regenerated: false, // Future: implement answer regeneration
         },

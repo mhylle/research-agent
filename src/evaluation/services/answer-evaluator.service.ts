@@ -18,6 +18,7 @@ export interface AnswerEvaluationInput {
 export interface AnswerEvaluationResult {
   passed: boolean;
   scores: AnswerDimensionScores;
+  explanations?: Record<string, string>;
   confidence: number;
   shouldRegenerate: boolean;
   critique: string;
@@ -54,6 +55,7 @@ export class AnswerEvaluatorService {
         return {
           passed: false,
           scores: { faithfulness: 0, answerRelevance: 0, completeness: 0, accuracy: 0 },
+          explanations: {},
           confidence: 0,
           shouldRegenerate: true,
           critique: 'No answer was generated',
@@ -90,12 +92,23 @@ export class AnswerEvaluatorService {
         this.logger.warn(`Answer flagged for regeneration: ${overallScore.toFixed(2)}`);
       }
 
+      // Extract explanations from evaluator results
+      const explanations: Record<string, string> = {};
+      for (const result of evaluatorResults) {
+        if (result.explanation) {
+          for (const dimension of result.dimensions) {
+            explanations[dimension] = result.explanation;
+          }
+        }
+      }
+
       const critique = this.buildCritique(evaluatorResults);
       const suggestions = this.extractSuggestions(evaluatorResults);
 
       return {
         passed,
         scores: aggregated.scores as AnswerDimensionScores,
+        explanations,
         confidence: aggregated.confidence,
         shouldRegenerate,
         critique,
@@ -112,6 +125,7 @@ export class AnswerEvaluatorService {
           completeness: 0,
           accuracy: 0,
         },
+        explanations: {},
         confidence: 0,
         shouldRegenerate: false,
         critique: '',

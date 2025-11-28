@@ -6,6 +6,7 @@ export interface EvaluatorResult {
   dimensions: string[];
   scores: DimensionScores;
   confidence: number;
+  explanation?: string;
   critique: string;
   rawResponse: string;
   latency: number;
@@ -44,6 +45,7 @@ export interface PlanAttempt {
 export interface EvaluationResult {
   passed: boolean;
   scores: DimensionScores;
+  explanations?: Record<string, string>;
   confidence: number;
   critique?: string;
   evaluationSkipped: boolean;

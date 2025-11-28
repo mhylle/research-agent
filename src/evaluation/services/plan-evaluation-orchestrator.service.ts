@@ -107,9 +107,22 @@ export class PlanEvaluationOrchestratorService {
 
     const lastAttempt = attempts[attempts.length - 1];
 
+    // Extract explanations from the last attempt
+    const explanations: Record<string, string> = {};
+    if (lastAttempt?.evaluatorResults) {
+      for (const result of lastAttempt.evaluatorResults) {
+        if (result.explanation) {
+          for (const dimension of result.dimensions) {
+            explanations[dimension] = result.explanation;
+          }
+        }
+      }
+    }
+
     return {
       passed: lastAttempt?.passed ?? false,
       scores: lastAttempt?.aggregatedScores ?? {},
+      explanations,
       confidence: lastAttempt?.aggregatedConfidence ?? 0,
       evaluationSkipped: false,
       attempts,

@@ -70,6 +70,7 @@ export const createMockEvaluationRecord = (
       },
     ],
     finalScores: { intentAlignment: 0.9, queryCoverage: 0.85 },
+    explanations: { intentAlignment: 'Plan perfectly captures user intent', queryCoverage: 'All aspects covered' },
     passed: true,
     totalIterations: 1,
     escalatedToLargeModel: false,
@@ -80,6 +81,7 @@ export const createMockEvaluationRecord = (
       contextPrecision: 0.8,
       sourceQuality: 0.9,
     },
+    explanations: { contextRecall: 'Good coverage of key concepts', contextPrecision: 'Minimal irrelevant content', sourceQuality: 'Credible sources' },
     passed: true,
     flaggedSevere: false,
     sourceDetails: [
@@ -116,6 +118,7 @@ export const createMockEvaluationRecord = (
       answerRelevance: 0.85,
       completeness: 0.8,
     },
+    explanations: { faithfulness: 'Answer is grounded in sources', answerRelevance: 'Addresses the query well', completeness: 'Good coverage' },
     passed: true,
     regenerated: false,
   },

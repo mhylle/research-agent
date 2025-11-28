@@ -18,6 +18,7 @@ export interface RetrievalEvaluationInput {
 export interface RetrievalEvaluationResult {
   passed: boolean;
   scores: RetrievalDimensionScores;
+  explanations?: Record<string, string>;
   confidence: number;
   flaggedSevere: boolean;
   sourceDetails: Array<{
@@ -76,9 +77,20 @@ export class RetrievalEvaluatorService {
         this.logger.warn(`Retrieval flagged as severe failure: ${overallScore.toFixed(2)}`);
       }
 
+      // Extract explanations from evaluator results
+      const explanations: Record<string, string> = {};
+      for (const result of evaluatorResults) {
+        if (result.explanation) {
+          for (const dimension of result.dimensions) {
+            explanations[dimension] = result.explanation;
+          }
+        }
+      }
+
       return {
         passed,
         scores: aggregated.scores as RetrievalDimensionScores,
+        explanations,
         confidence: aggregated.confidence,
         flaggedSevere,
         sourceDetails: this.buildSourceDetails(input.retrievedContent, evaluatorResults),
@@ -89,6 +101,7 @@ export class RetrievalEvaluatorService {
       return {
         passed: true, // Fail-safe: don't block on evaluation failure
         scores: { contextRecall: 0, contextPrecision: 0, sourceQuality: 0 },
+        explanations: {},
         confidence: 0,
         flaggedSevere: false,
         sourceDetails: [],

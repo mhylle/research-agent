@@ -179,6 +179,7 @@ export class EvaluationService {
         phase: 'plan',
         passed: entity.planEvaluation.passed,
         scores: entity.planEvaluation.finalScores || {},
+        explanations: entity.planEvaluation.explanations || {},
         confidence: 1,
       });
     }
@@ -188,6 +189,7 @@ export class EvaluationService {
         phase: 'retrieval',
         passed: entity.retrievalEvaluation.passed,
         scores: entity.retrievalEvaluation.scores || {},
+        explanations: entity.retrievalEvaluation.explanations || {},
         confidence: 1,
       });
     }
@@ -197,6 +199,7 @@ export class EvaluationService {
         phase: 'answer',
         passed: entity.answerEvaluation.passed,
         scores: entity.answerEvaluation.finalScores || {},
+        explanations: entity.answerEvaluation.explanations || {},
         confidence: 1,
       });
     }

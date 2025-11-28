@@ -28,6 +28,7 @@ export class EvaluationRecordEntity {
   planEvaluation: {
     attempts: any[];
     finalScores: Record<string, number>;
+    explanations: Record<string, string>;
     passed: boolean;
     totalIterations: number;
     escalatedToLargeModel: boolean;
@@ -36,6 +37,7 @@ export class EvaluationRecordEntity {
   @Column('simple-json', { nullable: true })
   retrievalEvaluation: {
     scores: Record<string, number>;
+    explanations: Record<string, string>;
     passed: boolean;
     flaggedSevere: boolean;
     sourceDetails: any[];
@@ -45,6 +47,7 @@ export class EvaluationRecordEntity {
   answerEvaluation: {
     attempts: any[];
     finalScores: Record<string, number>;
+    explanations: Record<string, string>;
     passed: boolean;
     regenerated: boolean;
   };

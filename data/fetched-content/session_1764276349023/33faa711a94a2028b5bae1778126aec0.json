@@ -1,0 +1,29 @@
+{
+  "url": "https://test.com",
+  "fetchedAt": "2025-11-27T20:45:49.043Z",
+  "method": "cheerio",
+  "originalSize": 39,
+  "extractedSize": 4,
+  "title": "Test",
+  "content": "Test",
+  "htmlPath": "data/fetched-content/session_1764276349023/33faa711a94a2028b5bae1778126aec0.html",
+  "confidence": 0.5,
+  "extractionMetadata": {
+    "selectionReason": "Cheerio fallback (all other methods failed or low confidence)",
+    "totalDuration": 20,
+    "downloadDuration": 0,
+    "readability": {
+      "attempted": true,
+      "success": false,
+      "confidence": 0,
+      "duration": 8,
+      "contentLength": 0
+    },
+    "cheerio": {
+      "attempted": true,
+      "success": true,
+      "duration": 5,
+      "contentLength": 4
+    }
+  }
+}

@@ -242,8 +242,12 @@ export class EvaluationService {
     };
   }
 
-  async getRecordById(id: string): Promise<EvaluationRecordEntity | null> {
-    return this.evaluationRepository.findOne({ where: { id } });
+  async getRecordById(id: string): Promise<any | null> {
+    const entity = await this.evaluationRepository.findOne({ where: { id } });
+    if (!entity) {
+      return null;
+    }
+    return this.transformToFrontendRecord(entity);
   }
 
   async getStats(): Promise<EvaluationStats> {
@@ -329,6 +333,15 @@ export class EvaluationService {
         if (record.retrievalEvaluation.passed) {
           phaseAccumulators.retrieval.passed++;
         }
+
+        // Process retrieval evaluation scores
+        // Map contextRecall + contextPrecision to relevance score
+        const retrievalScores = record.retrievalEvaluation.scores || {};
+        if ('contextRecall' in retrievalScores && 'contextPrecision' in retrievalScores) {
+          const relevanceScore = (retrievalScores.contextRecall + retrievalScores.contextPrecision) / 2;
+          scoreAccumulators.relevance.sum += relevanceScore;
+          scoreAccumulators.relevance.count++;
+        }
       }
 
       // Process answer evaluation
@@ -336,6 +349,21 @@ export class EvaluationService {
         phaseAccumulators.answer.total++;
         if (record.answerEvaluation.passed) {
           phaseAccumulators.answer.passed++;
+        }
+
+        // Process answer evaluation scores
+        const answerScores = record.answerEvaluation.finalScores || {};
+        for (const [key, value] of Object.entries(answerScores)) {
+          if (typeof value === 'number') {
+            // Map answerRelevance to relevance
+            if (key === 'answerRelevance') {
+              scoreAccumulators.relevance.sum += value;
+              scoreAccumulators.relevance.count++;
+            } else if (key in scoreAccumulators) {
+              scoreAccumulators[key as keyof typeof scoreAccumulators].sum += value;
+              scoreAccumulators[key as keyof typeof scoreAccumulators].count++;
+            }
+          }
         }
       }
 

@@ -7,6 +7,7 @@ import { EventCoordinatorService } from './services/event-coordinator.service';
 import { MilestoneService } from './services/milestone.service';
 import { ResultExtractorService } from './services/result-extractor.service';
 import { StepConfigurationService } from './services/step-configuration.service';
+import { EvaluationCoordinatorService } from './services/evaluation-coordinator.service';
 import { ExecutorsModule } from '../executors/executors.module';
 import { LoggingModule } from '../logging/logging.module';
 import { LLMModule } from '../llm/llm.module';
@@ -27,6 +28,7 @@ import { EvaluationModule } from '../evaluation/evaluation.module';
     MilestoneService,
     ResultExtractorService,
     StepConfigurationService,
+    EvaluationCoordinatorService,
   ],
   exports: [Orchestrator, PlannerService],
 })

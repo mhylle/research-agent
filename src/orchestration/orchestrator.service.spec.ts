@@ -8,11 +8,8 @@ import { EventCoordinatorService } from './services/event-coordinator.service';
 import { MilestoneService } from './services/milestone.service';
 import { ResultExtractorService } from './services/result-extractor.service';
 import { StepConfigurationService } from './services/step-configuration.service';
+import { EvaluationCoordinatorService } from './services/evaluation-coordinator.service';
 import { Plan } from './interfaces/plan.interface';
-import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
-import { EvaluationService } from '../evaluation/services/evaluation.service';
-import { RetrievalEvaluatorService } from '../evaluation/services/retrieval-evaluator.service';
-import { AnswerEvaluatorService } from '../evaluation/services/answer-evaluator.service';
 
 describe('Orchestrator', () => {
   let orchestrator: Orchestrator;
@@ -24,10 +21,7 @@ describe('Orchestrator', () => {
   let mockMilestoneService: jest.Mocked<MilestoneService>;
   let mockResultExtractor: jest.Mocked<ResultExtractorService>;
   let mockStepConfiguration: jest.Mocked<StepConfigurationService>;
-  let mockPlanEvaluationOrchestrator: jest.Mocked<any>;
-  let mockEvaluationService: jest.Mocked<any>;
-  let mockRetrievalEvaluator: jest.Mocked<any>;
-  let mockAnswerEvaluator: jest.Mocked<any>;
+  let mockEvaluationCoordinator: jest.Mocked<any>;
 
   const mockPlan: Plan = {
     id: 'plan-1',
@@ -109,7 +103,7 @@ describe('Orchestrator', () => {
       enrichSynthesizeStep: jest.fn(),
     } as unknown as jest.Mocked<StepConfigurationService>;
 
-    mockPlanEvaluationOrchestrator = {
+    mockEvaluationCoordinator = {
       evaluatePlan: jest.fn().mockResolvedValue({
         passed: true,
         scores: { intentAlignment: 0.9, queryCoverage: 0.85 },
@@ -119,25 +113,14 @@ describe('Orchestrator', () => {
         evaluationSkipped: false,
         attempts: [],
       }),
-    };
-
-    mockEvaluationService = {
-      saveEvaluationRecord: jest.fn().mockResolvedValue(undefined),
-      updateEvaluationRecord: jest.fn().mockResolvedValue(undefined),
-    };
-
-    mockRetrievalEvaluator = {
-      evaluate: jest.fn().mockResolvedValue({
+      evaluateRetrieval: jest.fn().mockResolvedValue({
         passed: true,
         scores: { sourceQuality: 0.9, contentRelevance: 0.85 },
         confidence: 0.87,
         flaggedSevere: false,
         evaluationSkipped: false,
       }),
-    };
-
-    mockAnswerEvaluator = {
-      evaluate: jest.fn().mockResolvedValue({
+      evaluateAnswer: jest.fn().mockResolvedValue({
         passed: true,
         scores: { answerAccuracy: 0.9, answerCompleteness: 0.85 },
         confidence: 0.87,
@@ -161,15 +144,9 @@ describe('Orchestrator', () => {
           useValue: mockStepConfiguration,
         },
         {
-          provide: PlanEvaluationOrchestratorService,
-          useValue: mockPlanEvaluationOrchestrator,
+          provide: EvaluationCoordinatorService,
+          useValue: mockEvaluationCoordinator,
         },
-        { provide: EvaluationService, useValue: mockEvaluationService },
-        {
-          provide: RetrievalEvaluatorService,
-          useValue: mockRetrievalEvaluator,
-        },
-        { provide: AnswerEvaluatorService, useValue: mockAnswerEvaluator },
       ],
     }).compile();
 

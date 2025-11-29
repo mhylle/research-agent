@@ -9,6 +9,7 @@ import { EventCoordinatorService } from './services/event-coordinator.service';
 import { MilestoneService } from './services/milestone.service';
 import { ResultExtractorService } from './services/result-extractor.service';
 import { StepConfigurationService } from './services/step-configuration.service';
+import { EvaluationCoordinatorService } from './services/evaluation-coordinator.service';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
 import { PlanStep } from './interfaces/plan-step.interface';
@@ -17,10 +18,6 @@ import {
   FailureContext,
   RecoveryDecision,
 } from './interfaces/recovery.interface';
-import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
-import { EvaluationService } from '../evaluation/services/evaluation.service';
-import { RetrievalEvaluatorService } from '../evaluation/services/retrieval-evaluator.service';
-import { AnswerEvaluatorService } from '../evaluation/services/answer-evaluator.service';
 
 export interface ResearchResult {
   logId: string;
@@ -44,10 +41,7 @@ export class Orchestrator {
     private milestoneService: MilestoneService,
     private resultExtractor: ResultExtractorService,
     private stepConfiguration: StepConfigurationService,
-    private planEvaluationOrchestrator: PlanEvaluationOrchestratorService,
-    private evaluationService: EvaluationService,
-    private retrievalEvaluator: RetrievalEvaluatorService,
-    private answerEvaluator: AnswerEvaluatorService,
+    private evaluationCoordinator: EvaluationCoordinatorService,
   ) {}
 
   async executeResearch(
@@ -68,76 +62,8 @@ export class Orchestrator {
     );
 
     // PLAN EVALUATION
-    console.log('[Orchestrator] Starting plan evaluation...');
-    await this.eventCoordinator.emit(logId, 'evaluation_started', {
-      phase: 'plan',
-      query: plan.query,
-    });
-    console.log('[Orchestrator] evaluation_started event emitted');
-
-    console.log(
-      '[Orchestrator] Calling planEvaluationOrchestrator.evaluatePlan...',
-    );
-    const evaluationResult = await this.planEvaluationOrchestrator.evaluatePlan(
-      {
-        query: plan.query,
-        plan: {
-          id: plan.id,
-          phases: plan.phases,
-          searchQueries: this.resultExtractor.extractSearchQueries(plan),
-        },
-      },
-    );
-    console.log(
-      '[Orchestrator] Plan evaluation completed:',
-      JSON.stringify(evaluationResult, null, 2),
-    );
-
-    await this.eventCoordinator.emit(logId, 'evaluation_completed', {
-      phase: 'plan',
-      passed: evaluationResult.passed,
-      scores: evaluationResult.scores,
-      confidence: evaluationResult.confidence,
-      totalIterations: evaluationResult.totalIterations,
-      escalatedToLargeModel: evaluationResult.escalatedToLargeModel,
-      evaluationSkipped: evaluationResult.evaluationSkipped,
-      skipReason: evaluationResult.skipReason,
-    });
-
-    // Save evaluation record to database
-    console.log('[Orchestrator] Saving evaluation record to database...');
-    try {
-      await this.evaluationService.saveEvaluationRecord({
-        logId,
-        userQuery: plan.query,
-        planEvaluation: {
-          attempts: evaluationResult.attempts || [],
-          finalScores: evaluationResult.scores,
-          explanations: evaluationResult.explanations || {},
-          passed: evaluationResult.passed,
-          totalIterations: evaluationResult.totalIterations,
-          escalatedToLargeModel: evaluationResult.escalatedToLargeModel,
-        },
-        overallScore: evaluationResult.confidence,
-        evaluationSkipped: evaluationResult.evaluationSkipped,
-        skipReason: evaluationResult.skipReason,
-      });
-      console.log('[Orchestrator] Evaluation record saved successfully');
-    } catch (error) {
-      console.error('[Orchestrator] Failed to save evaluation record:', error);
-      // Don't throw - evaluation storage failure shouldn't break research execution
-    }
-
-    // Log evaluation result for user visibility
-    if (!evaluationResult.evaluationSkipped) {
-      const scoresSummary = Object.entries(evaluationResult.scores)
-        .map(([dim, score]) => `${dim}: ${(score * 100).toFixed(0)}%`)
-        .join(', ');
-
-      console.log(
-        `[Orchestrator] Plan evaluation: ${evaluationResult.passed ? 'PASSED' : 'FAILED'} (${scoresSummary})`,
-      );
-    }
+    const searchQueries = this.resultExtractor.extractSearchQueries(plan);
+    await this.evaluationCoordinator.evaluatePlan(logId, plan, searchQueries);
 
     // Log the FULL plan with all phases and steps
     await this.eventCoordinator.emit(logId, 'plan_created', {
@@ -218,47 +144,12 @@ export class Orchestrator {
         );
 
         if (hasRetrievedContent) {
-          console.log('[Orchestrator] Starting retrieval evaluation...');
-          await this.eventCoordinator.emit(logId, 'evaluation_started', {
-            phase: 'retrieval',
-            query: plan.query,
-          });
-
           try {
-            const retrievalContent =
-              this.resultExtractor.collectRetrievalContent(allStepResults);
-            const retrievalEvalResult = await this.retrievalEvaluator.evaluate({
-              query: plan.query,
-              retrievedContent: retrievalContent,
-            });
-
-            console.log(
-              '[Orchestrator] Retrieval evaluation completed:',
-              JSON.stringify(retrievalEvalResult, null, 2),
+            await this.evaluationCoordinator.evaluateRetrieval(
+              logId,
+              plan.query,
+              allStepResults,
             );
-
-            await this.eventCoordinator.emit(logId, 'evaluation_completed', {
-              phase: 'retrieval',
-              passed: retrievalEvalResult.passed,
-              scores: retrievalEvalResult.scores,
-              confidence: retrievalEvalResult.confidence,
-              flaggedSevere: retrievalEvalResult.flaggedSevere,
-              sourceDetails: retrievalEvalResult.sourceDetails,
-              evaluationSkipped: retrievalEvalResult.evaluationSkipped,
-              skipReason: retrievalEvalResult.skipReason,
-            });
-
-            // Update evaluation record with retrieval evaluation
-            await this.evaluationService.updateEvaluationRecord(logId, {
-              retrievalEvaluation: {
-                scores: retrievalEvalResult.scores,
-                explanations: retrievalEvalResult.explanations || {},
-                passed: retrievalEvalResult.passed,
-                flaggedSevere: retrievalEvalResult.flaggedSevere,
-                sourceDetails: retrievalEvalResult.sourceDetails,
-              },
-            });
-
             retrievalEvaluationComplete = true;
           } catch (error) {
             console.error('[Orchestrator] Retrieval evaluation failed:', error);
@@ -371,51 +262,13 @@ export class Orchestrator {
     }
 
     // 5. ANSWER EVALUATION
-    console.log('[Orchestrator] Starting answer evaluation phase');
     try {
-      const answerEvalResult = await this.answerEvaluator.evaluate({
-        query: plan.query,
-        answer: finalOutput,
-        sources: sources.map((s) => ({
-          url: s.url,
-          content: '', // Content not stored in sources array
-          title: s.title,
-        })),
-      });
-
-      console.log(
-        '[Orchestrator] Answer evaluation completed:',
-        JSON.stringify(answerEvalResult, null, 2),
+      await this.evaluationCoordinator.evaluateAnswer(
+        logId,
+        plan.query,
+        finalOutput,
+        sources,
       );
-
-      await this.eventCoordinator.emit(logId, 'evaluation_completed', {
-        phase: 'answer',
-        passed: answerEvalResult.passed,
-        scores: answerEvalResult.scores,
-        confidence: answerEvalResult.confidence,
-        shouldRegenerate: answerEvalResult.shouldRegenerate,
-        evaluationSkipped: answerEvalResult.evaluationSkipped,
-        skipReason: answerEvalResult.skipReason,
-      });
-
-      // Update evaluation record with answer evaluation
-      await this.evaluationService.updateEvaluationRecord(logId, {
-        answerEvaluation: {
-          attempts: [
-            {
-              scores: answerEvalResult.scores,
-              passed: answerEvalResult.passed,
-              confidence: answerEvalResult.confidence,
-              critique: answerEvalResult.critique,
-              suggestions: answerEvalResult.improvementSuggestions,
-            },
-          ],
-          finalScores: answerEvalResult.scores,
-          explanations: answerEvalResult.explanations || {},
-          passed: answerEvalResult.passed,
-          regenerated: false, // Future: implement answer regeneration
-        },
-      });
     } catch (error) {
       console.error('[Orchestrator] Answer evaluation failed:', error);
       // Don't throw - evaluation failure shouldn't break research execution

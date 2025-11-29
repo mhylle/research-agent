@@ -3,6 +3,9 @@
     <div class="stage-node__title">
       <span class="stage-node__icon">{{ node.icon }}</span>
       <span class="stage-node__name">{{ node.name }}</span>
+      <span class="status-badge" [class]="'status-' + node.status" *ngIf="node.status">
+        {{ node.status }}
+      </span>
     </div>
     <div class="stage-node__meta">
       <span class="stage-node__duration">{{ formatDuration(node.duration) }}</span>
@@ -13,9 +16,33 @@
   </div>
 
   <div class="stage-node__content" *ngIf="node.isExpanded">
+    <div class="error-section" *ngIf="node.error">
+      <h4 class="error-title">❌ Error</h4>
+      <div class="error-message">{{ node.error.message }}</div>
+      <div class="error-details" *ngIf="node.error.details">
+        <app-json-viewer title="Error Details" [data]="node.error.details" />
+      </div>
+    </div>
+
+    <div class="metadata-section" *ngIf="node.metadata">
+      <div class="metadata-badge" *ngIf="node.metadata.isAutoAdded">🤖 Auto-Added</div>
+      <div class="metadata-badge abandoned" *ngIf="node.metadata.isAbandoned">⚠️ Abandoned</div>
+      <div class="metadata-badge" *ngIf="node.metadata.recoveryReason">
+        🔧 Recovery: {{ node.metadata.recoveryReason }}
+      </div>
+    </div>
+
     <div class="stage-node__io">
       <app-json-viewer title="Input" [data]="node.input" />
-      <app-json-viewer title="Output" [data]="node.output" *ngIf="node.output" />
+      <app-json-viewer title="Output" [data]="node.output" />
+    </div>
+
+    <div class="stage-node__milestones" *ngIf="node.milestones && node.milestones.length > 0">
+      <h4 class="stage-node__children-title">Milestones ({{ node.milestones.length }})</h4>
+      <app-tool-node
+        *ngFor="let milestone of node.milestones"
+        [node]="milestone"
+      />
     </div>
 
     <div class="stage-node__children" *ngIf="node.children && node.children.length > 0">

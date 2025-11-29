@@ -2,26 +2,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Orchestrator } from './orchestrator.service';
 import { PlannerService } from './planner.service';
-import { ExecutorRegistry } from '../executors/executor-registry.service';
 import { LogService } from '../logging/log.service';
 import { EventCoordinatorService } from './services/event-coordinator.service';
-import { MilestoneService } from './services/milestone.service';
 import { ResultExtractorService } from './services/result-extractor.service';
-import { StepConfigurationService } from './services/step-configuration.service';
 import { EvaluationCoordinatorService } from './services/evaluation-coordinator.service';
+import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry';
 import { Plan } from './interfaces/plan.interface';
 
 describe('Orchestrator', () => {
   let orchestrator: Orchestrator;
   let mockPlannerService: jest.Mocked<PlannerService>;
-  let mockExecutorRegistry: jest.Mocked<ExecutorRegistry>;
   let mockLogService: jest.Mocked<LogService>;
   let mockEventEmitter: jest.Mocked<EventEmitter2>;
   let mockEventCoordinator: jest.Mocked<EventCoordinatorService>;
-  let mockMilestoneService: jest.Mocked<MilestoneService>;
   let mockResultExtractor: jest.Mocked<ResultExtractorService>;
-  let mockStepConfiguration: jest.Mocked<StepConfigurationService>;
   let mockEvaluationCoordinator: jest.Mocked<any>;
+  let mockPhaseExecutorRegistry: jest.Mocked<PhaseExecutorRegistry>;
 
   const mockPlan: Plan = {
     id: 'plan-1',
@@ -62,14 +58,6 @@ describe('Orchestrator', () => {
       setPhaseResults: jest.fn(),
     } as unknown as jest.Mocked<PlannerService>;
 
-    const mockExecutor = {
-      execute: jest.fn().mockResolvedValue({ output: { results: ['test'] } }),
-    };
-
-    mockExecutorRegistry = {
-      getExecutor: jest.fn().mockReturnValue(mockExecutor),
-    } as unknown as jest.Mocked<ExecutorRegistry>;
-
     mockLogService = {
       append: jest.fn().mockResolvedValue({ id: 'log-1' }),
     } as unknown as jest.Mocked<LogService>;
@@ -85,11 +73,6 @@ describe('Orchestrator', () => {
       emitPhaseFailed: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<EventCoordinatorService>;
 
-    mockMilestoneService = {
-      emitMilestonesForPhase: jest.fn().mockResolvedValue(undefined),
-      emitPhaseCompletion: jest.fn().mockResolvedValue(undefined),
-    } as unknown as jest.Mocked<MilestoneService>;
-
     mockResultExtractor = {
       extractSources: jest.fn().mockReturnValue([]),
       extractFinalOutput: jest.fn().mockReturnValue(''),
@@ -97,11 +80,6 @@ describe('Orchestrator', () => {
       extractSearchQueries: jest.fn().mockReturnValue([]),
       extractAllResults: jest.fn().mockReturnValue({ sources: [], output: '' }),
     } as unknown as jest.Mocked<ResultExtractorService>;
-
-    mockStepConfiguration = {
-      getDefaultConfig: jest.fn().mockReturnValue({}),
-      enrichSynthesizeStep: jest.fn(),
-    } as unknown as jest.Mocked<StepConfigurationService>;
 
     mockEvaluationCoordinator = {
       evaluatePlan: jest.fn().mockResolvedValue({
@@ -129,23 +107,42 @@ describe('Orchestrator', () => {
       }),
     };
 
+    // Mock phase executor that returns successful results
+    const mockPhaseExecutor = {
+      canHandle: jest.fn().mockReturnValue(true),
+      execute: jest.fn().mockResolvedValue({
+        status: 'completed',
+        stepResults: [
+          {
+            status: 'completed',
+            stepId: 'step-1',
+            output: { results: ['test'] },
+            input: { query: 'test' },
+            toolName: 'tavily_search',
+          },
+        ],
+      }),
+    };
+
+    mockPhaseExecutorRegistry = {
+      getExecutor: jest.fn().mockReturnValue(mockPhaseExecutor),
+    } as unknown as jest.Mocked<PhaseExecutorRegistry>;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         Orchestrator,
         { provide: PlannerService, useValue: mockPlannerService },
-        { provide: ExecutorRegistry, useValue: mockExecutorRegistry },
         { provide: LogService, useValue: mockLogService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
-        { provide: MilestoneService, useValue: mockMilestoneService },
         { provide: ResultExtractorService, useValue: mockResultExtractor },
-        {
-          provide: StepConfigurationService,
-          useValue: mockStepConfiguration,
-        },
         {
           provide: EvaluationCoordinatorService,
           useValue: mockEvaluationCoordinator,
+        },
+        {
+          provide: PhaseExecutorRegistry,
+          useValue: mockPhaseExecutorRegistry,
         },
       ],
     }).compile();
@@ -163,8 +160,8 @@ describe('Orchestrator', () => {
         expect.any(String),
       );
       // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(mockExecutorRegistry.getExecutor).toHaveBeenCalledWith(
-        'tavily_search',
+      expect(mockPhaseExecutorRegistry.getExecutor).toHaveBeenCalledWith(
+        mockPlan.phases[0],
       );
       expect(result).toBeDefined();
       expect(result.logId).toBeDefined();

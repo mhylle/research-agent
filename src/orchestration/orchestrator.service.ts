@@ -3,16 +3,13 @@ import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomUUID } from 'crypto';
 import { PlannerService } from './planner.service';
-import { ExecutorRegistry } from '../executors/executor-registry.service';
 import { LogService } from '../logging/log.service';
 import { EventCoordinatorService } from './services/event-coordinator.service';
-import { MilestoneService } from './services/milestone.service';
 import { ResultExtractorService } from './services/result-extractor.service';
-import { StepConfigurationService } from './services/step-configuration.service';
 import { EvaluationCoordinatorService } from './services/evaluation-coordinator.service';
+import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
-import { PlanStep } from './interfaces/plan-step.interface';
 import { LogEventType } from '../logging/interfaces/log-event-type.enum';
 import {
   FailureContext,
@@ -34,14 +31,12 @@ export interface ResearchResult {
 export class Orchestrator {
   constructor(
     private plannerService: PlannerService,
-    private executorRegistry: ExecutorRegistry,
     private logService: LogService,
     private eventEmitter: EventEmitter2,
     private eventCoordinator: EventCoordinatorService,
-    private milestoneService: MilestoneService,
     private resultExtractor: ResultExtractorService,
-    private stepConfiguration: StepConfigurationService,
     private evaluationCoordinator: EvaluationCoordinatorService,
+    private phaseExecutorRegistry: PhaseExecutorRegistry,
   ) {}
 
   async executeResearch(
@@ -111,12 +106,14 @@ export class Orchestrator {
       if (phase.status === 'skipped') continue;
 
       const phaseStartTime = Date.now();
-      const phaseResult = await this.executePhase(
-        phase,
-        plan,
+
+      // Get appropriate executor for this phase
+      const executor = this.phaseExecutorRegistry.getExecutor(phase);
+      const phaseResult = await executor.execute(phase, {
         logId,
-        allStepResults,
-      );
+        plan,
+        allPreviousResults: allStepResults,
+      });
 
       phaseMetrics.push({
         phase: phase.name,
@@ -171,64 +168,22 @@ export class Orchestrator {
           // Check if steps were added to the current phase during replanning
           const stepsAfterReplan = phase.steps.length;
           if (stepsAfterReplan > stepsBeforeReplan) {
-            // Re-execute the phase with the new steps
-            await this.eventCoordinator.emit(
+            // Re-execute the phase with the new steps using phase executor
+            const replanExecutor = this.phaseExecutorRegistry.getExecutor(phase);
+            const replanResult = await replanExecutor.execute(phase, {
               logId,
-              'phase_started',
-              {
-                phaseId: phase.id,
-                phaseName: phase.name,
-                stepCount: phase.steps.length,
-                reason: 'replan_added_steps',
-              },
-              phase.id,
-            );
+              plan,
+              allPreviousResults: allStepResults,
+            });
 
-            // Execute only the new steps (those with pending status)
-            const newSteps = phase.steps.filter((s) => s.status === 'pending');
-            const stepQueue = this.buildExecutionQueue(newSteps);
-
-            for (const stepBatch of stepQueue) {
-              const batchResults = await Promise.all(
-                stepBatch.map((step) =>
-                  this.executeStep(step, logId, plan, phaseResult.stepResults),
-                ),
-              );
-              phaseResult.stepResults.push(...batchResults);
-
-              const failed = batchResults.find((r) => r.status === 'failed');
-              if (failed) {
-                phase.status = 'failed';
-                await this.eventCoordinator.emit(
-                  logId,
-                  'phase_failed',
-                  {
-                    phaseId: phase.id,
-                    phaseName: phase.name,
-                    failedStepId: failed.stepId,
-                    error: failed.error?.message,
-                  },
-                  phase.id,
-                );
-                phaseResult.status = 'failed';
-                phaseResult.error = failed.error;
-                break;
-              }
+            // Merge results
+            phaseResult.stepResults.push(...replanResult.stepResults);
+            phaseResult.status = replanResult.status;
+            if (replanResult.error) {
+              phaseResult.error = replanResult.error;
             }
 
-            if (phaseResult.status !== 'failed') {
-              await this.eventCoordinator.emit(
-                logId,
-                'phase_completed',
-                {
-                  phaseId: phase.id,
-                  phaseName: phase.name,
-                  stepsCompleted: phaseResult.stepResults.length,
-                  reason: 'replan_execution',
-                },
-                phase.id,
-              );
-
+            if (replanResult.status !== 'failed') {
               // Update phase results for re-planning
               this.plannerService.setPhaseResults(phase.id, phaseResult);
 
@@ -293,214 +248,6 @@ export class Orchestrator {
         phases: phaseMetrics,
       },
     };
-  }
-
-  private async executePhase(
-    phase: Phase,
-    plan: Plan,
-    logId: string,
-    allPreviousResults: StepResult[] = [],
-  ): Promise<PhaseResult> {
-    phase.status = 'running';
-
-    await this.eventCoordinator.emit(
-      logId,
-      'phase_started',
-      {
-        phaseId: phase.id,
-        phaseName: phase.name,
-        stepCount: phase.steps.length,
-      },
-      phase.id,
-    );
-
-    // Emit milestones for this phase
-    await this.milestoneService.emitMilestonesForPhase(
-      phase,
-      logId,
-      plan.query,
-    );
-
-    const stepResults: StepResult[] = [];
-    const stepQueue = this.buildExecutionQueue(phase.steps);
-
-    for (const stepBatch of stepQueue) {
-      // Pass all previous results (from previous phases) + current phase results
-      const contextResults = [...allPreviousResults, ...stepResults];
-      const batchResults = await Promise.all(
-        stepBatch.map((step) =>
-          this.executeStep(step, logId, plan, contextResults),
-        ),
-      );
-      stepResults.push(...batchResults);
-
-      const failed = batchResults.find((r) => r.status === 'failed');
-      if (failed) {
-        phase.status = 'failed';
-        await this.eventCoordinator.emit(
-          logId,
-          'phase_failed',
-          {
-            phaseId: phase.id,
-            phaseName: phase.name,
-            failedStepId: failed.stepId,
-            error: failed.error?.message,
-          },
-          phase.id,
-        );
-        return { status: 'failed', stepResults, error: failed.error };
-      }
-    }
-
-    phase.status = 'completed';
-    await this.eventCoordinator.emit(
-      logId,
-      'phase_completed',
-      {
-        phaseId: phase.id,
-        phaseName: phase.name,
-        stepsCompleted: stepResults.length,
-      },
-      phase.id,
-    );
-
-    // Emit final milestone for the completed phase
-    await this.milestoneService.emitPhaseCompletion(phase, logId);
-
-    return { status: 'completed', stepResults };
-  }
-
-  private async executeStep(
-    step: PlanStep,
-    logId: string,
-    plan?: Plan,
-    phaseResults?: StepResult[],
-  ): Promise<StepResult> {
-    const startTime = Date.now();
-    step.status = 'running';
-
-    // Enrich synthesize steps with query and accumulated results
-    if (step.toolName === 'synthesize' && plan && phaseResults) {
-      this.stepConfiguration.enrichSynthesizeStep(step, plan, phaseResults);
-    }
-
-    // Provide default config for tools if missing
-    if (!step.config || Object.keys(step.config).length === 0) {
-      step.config = this.stepConfiguration.getDefaultConfig(step.toolName, plan, phaseResults);
-    }
-
-    await this.eventCoordinator.emit(
-      logId,
-      'step_started',
-      {
-        stepId: step.id,
-        toolName: step.toolName,
-        type: step.type,
-        config: step.config,
-      },
-      step.phaseId,
-      step.id,
-    );
-
-    try {
-      const executor = this.executorRegistry.getExecutor(step.toolName);
-      const result = await executor.execute(step, logId);
-      const durationMs = Date.now() - startTime;
-
-      step.status = 'completed';
-
-      await this.eventCoordinator.emit(
-        logId,
-        'step_completed',
-        {
-          stepId: step.id,
-          toolName: step.toolName,
-          input: step.config,
-          output: result.output,
-          tokensUsed: result.tokensUsed,
-          durationMs,
-          metadata: result.metadata,
-        },
-        step.phaseId,
-        step.id,
-      );
-
-      return {
-        status: 'completed',
-        stepId: step.id,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        output: result.output,
-        input: step.config,
-        toolName: step.toolName, // Include toolName to identify synthesis steps
-      };
-    } catch (error: unknown) {
-      const durationMs = Date.now() - startTime;
-      step.status = 'failed';
-
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      const errorStack = error instanceof Error ? error.stack : undefined;
-
-      await this.eventCoordinator.emit(
-        logId,
-        'step_failed',
-        {
-          stepId: step.id,
-          toolName: step.toolName,
-          input: step.config,
-          error: {
-            message: errorMessage,
-            stack: errorStack,
-          },
-          durationMs,
-        },
-        step.phaseId,
-        step.id,
-      );
-
-      return {
-        status: 'failed',
-        stepId: step.id,
-        error: error as Error,
-        input: step.config,
-        toolName: step.toolName,
-      };
-    }
-  }
-
-  private buildExecutionQueue(steps: PlanStep[]): PlanStep[][] {
-    const queue: PlanStep[][] = [];
-    const completed = new Set<string>();
-    const remaining = [...steps];
-
-    while (remaining.length > 0) {
-      const batch: PlanStep[] = [];
-
-      for (let i = remaining.length - 1; i >= 0; i--) {
-        const step = remaining[i];
-        const depsComplete = step.dependencies.every((dep) =>
-          completed.has(dep),
-        );
-
-        if (depsComplete) {
-          batch.push(step);
-          remaining.splice(i, 1);
-        }
-      }
-
-      if (batch.length === 0 && remaining.length > 0) {
-        // Circular dependency or missing dependency - execute remaining in order
-        batch.push(...remaining);
-        remaining.length = 0;
-      }
-
-      if (batch.length > 0) {
-        queue.push(batch);
-        batch.forEach((s) => completed.add(s.id));
-      }
-    }
-
-    return queue;
   }
 
   private async handleFailure(

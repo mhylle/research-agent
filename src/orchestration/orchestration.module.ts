@@ -12,6 +12,11 @@ import { ExecutorsModule } from '../executors/executors.module';
 import { LoggingModule } from '../logging/logging.module';
 import { LLMModule } from '../llm/llm.module';
 import { EvaluationModule } from '../evaluation/evaluation.module';
+import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry';
+import { SearchPhaseExecutor } from './phase-executors/search-phase-executor';
+import { FetchPhaseExecutor } from './phase-executors/fetch-phase-executor';
+import { SynthesisPhaseExecutor } from './phase-executors/synthesis-phase-executor';
+import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
 
 @Module({
   imports: [
@@ -29,6 +34,12 @@ import { EvaluationModule } from '../evaluation/evaluation.module';
     ResultExtractorService,
     StepConfigurationService,
     EvaluationCoordinatorService,
+    // Phase executors
+    PhaseExecutorRegistry,
+    SearchPhaseExecutor,
+    FetchPhaseExecutor,
+    SynthesisPhaseExecutor,
+    GenericPhaseExecutor,
   ],
   exports: [Orchestrator, PlannerService],
 })

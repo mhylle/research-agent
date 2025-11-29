@@ -5,6 +5,7 @@ import { PlannerService } from './planner.service';
 import { ExecutorRegistry } from '../executors/executor-registry.service';
 import { LogService } from '../logging/log.service';
 import { EventCoordinatorService } from './services/event-coordinator.service';
+import { MilestoneService } from './services/milestone.service';
 import { Plan } from './interfaces/plan.interface';
 import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
 import { EvaluationService } from '../evaluation/services/evaluation.service';
@@ -18,6 +19,7 @@ describe('Orchestrator', () => {
   let mockLogService: jest.Mocked<LogService>;
   let mockEventEmitter: jest.Mocked<EventEmitter2>;
   let mockEventCoordinator: jest.Mocked<EventCoordinatorService>;
+  let mockMilestoneService: jest.Mocked<MilestoneService>;
   let mockPlanEvaluationOrchestrator: jest.Mocked<any>;
   let mockEvaluationService: jest.Mocked<any>;
   let mockRetrievalEvaluator: jest.Mocked<any>;
@@ -85,6 +87,11 @@ describe('Orchestrator', () => {
       emitPhaseFailed: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<EventCoordinatorService>;
 
+    mockMilestoneService = {
+      emitMilestonesForPhase: jest.fn().mockResolvedValue(undefined),
+      emitPhaseCompletion: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<MilestoneService>;
+
     mockPlanEvaluationOrchestrator = {
       evaluatePlan: jest.fn().mockResolvedValue({
         passed: true,
@@ -130,6 +137,7 @@ describe('Orchestrator', () => {
         { provide: LogService, useValue: mockLogService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
+        { provide: MilestoneService, useValue: mockMilestoneService },
         { provide: PlanEvaluationOrchestratorService, useValue: mockPlanEvaluationOrchestrator },
         { provide: EvaluationService, useValue: mockEvaluationService },
         { provide: RetrievalEvaluatorService, useValue: mockRetrievalEvaluator },

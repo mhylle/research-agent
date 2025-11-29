@@ -6,6 +6,7 @@ import { PlannerService } from './planner.service';
 import { ExecutorRegistry } from '../executors/executor-registry.service';
 import { LogService } from '../logging/log.service';
 import { EventCoordinatorService } from './services/event-coordinator.service';
+import { MilestoneService } from './services/milestone.service';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
 import { PlanStep } from './interfaces/plan-step.interface';
@@ -14,10 +15,6 @@ import {
   FailureContext,
   RecoveryDecision,
 } from './interfaces/recovery.interface';
-import {
-  getMilestoneTemplates,
-  formatMilestoneDescription,
-} from '../logging/milestone-templates';
 import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
 import { EvaluationService } from '../evaluation/services/evaluation.service';
 import { RetrievalEvaluatorService } from '../evaluation/services/retrieval-evaluator.service';
@@ -42,6 +39,7 @@ export class Orchestrator {
     private logService: LogService,
     private eventEmitter: EventEmitter2,
     private eventCoordinator: EventCoordinatorService,
+    private milestoneService: MilestoneService,
     private planEvaluationOrchestrator: PlanEvaluationOrchestratorService,
     private evaluationService: EvaluationService,
     private retrievalEvaluator: RetrievalEvaluatorService,
@@ -403,7 +401,7 @@ export class Orchestrator {
     );
 
     // Emit milestones for this phase
-    await this.emitPhaseMilestones(phase, logId, plan.query);
+    await this.milestoneService.emitMilestonesForPhase(phase, logId, plan.query);
 
     const stepResults: StepResult[] = [];
     const stepQueue = this.buildExecutionQueue(phase.steps);
@@ -447,7 +445,7 @@ export class Orchestrator {
     );
 
     // Emit final milestone for the completed phase
-    await this.emitPhaseCompletionMilestone(phase, logId);
+    await this.milestoneService.emitPhaseCompletion(phase, logId);
 
     return { status: 'completed', stepResults };
   }
@@ -806,178 +804,6 @@ export class Orchestrator {
     console.log(`[Orchestrator] Emitting event: log.${logId} - ${eventType}`);
     this.eventEmitter.emit(`log.${logId}`, entry);
     this.eventEmitter.emit('log.all', entry);
-  }
-
-  /**
-   * Detect the stage type from phase name
-   */
-  private detectPhaseType(phaseName: string): 1 | 2 | 3 | null {
-    const name = phaseName.toLowerCase();
-    if (name.includes('search') || name.includes('initial') || name.includes('query')) {
-      return 1;
-    }
-    if (name.includes('fetch') || name.includes('content') || name.includes('gather')) {
-      return 2;
-    }
-    if (name.includes('synth') || name.includes('answer') || name.includes('generat')) {
-      return 3;
-    }
-    return null;
-  }
-
-  /**
-   * Emit milestones for a phase based on its type
-   */
-  private async emitPhaseMilestones(
-    phase: Phase,
-    logId: string,
-    query: string,
-  ): Promise<void> {
-    const stageType = this.detectPhaseType(phase.name);
-    if (!stageType) {
-      console.log(`[Orchestrator] Phase "${phase.name}" does not map to a milestone stage`);
-      return;
-    }
-
-    const templates = getMilestoneTemplates(stageType);
-    console.log(`[Orchestrator] Emitting ${templates.length} milestones for stage ${stageType} (${phase.name})`);
-
-    // Emit initial milestones for the phase
-    for (let i = 0; i < templates.length - 1; i++) {
-      const template = templates[i];
-      const milestoneId = `${phase.id}_${template.id}`;
-
-      // Build template data based on stage and milestone
-      const templateData = this.buildMilestoneTemplateData(stageType, template.id, query, phase);
-      const description = formatMilestoneDescription(template.template, templateData);
-
-      await this.eventCoordinator.emit(
-        logId,
-        'milestone_started',
-        {
-          milestoneId,
-          templateId: template.id,
-          stage: stageType,
-          description,
-          template: template.template,
-          templateData,
-          progress: template.expectedProgress,
-          status: 'running',
-        },
-        phase.id,
-      );
-
-      // Small delay between milestones for visual effect
-      await this.delay(100);
-    }
-  }
-
-  /**
-   * Emit the final milestone for a completed phase
-   */
-  private async emitPhaseCompletionMilestone(
-    phase: Phase,
-    logId: string,
-  ): Promise<void> {
-    const stageType = this.detectPhaseType(phase.name);
-    if (!stageType) return;
-
-    const templates = getMilestoneTemplates(stageType);
-    if (templates.length === 0) return;
-
-    const lastTemplate = templates[templates.length - 1];
-    const milestoneId = `${phase.id}_${lastTemplate.id}`;
-    const description = formatMilestoneDescription(lastTemplate.template, {});
-
-    await this.eventCoordinator.emit(
-      logId,
-      'milestone_completed',
-      {
-        milestoneId,
-        templateId: lastTemplate.id,
-        stage: stageType,
-        description,
-        template: lastTemplate.template,
-        templateData: {},
-        progress: lastTemplate.expectedProgress,
-        status: 'completed',
-      },
-      phase.id,
-    );
-  }
-
-  /**
-   * Build template data for milestone descriptions
-   */
-  private buildMilestoneTemplateData(
-    stage: 1 | 2 | 3,
-    templateId: string,
-    query: string,
-    phase: Phase,
-  ): Record<string, unknown> {
-    switch (stage) {
-      case 1:
-        if (templateId === 'stage1_identify_terms') {
-          // Extract key terms from query
-          const terms = this.extractKeyTerms(query);
-          return { terms: terms.join(', ') };
-        }
-        if (templateId === 'stage1_search') {
-          return {
-            count: phase.steps.length,
-            sources: 'Tavily (web sources, news, articles)',
-          };
-        }
-        return {};
-
-      case 2:
-        if (templateId === 'stage2_fetch') {
-          return { count: phase.steps.length };
-        }
-        if (templateId === 'stage2_extract') {
-          return { url: 'source content' };
-        }
-        return {};
-
-      case 3:
-        if (templateId === 'stage3_analyze') {
-          return { count: phase.steps.length };
-        }
-        return {};
-
-      default:
-        return {};
-    }
-  }
-
-  /**
-   * Extract key terms from a query string
-   */
-  private extractKeyTerms(query: string): string[] {
-    const stopWords = new Set([
-      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-      'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-      'could', 'should', 'may', 'might', 'can', 'what', 'how', 'why',
-      'when', 'where', 'who', 'which', 'this', 'that', 'these', 'those',
-      'latest', 'current', 'recent', 'about',
-    ]);
-
-    const words = query
-      .toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter((word) => word.length > 2 && !stopWords.has(word));
-
-    const uniqueWords = [...new Set(words)];
-    return uniqueWords.sort((a, b) => b.length - a.length).slice(0, 5);
-  }
-
-  /**
-   * Utility delay function
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

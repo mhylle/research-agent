@@ -4,6 +4,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { Orchestrator } from './orchestrator.service';
 import { PlannerService } from './planner.service';
 import { EventCoordinatorService } from './services/event-coordinator.service';
+import { MilestoneService } from './services/milestone.service';
 import { ExecutorsModule } from '../executors/executors.module';
 import { LoggingModule } from '../logging/logging.module';
 import { LLMModule } from '../llm/llm.module';
@@ -17,7 +18,7 @@ import { EvaluationModule } from '../evaluation/evaluation.module';
     LLMModule,
     EvaluationModule,
   ],
-  providers: [Orchestrator, PlannerService, EventCoordinatorService],
+  providers: [Orchestrator, PlannerService, EventCoordinatorService, MilestoneService],
   exports: [Orchestrator, PlannerService],
 })
 export class OrchestrationModule {}

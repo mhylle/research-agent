@@ -6,6 +6,7 @@ import { ExecutorRegistry } from '../executors/executor-registry.service';
 import { LogService } from '../logging/log.service';
 import { EventCoordinatorService } from './services/event-coordinator.service';
 import { MilestoneService } from './services/milestone.service';
+import { ResultExtractorService } from './services/result-extractor.service';
 import { Plan } from './interfaces/plan.interface';
 import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
 import { EvaluationService } from '../evaluation/services/evaluation.service';
@@ -20,6 +21,7 @@ describe('Orchestrator', () => {
   let mockEventEmitter: jest.Mocked<EventEmitter2>;
   let mockEventCoordinator: jest.Mocked<EventCoordinatorService>;
   let mockMilestoneService: jest.Mocked<MilestoneService>;
+  let mockResultExtractor: jest.Mocked<ResultExtractorService>;
   let mockPlanEvaluationOrchestrator: jest.Mocked<any>;
   let mockEvaluationService: jest.Mocked<any>;
   let mockRetrievalEvaluator: jest.Mocked<any>;
@@ -92,6 +94,13 @@ describe('Orchestrator', () => {
       emitPhaseCompletion: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<MilestoneService>;
 
+    mockResultExtractor = {
+      extractSources: jest.fn().mockReturnValue([]),
+      extractFinalOutput: jest.fn().mockReturnValue(''),
+      collectRetrievalContent: jest.fn().mockReturnValue([]),
+      extractSearchQueries: jest.fn().mockReturnValue([]),
+    } as unknown as jest.Mocked<ResultExtractorService>;
+
     mockPlanEvaluationOrchestrator = {
       evaluatePlan: jest.fn().mockResolvedValue({
         passed: true,
@@ -138,9 +147,16 @@ describe('Orchestrator', () => {
         { provide: EventEmitter2, useValue: mockEventEmitter },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
         { provide: MilestoneService, useValue: mockMilestoneService },
-        { provide: PlanEvaluationOrchestratorService, useValue: mockPlanEvaluationOrchestrator },
+        { provide: ResultExtractorService, useValue: mockResultExtractor },
+        {
+          provide: PlanEvaluationOrchestratorService,
+          useValue: mockPlanEvaluationOrchestrator,
+        },
         { provide: EvaluationService, useValue: mockEvaluationService },
-        { provide: RetrievalEvaluatorService, useValue: mockRetrievalEvaluator },
+        {
+          provide: RetrievalEvaluatorService,
+          useValue: mockRetrievalEvaluator,
+        },
         { provide: AnswerEvaluatorService, useValue: mockAnswerEvaluator },
       ],
     }).compile();

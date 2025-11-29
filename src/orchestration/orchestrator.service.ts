@@ -7,6 +7,7 @@ import { ExecutorRegistry } from '../executors/executor-registry.service';
 import { LogService } from '../logging/log.service';
 import { EventCoordinatorService } from './services/event-coordinator.service';
 import { MilestoneService } from './services/milestone.service';
+import { ResultExtractorService } from './services/result-extractor.service';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
 import { PlanStep } from './interfaces/plan-step.interface';
@@ -40,13 +41,17 @@ export class Orchestrator {
     private eventEmitter: EventEmitter2,
     private eventCoordinator: EventCoordinatorService,
     private milestoneService: MilestoneService,
+    private resultExtractor: ResultExtractorService,
     private planEvaluationOrchestrator: PlanEvaluationOrchestratorService,
     private evaluationService: EvaluationService,
     private retrievalEvaluator: RetrievalEvaluatorService,
     private answerEvaluator: AnswerEvaluatorService,
   ) {}
 
-  async executeResearch(query: string, logId?: string): Promise<ResearchResult> {
+  async executeResearch(
+    query: string,
+    logId?: string,
+  ): Promise<ResearchResult> {
     logId = logId || randomUUID();
     const startTime = Date.now();
     const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
@@ -56,26 +61,35 @@ export class Orchestrator {
 
     const plan = await this.plannerService.createPlan(query, logId);
 
-    console.log(`[Orchestrator] Plan created with ${plan.phases.length} phases, entering execution loop...`);
+    console.log(
+      `[Orchestrator] Plan created with ${plan.phases.length} phases, entering execution loop...`,
+    );
 
     // PLAN EVALUATION
     console.log('[Orchestrator] Starting plan evaluation...');
     await this.eventCoordinator.emit(logId, 'evaluation_started', {
       phase: 'plan',
-      query: plan.query
+      query: plan.query,
     });
     console.log('[Orchestrator] evaluation_started event emitted');
 
-    console.log('[Orchestrator] Calling planEvaluationOrchestrator.evaluatePlan...');
-    const evaluationResult = await this.planEvaluationOrchestrator.evaluatePlan({
-      query: plan.query,
-      plan: {
-        id: plan.id,
-        phases: plan.phases,
-        searchQueries: this.extractSearchQueries(plan),
+    console.log(
+      '[Orchestrator] Calling planEvaluationOrchestrator.evaluatePlan...',
+    );
+    const evaluationResult = await this.planEvaluationOrchestrator.evaluatePlan(
+      {
+        query: plan.query,
+        plan: {
+          id: plan.id,
+          phases: plan.phases,
+          searchQueries: this.resultExtractor.extractSearchQueries(plan),
+        },
       },
-    });
-    console.log('[Orchestrator] Plan evaluation completed:', JSON.stringify(evaluationResult, null, 2));
+    );
+    console.log(
+      '[Orchestrator] Plan evaluation completed:',
+      JSON.stringify(evaluationResult, null, 2),
+    );
 
     await this.eventCoordinator.emit(logId, 'evaluation_completed', {
       phase: 'plan',
@@ -115,10 +129,12 @@ export class Orchestrator {
     // Log evaluation result for user visibility
     if (!evaluationResult.evaluationSkipped) {
       const scoresSummary = Object.entries(evaluationResult.scores)
-        .map(([dim, score]) => `${dim}: ${((score as number) * 100).toFixed(0)}%`)
+        .map(([dim, score]) => `${dim}: ${(score * 100).toFixed(0)}%`)
         .join(', ');
 
-      console.log(`[Orchestrator] Plan evaluation: ${evaluationResult.passed ? 'PASSED' : 'FAILED'} (${scoresSummary})`);
+      console.log(
+        `[Orchestrator] Plan evaluation: ${evaluationResult.passed ? 'PASSED' : 'FAILED'} (${scoresSummary})`,
+      );
     }
 
     // Log the FULL plan with all phases and steps
@@ -155,15 +171,24 @@ export class Orchestrator {
     const allStepResults: StepResult[] = [];
     let retrievalEvaluationComplete = false;
 
-    console.log(`[Orchestrator] Starting execution loop for ${plan.phases.length} phases`);
+    console.log(
+      `[Orchestrator] Starting execution loop for ${plan.phases.length} phases`,
+    );
 
     // 2. EXECUTION LOOP
     for (const phase of plan.phases) {
-      console.log(`[Orchestrator] Processing phase: ${phase.name} (status: ${phase.status})`);
+      console.log(
+        `[Orchestrator] Processing phase: ${phase.name} (status: ${phase.status})`,
+      );
       if (phase.status === 'skipped') continue;
 
       const phaseStartTime = Date.now();
-      const phaseResult = await this.executePhase(phase, plan, logId, allStepResults);
+      const phaseResult = await this.executePhase(
+        phase,
+        plan,
+        logId,
+        allStepResults,
+      );
 
       phaseMetrics.push({
         phase: phase.name,
@@ -183,25 +208,29 @@ export class Orchestrator {
 
       // RETRIEVAL EVALUATION - after retrieval phases (search/fetch)
       if (!retrievalEvaluationComplete && this.isRetrievalPhase(phase)) {
-        const hasRetrievedContent = allStepResults.some(r =>
-          Array.isArray(r.output) && r.output.length > 0
+        const hasRetrievedContent = allStepResults.some(
+          (r) => Array.isArray(r.output) && r.output.length > 0,
         );
 
         if (hasRetrievedContent) {
           console.log('[Orchestrator] Starting retrieval evaluation...');
           await this.eventCoordinator.emit(logId, 'evaluation_started', {
             phase: 'retrieval',
-            query: plan.query
+            query: plan.query,
           });
 
           try {
-            const retrievalContent = this.collectRetrievalContent(allStepResults);
+            const retrievalContent =
+              this.resultExtractor.collectRetrievalContent(allStepResults);
             const retrievalEvalResult = await this.retrievalEvaluator.evaluate({
               query: plan.query,
               retrievedContent: retrievalContent,
             });
 
-            console.log('[Orchestrator] Retrieval evaluation completed:', JSON.stringify(retrievalEvalResult, null, 2));
+            console.log(
+              '[Orchestrator] Retrieval evaluation completed:',
+              JSON.stringify(retrievalEvalResult, null, 2),
+            );
 
             await this.eventCoordinator.emit(logId, 'evaluation_completed', {
               phase: 'retrieval',
@@ -247,32 +276,44 @@ export class Orchestrator {
           const stepsAfterReplan = phase.steps.length;
           if (stepsAfterReplan > stepsBeforeReplan) {
             // Re-execute the phase with the new steps
-            await this.eventCoordinator.emit(logId, 'phase_started', {
-              phaseId: phase.id,
-              phaseName: phase.name,
-              stepCount: phase.steps.length,
-              reason: 'replan_added_steps',
-            }, phase.id);
+            await this.eventCoordinator.emit(
+              logId,
+              'phase_started',
+              {
+                phaseId: phase.id,
+                phaseName: phase.name,
+                stepCount: phase.steps.length,
+                reason: 'replan_added_steps',
+              },
+              phase.id,
+            );
 
             // Execute only the new steps (those with pending status)
-            const newSteps = phase.steps.filter(s => s.status === 'pending');
+            const newSteps = phase.steps.filter((s) => s.status === 'pending');
             const stepQueue = this.buildExecutionQueue(newSteps);
 
             for (const stepBatch of stepQueue) {
               const batchResults = await Promise.all(
-                stepBatch.map((step) => this.executeStep(step, logId, plan, phaseResult.stepResults)),
+                stepBatch.map((step) =>
+                  this.executeStep(step, logId, plan, phaseResult.stepResults),
+                ),
               );
               phaseResult.stepResults.push(...batchResults);
 
               const failed = batchResults.find((r) => r.status === 'failed');
               if (failed) {
                 phase.status = 'failed';
-                await this.eventCoordinator.emit(logId, 'phase_failed', {
-                  phaseId: phase.id,
-                  phaseName: phase.name,
-                  failedStepId: failed.stepId,
-                  error: failed.error?.message,
-                }, phase.id);
+                await this.eventCoordinator.emit(
+                  logId,
+                  'phase_failed',
+                  {
+                    phaseId: phase.id,
+                    phaseName: phase.name,
+                    failedStepId: failed.stepId,
+                    error: failed.error?.message,
+                  },
+                  phase.id,
+                );
                 phaseResult.status = 'failed';
                 phaseResult.error = failed.error;
                 break;
@@ -280,12 +321,17 @@ export class Orchestrator {
             }
 
             if (phaseResult.status !== 'failed') {
-              await this.eventCoordinator.emit(logId, 'phase_completed', {
-                phaseId: phase.id,
-                phaseName: phase.name,
-                stepsCompleted: phaseResult.stepResults.length,
-                reason: 'replan_execution',
-              }, phase.id);
+              await this.eventCoordinator.emit(
+                logId,
+                'phase_completed',
+                {
+                  phaseId: phase.id,
+                  phaseName: phase.name,
+                  stepsCompleted: phaseResult.stepResults.length,
+                  reason: 'replan_execution',
+                },
+                phase.id,
+              );
 
               // Update phase results for re-planning
               this.plannerService.setPhaseResults(phase.id, phaseResult);
@@ -308,7 +354,9 @@ export class Orchestrator {
           logId,
         );
         if (recovery.action === 'abort') {
-          await this.eventCoordinator.emit(logId, 'session_failed', { reason: recovery.reason });
+          await this.eventCoordinator.emit(logId, 'session_failed', {
+            reason: recovery.reason,
+          });
           throw new Error(`Research failed: ${recovery.reason}`);
         }
       }
@@ -320,14 +368,17 @@ export class Orchestrator {
       const answerEvalResult = await this.answerEvaluator.evaluate({
         query: plan.query,
         answer: finalOutput,
-        sources: sources.map(s => ({
+        sources: sources.map((s) => ({
           url: s.url,
           content: '', // Content not stored in sources array
           title: s.title,
         })),
       });
 
-      console.log('[Orchestrator] Answer evaluation completed:', JSON.stringify(answerEvalResult, null, 2));
+      console.log(
+        '[Orchestrator] Answer evaluation completed:',
+        JSON.stringify(answerEvalResult, null, 2),
+      );
 
       await this.eventCoordinator.emit(logId, 'evaluation_completed', {
         phase: 'answer',
@@ -342,13 +393,15 @@ export class Orchestrator {
       // Update evaluation record with answer evaluation
       await this.evaluationService.updateEvaluationRecord(logId, {
         answerEvaluation: {
-          attempts: [{
-            scores: answerEvalResult.scores,
-            passed: answerEvalResult.passed,
-            confidence: answerEvalResult.confidence,
-            critique: answerEvalResult.critique,
-            suggestions: answerEvalResult.improvementSuggestions,
-          }],
+          attempts: [
+            {
+              scores: answerEvalResult.scores,
+              passed: answerEvalResult.passed,
+              confidence: answerEvalResult.confidence,
+              critique: answerEvalResult.critique,
+              suggestions: answerEvalResult.improvementSuggestions,
+            },
+          ],
           finalScores: answerEvalResult.scores,
           explanations: answerEvalResult.explanations || {},
           passed: answerEvalResult.passed,
@@ -401,7 +454,11 @@ export class Orchestrator {
     );
 
     // Emit milestones for this phase
-    await this.milestoneService.emitMilestonesForPhase(phase, logId, plan.query);
+    await this.milestoneService.emitMilestonesForPhase(
+      phase,
+      logId,
+      plan.query,
+    );
 
     const stepResults: StepResult[] = [];
     const stepQueue = this.buildExecutionQueue(phase.steps);
@@ -410,7 +467,9 @@ export class Orchestrator {
       // Pass all previous results (from previous phases) + current phase results
       const contextResults = [...allPreviousResults, ...stepResults];
       const batchResults = await Promise.all(
-        stepBatch.map((step) => this.executeStep(step, logId, plan, contextResults)),
+        stepBatch.map((step) =>
+          this.executeStep(step, logId, plan, contextResults),
+        ),
       );
       stepResults.push(...batchResults);
 
@@ -630,65 +689,15 @@ export class Orchestrator {
     sources: Array<{ url: string; title: string; relevance: string }>,
     setOutput: (output: string) => void,
   ): void {
-    // Track synthesis outputs separately to prioritize them
-    let synthesisOutput: string | null = null;
-    let genericStringOutput: string | null = null;
+    // Extract sources from this phase result and add to accumulator
+    const phaseSources = this.resultExtractor.extractSources([phaseResult]);
+    sources.push(...phaseSources);
 
-    for (const stepResult of phaseResult.stepResults) {
-      if (stepResult.output) {
-        // Extract sources from search results
-        if (Array.isArray(stepResult.output)) {
-          for (const item of stepResult.output) {
-            if (this.isSearchResultItem(item)) {
-              const score = typeof item.score === 'number' ? item.score : 0;
-              sources.push({
-                url: item.url,
-                title: item.title,
-                relevance: score > 0.7 ? 'high' : 'medium',
-              });
-            }
-          }
-        }
-
-        // Extract final answer - prioritize synthesis steps
-        if (typeof stepResult.output === 'string' && stepResult.output.trim().length > 0) {
-          // Check if this is a synthesis step (synthesis, synthesize, tavily_synthesize, etc.)
-          const isSynthesisStep = stepResult.toolName &&
-            (stepResult.toolName.toLowerCase().includes('synth') ||
-             stepResult.toolName === 'llm');
-
-          if (isSynthesisStep) {
-            // Always prefer synthesis step output
-            synthesisOutput = stepResult.output;
-          } else if (!synthesisOutput && stepResult.output.length > 50) {
-            // Fallback: use longer string outputs if no synthesis found
-            genericStringOutput = stepResult.output;
-          }
-        }
-      }
+    // Extract final output from this phase result
+    const phaseOutput = this.resultExtractor.extractFinalOutput([phaseResult]);
+    if (phaseOutput) {
+      setOutput(phaseOutput);
     }
-
-    // Set the output, prioritizing synthesis results
-    if (synthesisOutput) {
-      setOutput(synthesisOutput);
-    } else if (genericStringOutput) {
-      setOutput(genericStringOutput);
-    }
-  }
-
-  private isSearchResultItem(
-    item: unknown,
-  ): item is { url: string; title: string; content: string; score?: number } {
-    return (
-      typeof item === 'object' &&
-      item !== null &&
-      'url' in item &&
-      'title' in item &&
-      'content' in item &&
-      typeof (item as Record<string, unknown>).url === 'string' &&
-      typeof (item as Record<string, unknown>).title === 'string' &&
-      typeof (item as Record<string, unknown>).content === 'string'
-    );
   }
 
   private getDefaultConfig(
@@ -773,18 +782,6 @@ export class Orchestrator {
     };
   }
 
-  private extractSearchQueries(plan: Plan): string[] {
-    const queries: string[] = [];
-    for (const phase of plan.phases) {
-      for (const step of phase.steps) {
-        if ((step.toolName === 'web_search' || step.toolName === 'tavily_search') && step.config?.query) {
-          queries.push(step.config.query);
-        }
-      }
-    }
-    return queries;
-  }
-
   private async emit(
     logId: string,
     eventType: LogEventType,
@@ -811,56 +808,12 @@ export class Orchestrator {
    */
   private isRetrievalPhase(phase: Phase): boolean {
     const phaseName = phase.name.toLowerCase();
-    return phaseName.includes('search') ||
-           phaseName.includes('fetch') ||
-           phaseName.includes('gather') ||
-           phaseName.includes('retriev');
+    return (
+      phaseName.includes('search') ||
+      phaseName.includes('fetch') ||
+      phaseName.includes('gather') ||
+      phaseName.includes('retriev')
+    );
   }
 
-  /**
-   * Collect retrieval content from step results for evaluation
-   */
-  private collectRetrievalContent(stepResults: StepResult[]): Array<{
-    url: string;
-    content: string;
-    title?: string;
-    fetchedAt?: Date;
-  }> {
-    const retrievalContent: Array<{
-      url: string;
-      content: string;
-      title?: string;
-      fetchedAt?: Date;
-    }> = [];
-
-    for (const stepResult of stepResults) {
-      if (stepResult.status === 'completed' && stepResult.output) {
-        // Handle search results (arrays of search result objects)
-        if (Array.isArray(stepResult.output)) {
-          for (const item of stepResult.output) {
-            if (this.isSearchResultItem(item)) {
-              retrievalContent.push({
-                url: item.url,
-                title: item.title,
-                content: item.content || '',
-                fetchedAt: new Date(),
-              });
-            }
-          }
-        }
-        // Handle fetch results (string content)
-        else if (typeof stepResult.output === 'string' && stepResult.output.length > 50) {
-          // For fetch results, we might not have URL directly, use a placeholder
-          retrievalContent.push({
-            url: `fetched-content-${retrievalContent.length}`,
-            content: stepResult.output,
-            title: 'Fetched Content',
-            fetchedAt: new Date(),
-          });
-        }
-      }
-    }
-
-    return retrievalContent;
-  }
 }

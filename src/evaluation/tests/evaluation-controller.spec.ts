@@ -63,7 +63,11 @@ describe('EvaluationController', () => {
       const result = await controller.getRecords();
 
       expect(result).toEqual(mockRecords);
-      expect(mockEvaluationService.getRecords).toHaveBeenCalledWith(1, 10, undefined);
+      expect(mockEvaluationService.getRecords).toHaveBeenCalledWith(
+        1,
+        10,
+        undefined,
+      );
     });
 
     it('should return paginated records with custom parameters', async () => {
@@ -80,7 +84,11 @@ describe('EvaluationController', () => {
       const result = await controller.getRecords('2', '20');
 
       expect(result).toEqual(mockRecords);
-      expect(mockEvaluationService.getRecords).toHaveBeenCalledWith(2, 20, undefined);
+      expect(mockEvaluationService.getRecords).toHaveBeenCalledWith(
+        2,
+        20,
+        undefined,
+      );
     });
 
     it('should filter records by passed status', async () => {
@@ -109,7 +117,11 @@ describe('EvaluationController', () => {
       const result = await controller.getRecords('1', '10', 'true');
 
       expect(result).toEqual(mockRecords);
-      expect(mockEvaluationService.getRecords).toHaveBeenCalledWith(1, 10, true);
+      expect(mockEvaluationService.getRecords).toHaveBeenCalledWith(
+        1,
+        10,
+        true,
+      );
     });
 
     it('should filter records by failed status', async () => {
@@ -138,7 +150,11 @@ describe('EvaluationController', () => {
       const result = await controller.getRecords('1', '10', 'false');
 
       expect(result).toEqual(mockRecords);
-      expect(mockEvaluationService.getRecords).toHaveBeenCalledWith(1, 10, false);
+      expect(mockEvaluationService.getRecords).toHaveBeenCalledWith(
+        1,
+        10,
+        false,
+      );
     });
 
     it('should handle invalid page and limit values', async () => {
@@ -176,8 +192,20 @@ describe('EvaluationController', () => {
         },
         phaseBreakdown: [
           { phase: 'plan', total: 100, passed: 85, failed: 15, passRate: 85 },
-          { phase: 'retrieval', total: 85, passed: 80, failed: 5, passRate: 94 },
-          { phase: 'answer', total: 80, passed: 75, failed: 5, passRate: 93.75 },
+          {
+            phase: 'retrieval',
+            total: 85,
+            passed: 80,
+            failed: 5,
+            passRate: 94,
+          },
+          {
+            phase: 'answer',
+            total: 80,
+            passed: 75,
+            failed: 5,
+            passRate: 93.75,
+          },
         ],
         scoreDistribution: [
           { range: '0-20', count: 2 },
@@ -243,7 +271,9 @@ describe('EvaluationController', () => {
       const result = await controller.getRecordById('test-id-123');
 
       expect(result).toEqual(mockRecord);
-      expect(mockEvaluationService.getRecordById).toHaveBeenCalledWith('test-id-123');
+      expect(mockEvaluationService.getRecordById).toHaveBeenCalledWith(
+        'test-id-123',
+      );
     });
 
     it('should throw NotFoundException when record does not exist', async () => {
@@ -278,14 +308,22 @@ describe('EvaluationController', () => {
           escalatedToLargeModel: false,
         },
         retrievalEvaluation: {
-          scores: { contextRecall: 0.85, contextPrecision: 0.8, sourceQuality: 0.9 },
+          scores: {
+            contextRecall: 0.85,
+            contextPrecision: 0.8,
+            sourceQuality: 0.9,
+          },
           passed: true,
           flaggedSevere: false,
           sourceDetails: [],
         },
         answerEvaluation: {
           attempts: [],
-          finalScores: { faithfulness: 0.9, answerRelevance: 0.85, completeness: 0.8 },
+          finalScores: {
+            faithfulness: 0.9,
+            answerRelevance: 0.85,
+            completeness: 0.8,
+          },
           passed: true,
           regenerated: false,
         },

@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  ParseIntPipe,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { ResearchResultService } from './research-result.service';
 import { ResearchResultEntity } from './entities/research-result.entity';
 
@@ -15,7 +22,9 @@ export class ResearchResultController {
   }
 
   @Get(':logId')
-  async findByLogId(@Param('logId') logId: string): Promise<ResearchResultEntity> {
+  async findByLogId(
+    @Param('logId') logId: string,
+  ): Promise<ResearchResultEntity> {
     return this.resultService.getByLogId(logId);
   }
 }

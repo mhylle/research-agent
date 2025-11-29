@@ -53,7 +53,8 @@ export const planningTools: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'add_step',
-      description: 'Add an execution step to a phase with specific configuration parameters',
+      description:
+        'Add an execution step to a phase with specific configuration parameters',
       parameters: {
         type: 'object',
         properties: {
@@ -73,7 +74,8 @@ export const planningTools: ToolDefinition[] = [
           },
           config: {
             type: 'object',
-            description: 'REQUIRED tool-specific parameters. For tavily_search: {query: "search terms", max_results: 5}. For web_fetch: {url: "https://..."}. For synthesize: {prompt: "synthesis instructions"}',
+            description:
+              'REQUIRED tool-specific parameters. For tavily_search: {query: "search terms", max_results: 5}. For web_fetch: {url: "https://..."}. For synthesize: {prompt: "synthesis instructions"}',
           },
           dependsOn: {
             type: 'array',

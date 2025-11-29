@@ -79,7 +79,11 @@ describe('PlannerService', () => {
               {
                 function: {
                   name: 'add_phase',
-                  arguments: { name: 'search', description: 'Search phase', replanCheckpoint: true },
+                  arguments: {
+                    name: 'search',
+                    description: 'Search phase',
+                    replanCheckpoint: true,
+                  },
                 },
               },
             ],
@@ -93,7 +97,12 @@ describe('PlannerService', () => {
               {
                 function: {
                   name: 'add_step',
-                  arguments: { phaseId: expect.any(String), toolName: 'tavily_search', type: 'search', config: {} },
+                  arguments: {
+                    phaseId: expect.any(String),
+                    toolName: 'tavily_search',
+                    type: 'search',
+                    config: {},
+                  },
                 },
               },
             ],
@@ -145,7 +154,11 @@ describe('PlannerService', () => {
               {
                 function: {
                   name: 'add_phase',
-                  arguments: { name: 'Information Gathering', description: 'Search for info', replanCheckpoint: false },
+                  arguments: {
+                    name: 'Information Gathering',
+                    description: 'Search for info',
+                    replanCheckpoint: false,
+                  },
                 },
               },
             ],
@@ -159,7 +172,12 @@ describe('PlannerService', () => {
               {
                 function: {
                   name: 'add_step',
-                  arguments: { phaseId: expect.any(String), toolName: 'tavily_search', type: 'search', config: { query: 'test' } },
+                  arguments: {
+                    phaseId: expect.any(String),
+                    toolName: 'tavily_search',
+                    type: 'search',
+                    config: { query: 'test' },
+                  },
                 },
               },
             ],
@@ -215,7 +233,11 @@ describe('PlannerService', () => {
               {
                 function: {
                   name: 'add_phase',
-                  arguments: { name: 'Search Phase', description: 'Search', replanCheckpoint: false },
+                  arguments: {
+                    name: 'Search Phase',
+                    description: 'Search',
+                    replanCheckpoint: false,
+                  },
                 },
               },
             ],
@@ -229,7 +251,12 @@ describe('PlannerService', () => {
               {
                 function: {
                   name: 'add_step',
-                  arguments: { phaseId: expect.any(String), toolName: 'tavily_search', type: 'search', config: {} },
+                  arguments: {
+                    phaseId: expect.any(String),
+                    toolName: 'tavily_search',
+                    type: 'search',
+                    config: {},
+                  },
                 },
               },
             ],
@@ -243,7 +270,11 @@ describe('PlannerService', () => {
               {
                 function: {
                   name: 'add_phase',
-                  arguments: { name: 'Synthesis Phase', description: 'Synthesize results', replanCheckpoint: false },
+                  arguments: {
+                    name: 'Synthesis Phase',
+                    description: 'Synthesize results',
+                    replanCheckpoint: false,
+                  },
                 },
               },
             ],
@@ -257,7 +288,12 @@ describe('PlannerService', () => {
               {
                 function: {
                   name: 'add_step',
-                  arguments: { phaseId: expect.any(String), toolName: 'synthesize', type: 'llm', config: {} },
+                  arguments: {
+                    phaseId: expect.any(String),
+                    toolName: 'synthesize',
+                    type: 'llm',
+                    config: {},
+                  },
                 },
               },
             ],

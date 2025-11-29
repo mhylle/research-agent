@@ -46,7 +46,10 @@ describe('AnswerEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('faithfulness', { faithfulness: 0.9 }),
         createMockEvaluatorResult('answerRelevance', { answerRelevance: 0.85 }),
-        createMockEvaluatorResult('answerCompleteness', { completeness: 0.8, accuracy: 0.85 }),
+        createMockEvaluatorResult('answerCompleteness', {
+          completeness: 0.8,
+          accuracy: 0.85,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -86,7 +89,10 @@ describe('AnswerEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('faithfulness', { faithfulness: 0.3 }),
         createMockEvaluatorResult('answerRelevance', { answerRelevance: 0.4 }),
-        createMockEvaluatorResult('answerCompleteness', { completeness: 0.35, accuracy: 0.3 }),
+        createMockEvaluatorResult('answerCompleteness', {
+          completeness: 0.35,
+          accuracy: 0.3,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -269,7 +275,10 @@ describe('AnswerEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('faithfulness', { faithfulness: 0.9 }),
         createMockEvaluatorResult('answerRelevance', { answerRelevance: 0.85 }),
-        createMockEvaluatorResult('answerCompleteness', { completeness: 0.8, accuracy: 0.85 }),
+        createMockEvaluatorResult('answerCompleteness', {
+          completeness: 0.8,
+          accuracy: 0.85,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -336,7 +345,9 @@ describe('AnswerEvaluatorService', () => {
           critique: 'Needs better source alignment',
         },
         {
-          ...createMockEvaluatorResult('answerRelevance', { answerRelevance: 0.6 }),
+          ...createMockEvaluatorResult('answerRelevance', {
+            answerRelevance: 0.6,
+          }),
           critique: 'Could be more focused on the query',
         },
       ]);

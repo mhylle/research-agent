@@ -33,8 +33,8 @@ export class AnswerEvaluatorService {
 
   private readonly ANSWER_WEIGHTS: Record<string, number> = {
     faithfulness: 0.35,
-    answerRelevance: 0.30,
-    completeness: 0.20,
+    answerRelevance: 0.3,
+    completeness: 0.2,
     accuracy: 0.15,
   };
 
@@ -45,8 +45,12 @@ export class AnswerEvaluatorService {
     private readonly scoreAggregator: ScoreAggregatorService,
   ) {}
 
-  async evaluate(input: AnswerEvaluationInput): Promise<AnswerEvaluationResult> {
-    this.logger.log(`Evaluating answer for query: ${input.query.substring(0, 50)}...`);
+  async evaluate(
+    input: AnswerEvaluationInput,
+  ): Promise<AnswerEvaluationResult> {
+    this.logger.log(
+      `Evaluating answer for query: ${input.query.substring(0, 50)}...`,
+    );
 
     try {
       // Skip evaluation if no answer was generated
@@ -54,12 +58,19 @@ export class AnswerEvaluatorService {
         this.logger.warn('No answer generated, skipping answer evaluation');
         return {
           passed: false,
-          scores: { faithfulness: 0, answerRelevance: 0, completeness: 0, accuracy: 0 },
+          scores: {
+            faithfulness: 0,
+            answerRelevance: 0,
+            completeness: 0,
+            accuracy: 0,
+          },
           explanations: {},
           confidence: 0,
           shouldRegenerate: true,
           critique: 'No answer was generated',
-          improvementSuggestions: ['Generate a comprehensive answer based on retrieved sources'],
+          improvementSuggestions: [
+            'Generate a comprehensive answer based on retrieved sources',
+          ],
           evaluationSkipped: true,
           skipReason: 'No answer generated',
         };
@@ -89,7 +100,9 @@ export class AnswerEvaluatorService {
       const shouldRegenerate = overallScore < this.MAJOR_FAILURE_THRESHOLD;
 
       if (shouldRegenerate) {
-        this.logger.warn(`Answer flagged for regeneration: ${overallScore.toFixed(2)}`);
+        this.logger.warn(
+          `Answer flagged for regeneration: ${overallScore.toFixed(2)}`,
+        );
       }
 
       // Extract explanations from evaluator results
@@ -155,8 +168,8 @@ export class AnswerEvaluatorService {
 
   private buildCritique(results: EvaluatorResult[]): string {
     return results
-      .filter(r => r.critique)
-      .map(r => `[${r.role}]: ${r.critique}`)
+      .filter((r) => r.critique)
+      .map((r) => `[${r.role}]: ${r.critique}`)
       .join('\n');
   }
 
@@ -168,7 +181,9 @@ export class AnswerEvaluatorService {
     for (const result of results) {
       for (const [dimension, score] of Object.entries(result.scores)) {
         if (typeof score === 'number' && score < 0.6) {
-          suggestions.push(`Improve ${dimension} (currently ${(score * 100).toFixed(0)}%)`);
+          suggestions.push(
+            `Improve ${dimension} (currently ${(score * 100).toFixed(0)}%)`,
+          );
         }
       }
     }

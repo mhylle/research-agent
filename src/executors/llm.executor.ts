@@ -30,7 +30,10 @@ export class LLMExecutor implements Executor {
         });
       }
 
-      messages.push({ role: 'user', content: String(config.prompt || 'Please provide a response.') });
+      messages.push({
+        role: 'user',
+        content: String(config.prompt || 'Please provide a response.'),
+      });
 
       const response = await this.llmService.chat(messages);
       const durationMs = Date.now() - startTime;

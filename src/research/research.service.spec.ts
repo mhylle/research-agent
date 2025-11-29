@@ -60,6 +60,9 @@ describe('ResearchService', () => {
 
     expect(result.answer).toBe('Final answer');
     expect(result.metadata.totalExecutionTime).toBe(4500);
-    expect(orchestrator.executeResearch).toHaveBeenCalledWith('What is AI?', undefined);
+    expect(orchestrator.executeResearch).toHaveBeenCalledWith(
+      'What is AI?',
+      undefined,
+    );
   });
 });

@@ -17,33 +17,129 @@ export interface RetrievalContent {
 
 @Injectable()
 export class ResultExtractorService {
+  /**
+   * Minimum character length for valid text outputs.
+   * Filters out short/empty results that are unlikely to contain useful information.
+   * Based on analysis showing meaningful answers average 100+ characters.
+   */
+  private static readonly MIN_OUTPUT_LENGTH = 50;
+
+  /**
+   * Extracts both sources and final output from a single phase result in one pass.
+   * This maintains the original atomic extraction behavior where sources and output
+   * are extracted together with consistent state tracking.
+   *
+   * @param phaseResult - The phase result to extract data from
+   * @returns Object containing sources array and final output string
+   */
+  extractAllResults(phaseResult: PhaseResult): {
+    sources: Source[];
+    output: string;
+  } {
+    const sourceMap = new Map<string, Source>();
+    let synthesisOutput: string | null = null;
+    let genericStringOutput: string | null = null;
+
+    // Single pass through step results to extract both sources and output
+    for (const stepResult of phaseResult.stepResults) {
+      if (stepResult.output) {
+        // Extract sources from search results
+        if (Array.isArray(stepResult.output)) {
+          for (const item of stepResult.output) {
+            if (this.isSearchResultItem(item)) {
+              const score = typeof item.score === 'number' ? item.score : null;
+              const relevance =
+                score !== null && score > 0.7 ? 'high' : 'medium';
+
+              // Deduplication: only add if not exists, or if exists with lower relevance
+              const existing = sourceMap.get(item.url);
+              if (
+                !existing ||
+                (relevance === 'high' && existing.relevance === 'medium')
+              ) {
+                sourceMap.set(item.url, {
+                  url: item.url,
+                  title: item.title,
+                  relevance,
+                });
+              }
+            }
+          }
+        }
+
+        // Extract final output - prioritize synthesis steps
+        if (
+          typeof stepResult.output === 'string' &&
+          stepResult.output.trim().length > 0
+        ) {
+          const isSynthesisStep =
+            stepResult.toolName &&
+            (stepResult.toolName.toLowerCase().includes('synth') ||
+              stepResult.toolName === 'llm');
+
+          if (isSynthesisStep) {
+            synthesisOutput = stepResult.output;
+          } else if (
+            !synthesisOutput &&
+            stepResult.output.length > ResultExtractorService.MIN_OUTPUT_LENGTH
+          ) {
+            genericStringOutput = stepResult.output;
+          }
+        }
+      }
+    }
+
+    // Convert source map to array, sorted by relevance (high first)
+    const sources = Array.from(sourceMap.values()).sort((a, b) => {
+      if (a.relevance === b.relevance) return 0;
+      return a.relevance === 'high' ? -1 : 1;
+    });
+
+    return {
+      sources,
+      output: synthesisOutput || genericStringOutput || '',
+    };
+  }
+
   extractSources(phaseResults: PhaseResult[]): Source[] {
-    const sources: Source[] = [];
+    const sourceMap = new Map<string, Source>();
 
     for (const phaseResult of phaseResults) {
       for (const stepResult of phaseResult.stepResults) {
         if (stepResult.output && Array.isArray(stepResult.output)) {
           for (const item of stepResult.output) {
             if (this.isSearchResultItem(item)) {
-              const score = typeof item.score === 'number' ? item.score : 0;
-              sources.push({
-                url: item.url,
-                title: item.title,
-                relevance: score > 0.7 ? 'high' : 'medium',
-              });
+              const score = typeof item.score === 'number' ? item.score : null;
+              const relevance =
+                score !== null && score > 0.7 ? 'high' : 'medium';
+
+              // Deduplication: only add if not exists, or if exists with lower relevance
+              const existing = sourceMap.get(item.url);
+              if (
+                !existing ||
+                (relevance === 'high' && existing.relevance === 'medium')
+              ) {
+                sourceMap.set(item.url, {
+                  url: item.url,
+                  title: item.title,
+                  relevance,
+                });
+              }
             }
           }
         }
       }
     }
 
-    return sources;
+    // Return sorted by relevance (high first), then by insertion order
+    return Array.from(sourceMap.values()).sort((a, b) => {
+      if (a.relevance === b.relevance) return 0;
+      return a.relevance === 'high' ? -1 : 1;
+    });
   }
 
   extractFinalOutput(phaseResults: PhaseResult[]): string {
-    let synthesisOutput: string | null = null;
-    let genericStringOutput: string | null = null;
-
+    // First pass: look for synthesis output (return immediately on first match)
     for (const phaseResult of phaseResults) {
       for (const stepResult of phaseResult.stepResults) {
         if (
@@ -57,15 +153,26 @@ export class ResultExtractorService {
               stepResult.toolName === 'llm');
 
           if (isSynthesisStep) {
-            synthesisOutput = stepResult.output;
-          } else if (!synthesisOutput && stepResult.output.length > 50) {
-            genericStringOutput = stepResult.output;
+            return stepResult.output; // Return immediately on first synthesis match
           }
         }
       }
     }
 
-    return synthesisOutput || genericStringOutput || '';
+    // Second pass: look for generic string output (return immediately on first match)
+    for (const phaseResult of phaseResults) {
+      for (const stepResult of phaseResult.stepResults) {
+        if (
+          stepResult.output &&
+          typeof stepResult.output === 'string' &&
+          stepResult.output.length > ResultExtractorService.MIN_OUTPUT_LENGTH
+        ) {
+          return stepResult.output; // Return immediately on first long string
+        }
+      }
+    }
+
+    return '';
   }
 
   collectRetrievalContent(stepResults: StepResult[]): RetrievalContent[] {
@@ -86,7 +193,7 @@ export class ResultExtractorService {
           }
         } else if (
           typeof stepResult.output === 'string' &&
-          stepResult.output.length > 50
+          stepResult.output.length > ResultExtractorService.MIN_OUTPUT_LENGTH
         ) {
           retrievalContent.push({
             url: `fetched-content-${retrievalContent.length}`,
@@ -107,9 +214,11 @@ export class ResultExtractorService {
       for (const step of phase.steps) {
         if (
           (step.toolName === 'web_search' || step.toolName === 'tavily_search') &&
-          step.config?.query
+          step.config &&
+          typeof step.config.query === 'string' &&
+          step.config.query.trim().length > 0
         ) {
-          queries.push(step.config.query as string);
+          queries.push(step.config.query);
         }
       }
     }

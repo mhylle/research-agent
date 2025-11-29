@@ -43,7 +43,11 @@ describe('EvaluationService', () => {
     });
 
     it('should return evaluation result when successful', async () => {
-      const expected = { passed: true, scores: { test: 0.8 }, evaluationSkipped: false };
+      const expected = {
+        passed: true,
+        scores: { test: 0.8 },
+        evaluationSkipped: false,
+      };
 
       const result = await service.evaluateWithFallback(
         async () => expected,

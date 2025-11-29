@@ -35,7 +35,7 @@ export class RetrievalEvaluatorService {
   private readonly logger = new Logger(RetrievalEvaluatorService.name);
 
   private readonly RETRIEVAL_WEIGHTS: Record<string, number> = {
-    contextRecall: 0.40,
+    contextRecall: 0.4,
     contextPrecision: 0.35,
     sourceQuality: 0.25,
   };
@@ -47,12 +47,18 @@ export class RetrievalEvaluatorService {
     private readonly scoreAggregator: ScoreAggregatorService,
   ) {}
 
-  async evaluate(input: RetrievalEvaluationInput): Promise<RetrievalEvaluationResult> {
-    this.logger.log(`Evaluating retrieval for query: ${input.query.substring(0, 50)}...`);
+  async evaluate(
+    input: RetrievalEvaluationInput,
+  ): Promise<RetrievalEvaluationResult> {
+    this.logger.log(
+      `Evaluating retrieval for query: ${input.query.substring(0, 50)}...`,
+    );
 
     try {
       // Format sources for evaluation
-      const sourcesText = this.formatSourcesForEvaluation(input.retrievedContent);
+      const sourcesText = this.formatSourcesForEvaluation(
+        input.retrievedContent,
+      );
 
       // Use retrieval-specific evaluator roles
       const evaluatorResults = await this.panelEvaluator.evaluateWithPanel(
@@ -74,7 +80,9 @@ export class RetrievalEvaluatorService {
       const flaggedSevere = overallScore < this.SEVERE_THRESHOLD;
 
       if (flaggedSevere) {
-        this.logger.warn(`Retrieval flagged as severe failure: ${overallScore.toFixed(2)}`);
+        this.logger.warn(
+          `Retrieval flagged as severe failure: ${overallScore.toFixed(2)}`,
+        );
       }
 
       // Extract explanations from evaluator results
@@ -93,7 +101,10 @@ export class RetrievalEvaluatorService {
         explanations,
         confidence: aggregated.confidence,
         flaggedSevere,
-        sourceDetails: this.buildSourceDetails(input.retrievedContent, evaluatorResults),
+        sourceDetails: this.buildSourceDetails(
+          input.retrievedContent,
+          evaluatorResults,
+        ),
         evaluationSkipped: false,
       };
     } catch (error) {
@@ -112,15 +123,17 @@ export class RetrievalEvaluatorService {
   }
 
   private formatSourcesForEvaluation(content: RetrievalContent[]): string {
-    return content.map((source, index) => {
-      return `
+    return content
+      .map((source, index) => {
+        return `
 ### Source ${index + 1}
 - URL: ${source.url}
 - Title: ${source.title || 'N/A'}
 - Content Preview: ${source.content.substring(0, 300)}...
 - Fetched At: ${source.fetchedAt ? source.fetchedAt.toISOString() : 'N/A'}
 `;
-    }).join('\n');
+      })
+      .join('\n');
   }
 
   private buildSourceDetails(
@@ -128,15 +141,19 @@ export class RetrievalEvaluatorService {
     evaluatorResults: any[],
   ): Array<{ url: string; relevanceScore: number; qualityScore: number }> {
     // Extract relevance and quality scores from evaluator results
-    const relevanceResult = evaluatorResults.find(r => r.role === 'sourceRelevance');
-    const qualityResult = evaluatorResults.find(r => r.role === 'sourceQuality');
+    const relevanceResult = evaluatorResults.find(
+      (r) => r.role === 'sourceRelevance',
+    );
+    const qualityResult = evaluatorResults.find(
+      (r) => r.role === 'sourceQuality',
+    );
 
     const contextRecall = relevanceResult?.scores?.contextRecall || 0.5;
     const contextPrecision = relevanceResult?.scores?.contextPrecision || 0.5;
     const sourceQuality = qualityResult?.scores?.sourceQuality || 0.5;
 
     // Build per-source details (simplified - using average scores)
-    return content.map(c => ({
+    return content.map((c) => ({
       url: c.url,
       relevanceScore: (contextRecall + contextPrecision) / 2,
       qualityScore: sourceQuality,

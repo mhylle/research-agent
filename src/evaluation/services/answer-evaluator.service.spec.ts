@@ -33,15 +33,37 @@ describe('AnswerEvaluatorService', () => {
   describe('evaluate', () => {
     it('should evaluate answer and return scores', async () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
-        { role: 'faithfulnessJudge', scores: { faithfulness: 0.85 }, confidence: 0.9 },
+        {
+          role: 'faithfulnessJudge',
+          scores: { faithfulness: 0.85 },
+          confidence: 0.9,
+        },
         { role: 'intentAnalyst', scores: { relevance: 0.8 }, confidence: 0.85 },
-        { role: 'factChecker', scores: { factualAccuracy: 0.9 }, confidence: 0.95 },
-        { role: 'coverageChecker', scores: { completeness: 0.75 }, confidence: 0.8 },
-        { role: 'qualityAssessor', scores: { coherence: 0.85 }, confidence: 0.9 },
+        {
+          role: 'factChecker',
+          scores: { factualAccuracy: 0.9 },
+          confidence: 0.95,
+        },
+        {
+          role: 'coverageChecker',
+          scores: { completeness: 0.75 },
+          confidence: 0.8,
+        },
+        {
+          role: 'qualityAssessor',
+          scores: { coherence: 0.85 },
+          confidence: 0.9,
+        },
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
-        scores: { faithfulness: 0.85, relevance: 0.8, factualAccuracy: 0.9, completeness: 0.75, coherence: 0.85 },
+        scores: {
+          faithfulness: 0.85,
+          relevance: 0.8,
+          factualAccuracy: 0.9,
+          completeness: 0.75,
+          coherence: 0.85,
+        },
         confidence: 0.88,
       });
 
@@ -60,7 +82,11 @@ describe('AnswerEvaluatorService', () => {
 
     it('should recommend regeneration when score < 0.5', async () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
-        { role: 'faithfulnessJudge', scores: { faithfulness: 0.3 }, confidence: 0.9 },
+        {
+          role: 'faithfulnessJudge',
+          scores: { faithfulness: 0.3 },
+          confidence: 0.9,
+        },
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -82,7 +108,12 @@ describe('AnswerEvaluatorService', () => {
 
     it('should include critique for improvement guidance', async () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
-        { role: 'faithfulnessJudge', scores: { faithfulness: 0.6 }, confidence: 0.8, critique: 'Some claims lack support' },
+        {
+          role: 'faithfulnessJudge',
+          scores: { faithfulness: 0.6 },
+          confidence: 0.8,
+          critique: 'Some claims lack support',
+        },
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({

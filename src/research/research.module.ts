@@ -15,7 +15,11 @@ import { LoggingModule } from '../logging/logging.module';
     OrchestrationModule,
     LoggingModule,
   ],
-  controllers: [ResearchController, ResearchStreamController, ResearchResultController],
+  controllers: [
+    ResearchController,
+    ResearchStreamController,
+    ResearchResultController,
+  ],
   providers: [ResearchService, ResearchResultService],
   exports: [ResearchService, ResearchResultService],
 })

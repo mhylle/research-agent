@@ -33,13 +33,29 @@ describe('RetrievalEvaluatorService', () => {
   describe('evaluate', () => {
     it('should evaluate retrieval and return scores', async () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
-        { role: 'faithfulnessJudge', scores: { contextPrecision: 0.8 }, confidence: 0.9 },
-        { role: 'coverageChecker', scores: { contextRecall: 0.7 }, confidence: 0.85 },
-        { role: 'qualityAssessor', scores: { sourceQuality: 0.75 }, confidence: 0.8 },
+        {
+          role: 'faithfulnessJudge',
+          scores: { contextPrecision: 0.8 },
+          confidence: 0.9,
+        },
+        {
+          role: 'coverageChecker',
+          scores: { contextRecall: 0.7 },
+          confidence: 0.85,
+        },
+        {
+          role: 'qualityAssessor',
+          scores: { sourceQuality: 0.75 },
+          confidence: 0.8,
+        },
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
-        scores: { contextRecall: 0.7, contextPrecision: 0.8, sourceQuality: 0.75 },
+        scores: {
+          contextRecall: 0.7,
+          contextPrecision: 0.8,
+          sourceQuality: 0.75,
+        },
         confidence: 0.85,
       });
 
@@ -57,7 +73,11 @@ describe('RetrievalEvaluatorService', () => {
 
     it('should flag severe failures when score < 0.5', async () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
-        { role: 'faithfulnessJudge', scores: { contextPrecision: 0.3 }, confidence: 0.9 },
+        {
+          role: 'faithfulnessJudge',
+          scores: { contextPrecision: 0.3 },
+          confidence: 0.9,
+        },
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({

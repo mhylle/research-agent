@@ -22,7 +22,9 @@ describe('ToolExecutor', () => {
                 { function: { name: 'tavily_search', description: 'Search' } },
               ]),
             getTool: jest.fn().mockReturnValue({
-              definition: { function: { name: 'tavily_search', description: 'Search' } },
+              definition: {
+                function: { name: 'tavily_search', description: 'Search' },
+              },
             }),
           },
         },

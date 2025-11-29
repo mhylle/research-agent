@@ -41,14 +41,24 @@ describe('PlanEvaluationOrchestratorService', () => {
       ],
     }).compile();
 
-    service = module.get<PlanEvaluationOrchestratorService>(PlanEvaluationOrchestratorService);
+    service = module.get<PlanEvaluationOrchestratorService>(
+      PlanEvaluationOrchestratorService,
+    );
   });
 
   describe('evaluatePlan', () => {
     it('should pass on first attempt when scores are good', async () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
-        { role: 'intentAnalyst', scores: { intentAlignment: 0.9 }, confidence: 0.9 },
-        { role: 'coverageChecker', scores: { queryCoverage: 0.85 }, confidence: 0.85 },
+        {
+          role: 'intentAnalyst',
+          scores: { intentAlignment: 0.9 },
+          confidence: 0.9,
+        },
+        {
+          role: 'coverageChecker',
+          scores: { queryCoverage: 0.85 },
+          confidence: 0.85,
+        },
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -71,7 +81,11 @@ describe('PlanEvaluationOrchestratorService', () => {
 
     it('should escalate when trigger is detected', async () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
-        { role: 'intentAnalyst', scores: { intentAlignment: 0.68 }, confidence: 0.5 },
+        {
+          role: 'intentAnalyst',
+          scores: { intentAlignment: 0.68 },
+          confidence: 0.5,
+        },
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -99,7 +113,12 @@ describe('PlanEvaluationOrchestratorService', () => {
 
     it('should iterate up to max attempts on failure', async () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
-        { role: 'intentAnalyst', scores: { intentAlignment: 0.4 }, confidence: 0.9, critique: 'Poor alignment' },
+        {
+          role: 'intentAnalyst',
+          scores: { intentAlignment: 0.4 },
+          confidence: 0.9,
+          critique: 'Poor alignment',
+        },
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({

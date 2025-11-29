@@ -33,19 +33,21 @@ export class ToolExecutor implements Executor {
       const tool = this.toolRegistry.getTool(step.toolName);
       if (!tool) {
         throw new Error(
-          `Tool "${step.toolName}" not found in registry. Available tools: ${this.getAvailableTools().map((t) => t.function.name).join(', ')}`,
+          `Tool "${step.toolName}" not found in registry. Available tools: ${this.getAvailableTools()
+            .map((t) => t.function.name)
+            .join(', ')}`,
         );
       }
 
-      console.log(`[ToolExecutor] Found tool: ${tool.definition.function.name}`);
+      console.log(
+        `[ToolExecutor] Found tool: ${tool.definition.function.name}`,
+      );
       const result: unknown = await this.toolRegistry.execute(
         step.toolName,
         step.config,
       );
       const durationMs = Date.now() - startTime;
-      console.log(
-        `[ToolExecutor] Tool execution completed in ${durationMs}ms`,
-      );
+      console.log(`[ToolExecutor] Tool execution completed in ${durationMs}ms`);
 
       // Emit tool_call_completed event
       this.eventEmitter.emit('tool.call.completed', {

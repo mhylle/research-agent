@@ -202,9 +202,12 @@ export class Orchestrator {
       this.plannerService.setPhaseResults(phase.id, phaseResult);
 
       // Extract sources and final output
-      this.extractResultData(phaseResult, sources, (output) => {
-        finalOutput = output;
-      });
+      const { sources: phaseSources, output: phaseOutput } =
+        this.resultExtractor.extractAllResults(phaseResult);
+      sources.push(...phaseSources);
+      if (phaseOutput) {
+        finalOutput = phaseOutput;
+      }
 
       // RETRIEVAL EVALUATION - after retrieval phases (search/fetch)
       if (!retrievalEvaluationComplete && this.isRetrievalPhase(phase)) {
@@ -337,9 +340,12 @@ export class Orchestrator {
               this.plannerService.setPhaseResults(phase.id, phaseResult);
 
               // Re-extract result data
-              this.extractResultData(phaseResult, sources, (output) => {
-                finalOutput = output;
-              });
+              const { sources: phaseSources, output: phaseOutput } =
+                this.resultExtractor.extractAllResults(phaseResult);
+              sources.push(...phaseSources);
+              if (phaseOutput) {
+                finalOutput = phaseOutput;
+              }
             }
           }
         }
@@ -682,22 +688,6 @@ export class Orchestrator {
     };
 
     return this.plannerService.decideRecovery(failureContext, logId);
-  }
-
-  private extractResultData(
-    phaseResult: PhaseResult,
-    sources: Array<{ url: string; title: string; relevance: string }>,
-    setOutput: (output: string) => void,
-  ): void {
-    // Extract sources from this phase result and add to accumulator
-    const phaseSources = this.resultExtractor.extractSources([phaseResult]);
-    sources.push(...phaseSources);
-
-    // Extract final output from this phase result
-    const phaseOutput = this.resultExtractor.extractFinalOutput([phaseResult]);
-    if (phaseOutput) {
-      setOutput(phaseOutput);
-    }
   }
 
   private getDefaultConfig(

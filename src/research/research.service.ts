@@ -14,7 +14,10 @@ export class ResearchService {
     private resultService: ResearchResultService,
   ) {}
 
-  async executeResearch(query: string, logId?: string): Promise<ResearchResult> {
+  async executeResearch(
+    query: string,
+    logId?: string,
+  ): Promise<ResearchResult> {
     const result = await this.orchestrator.executeResearch(query, logId);
 
     // Persist the research result to database
@@ -42,7 +45,9 @@ export class ResearchService {
   startResearchInBackground(query: string, logId: string): void {
     // Fire and forget - don't await
     this.executeResearch(query, logId).catch((error) => {
-      this.logger.error(`Background research failed for logId ${logId}: ${error}`);
+      this.logger.error(
+        `Background research failed for logId ${logId}: ${error}`,
+      );
     });
   }
 }

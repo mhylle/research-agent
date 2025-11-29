@@ -44,7 +44,12 @@ describe('EscalationHandlerService', () => {
         query: 'test query',
         content: { plan: 'test plan' },
         panelResults: [
-          { role: 'intentAnalyst', scores: { intentAlignment: 0.68 }, confidence: 0.8, critique: 'Close to threshold' },
+          {
+            role: 'intentAnalyst',
+            scores: { intentAlignment: 0.68 },
+            confidence: 0.8,
+            critique: 'Close to threshold',
+          },
         ],
       });
 

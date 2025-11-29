@@ -84,9 +84,11 @@ describe('ScoreAggregatorService', () => {
     it('should return null when no trigger', () => {
       const result = { scores: { test: 0.9 }, confidence: 0.9 };
 
-      const trigger = service.checkEscalationTriggers(result, [
-        { scores: { test: 0.85 }, confidence: 0.9 },
-      ] as any, 0.7);
+      const trigger = service.checkEscalationTriggers(
+        result,
+        [{ scores: { test: 0.85 }, confidence: 0.9 }] as any,
+        0.7,
+      );
 
       expect(trigger).toBeNull();
     });

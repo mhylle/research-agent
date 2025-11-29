@@ -9,7 +9,7 @@ export interface AggregatedResult {
 @Injectable()
 export class ScoreAggregatorService {
   private readonly PLAN_DIMENSION_WEIGHTS: Record<string, number> = {
-    intentAlignment: 0.50,
+    intentAlignment: 0.5,
     queryCoverage: 0.35,
     scopeAppropriateness: 0.15,
   };
@@ -31,7 +31,8 @@ export class ScoreAggregatorService {
       confidenceCount++;
     }
 
-    const avgConfidence = confidenceCount > 0 ? totalConfidence / confidenceCount : 0;
+    const avgConfidence =
+      confidenceCount > 0 ? totalConfidence / confidenceCount : 0;
 
     return {
       scores,
@@ -39,7 +40,10 @@ export class ScoreAggregatorService {
     };
   }
 
-  calculateOverallScore(scores: DimensionScores, weights?: Record<string, number>): number {
+  calculateOverallScore(
+    scores: DimensionScores,
+    weights?: Record<string, number>,
+  ): number {
     const w = weights || this.PLAN_DIMENSION_WEIGHTS;
     let weightedSum = 0;
     let totalWeight = 0;
@@ -54,11 +58,15 @@ export class ScoreAggregatorService {
       }
     } else {
       // No weights provided - check if scores match default weights
-      const hasWeightedDimensions = Object.keys(scores).some(d => d in this.PLAN_DIMENSION_WEIGHTS);
+      const hasWeightedDimensions = Object.keys(scores).some(
+        (d) => d in this.PLAN_DIMENSION_WEIGHTS,
+      );
 
       if (hasWeightedDimensions) {
         // Use weighted calculation for known dimensions
-        for (const [dimension, weight] of Object.entries(this.PLAN_DIMENSION_WEIGHTS)) {
+        for (const [dimension, weight] of Object.entries(
+          this.PLAN_DIMENSION_WEIGHTS,
+        )) {
           if (dimension in scores) {
             weightedSum += scores[dimension] * weight;
             totalWeight += weight;
@@ -66,9 +74,13 @@ export class ScoreAggregatorService {
         }
       } else {
         // Unknown dimensions - use simple average
-        const scoreValues = Object.values(scores).filter(v => typeof v === 'number');
+        const scoreValues = Object.values(scores).filter(
+          (v) => typeof v === 'number',
+        );
         if (scoreValues.length > 0) {
-          return scoreValues.reduce((sum, val) => sum + val, 0) / scoreValues.length;
+          return (
+            scoreValues.reduce((sum, val) => sum + val, 0) / scoreValues.length
+          );
         }
       }
     }
@@ -82,8 +94,8 @@ export class ScoreAggregatorService {
     passThreshold: number = 0.7,
   ): 'low_confidence' | 'disagreement' | 'borderline' | null {
     // Check low confidence
-    const allLowConfidence = results.length > 0 &&
-      results.every(r => r.confidence < 0.6);
+    const allLowConfidence =
+      results.length > 0 && results.every((r) => r.confidence < 0.6);
     if (allLowConfidence || aggregated.confidence < 0.6) {
       return 'low_confidence';
     }
@@ -91,8 +103,8 @@ export class ScoreAggregatorService {
     // Check disagreement (scores differ by > 0.3)
     for (const dimension of Object.keys(aggregated.scores)) {
       const dimensionScores = results
-        .map(r => r.scores[dimension])
-        .filter(s => typeof s === 'number');
+        .map((r) => r.scores[dimension])
+        .filter((s) => typeof s === 'number');
 
       if (dimensionScores.length >= 2) {
         const max = Math.max(...dimensionScores);

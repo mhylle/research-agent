@@ -28,7 +28,9 @@ export class PlanEvaluationOrchestratorService {
     private readonly evaluationService: EvaluationService,
   ) {}
 
-  async evaluatePlan(input: PlanEvaluationInput): Promise<PlanEvaluationResult> {
+  async evaluatePlan(
+    input: PlanEvaluationInput,
+  ): Promise<PlanEvaluationResult> {
     return this.evaluationService.evaluateWithFallback(
       () => this.doEvaluatePlan(input),
       this.createFallbackResult(),
@@ -36,22 +38,33 @@ export class PlanEvaluationOrchestratorService {
     );
   }
 
-  private async doEvaluatePlan(input: PlanEvaluationInput): Promise<PlanEvaluationResult> {
+  private async doEvaluatePlan(
+    input: PlanEvaluationInput,
+  ): Promise<PlanEvaluationResult> {
     console.log('[PlanEvaluationOrchestrator] doEvaluatePlan started');
-    console.log('[PlanEvaluationOrchestrator] Input:', JSON.stringify({ query: input.query, planId: input.plan.id }, null, 2));
+    console.log(
+      '[PlanEvaluationOrchestrator] Input:',
+      JSON.stringify({ query: input.query, planId: input.plan.id }, null, 2),
+    );
 
     const attempts: PlanAttempt[] = [];
-    let currentPlan = input.plan;
-    let escalatedToLargeModel = false;
+    const currentPlan = input.plan;
+    const escalatedToLargeModel = false;
 
     const maxAttempts = this.config.planEvaluation.maxAttempts;
     const passThreshold = this.config.planEvaluation.passThreshold;
 
-    console.log(`[PlanEvaluationOrchestrator] Config: maxAttempts=${maxAttempts}, passThreshold=${passThreshold}`);
+    console.log(
+      `[PlanEvaluationOrchestrator] Config: maxAttempts=${maxAttempts}, passThreshold=${passThreshold}`,
+    );
 
     for (let attemptNumber = 1; attemptNumber <= maxAttempts; attemptNumber++) {
-      console.log(`[PlanEvaluationOrchestrator] Starting attempt ${attemptNumber}/${maxAttempts}`);
-      this.logger.log(`Plan evaluation attempt ${attemptNumber}/${maxAttempts}`);
+      console.log(
+        `[PlanEvaluationOrchestrator] Starting attempt ${attemptNumber}/${maxAttempts}`,
+      );
+      this.logger.log(
+        `Plan evaluation attempt ${attemptNumber}/${maxAttempts}`,
+      );
 
       try {
         // Step 1: Panel evaluation (no timeout)
@@ -64,7 +77,9 @@ export class PlanEvaluationOrchestratorService {
           },
         );
 
-        console.log(`[PlanEvaluationOrchestrator] Panel evaluation completed for attempt ${attemptNumber}`);
+        console.log(
+          `[PlanEvaluationOrchestrator] Panel evaluation completed for attempt ${attemptNumber}`,
+        );
 
         // Continue with the rest of the evaluation
         await this.processAttemptResults(
@@ -74,18 +89,23 @@ export class PlanEvaluationOrchestratorService {
           passThreshold,
           attempts,
           currentPlan,
-          escalatedToLargeModel
+          escalatedToLargeModel,
         );
 
         // Check if passed and can exit early
         const lastAttempt = attempts[attempts.length - 1];
         if (lastAttempt.passed) {
-          console.log(`[PlanEvaluationOrchestrator] Plan passed on attempt ${attemptNumber}, exiting early`);
+          console.log(
+            `[PlanEvaluationOrchestrator] Plan passed on attempt ${attemptNumber}, exiting early`,
+          );
           break;
         }
       } catch (error) {
         this.logger.error(`Attempt ${attemptNumber} failed: ${error.message}`);
-        console.error(`[PlanEvaluationOrchestrator] Attempt ${attemptNumber} error:`, error.message);
+        console.error(
+          `[PlanEvaluationOrchestrator] Attempt ${attemptNumber} error:`,
+          error.message,
+        );
 
         // Add failed attempt
         attempts.push({
@@ -110,19 +130,29 @@ export class PlanEvaluationOrchestratorService {
     // Extract explanations from the last attempt
     const explanations: Record<string, string> = {};
     if (lastAttempt?.evaluatorResults) {
-      this.logger.debug(`[doEvaluatePlan] Extracting explanations from ${lastAttempt.evaluatorResults.length} evaluator results`);
+      this.logger.debug(
+        `[doEvaluatePlan] Extracting explanations from ${lastAttempt.evaluatorResults.length} evaluator results`,
+      );
       for (const result of lastAttempt.evaluatorResults) {
-        this.logger.debug(`[doEvaluatePlan] Evaluator ${result.role}: explanation="${result.explanation?.substring(0, 100)}...", dimensions=${JSON.stringify(result.dimensions)}`);
+        this.logger.debug(
+          `[doEvaluatePlan] Evaluator ${result.role}: explanation="${result.explanation?.substring(0, 100)}...", dimensions=${JSON.stringify(result.dimensions)}`,
+        );
         if (result.explanation) {
           for (const dimension of result.dimensions) {
             explanations[dimension] = result.explanation;
-            this.logger.debug(`[doEvaluatePlan] Added explanation for dimension ${dimension}`);
+            this.logger.debug(
+              `[doEvaluatePlan] Added explanation for dimension ${dimension}`,
+            );
           }
         } else {
-          this.logger.warn(`[doEvaluatePlan] No explanation found for evaluator ${result.role}`);
+          this.logger.warn(
+            `[doEvaluatePlan] No explanation found for evaluator ${result.role}`,
+          );
         }
       }
-      this.logger.debug(`[doEvaluatePlan] Final explanations object: ${JSON.stringify(Object.keys(explanations))}`);
+      this.logger.debug(
+        `[doEvaluatePlan] Final explanations object: ${JSON.stringify(Object.keys(explanations))}`,
+      );
     }
 
     return {
@@ -144,11 +174,13 @@ export class PlanEvaluationOrchestratorService {
     passThreshold: number,
     attempts: PlanAttempt[],
     currentPlan: any,
-    escalatedToLargeModel: boolean
+    escalatedToLargeModel: boolean,
   ): Promise<void> {
     // Step 2: Aggregate scores
     const aggregated = this.scoreAggregator.aggregateScores(evaluatorResults);
-    const overallScore = this.scoreAggregator.calculateOverallScore(aggregated.scores);
+    const overallScore = this.scoreAggregator.calculateOverallScore(
+      aggregated.scores,
+    );
 
     // Step 3: Check escalation triggers
     const escalationTrigger = this.scoreAggregator.checkEscalationTriggers(
@@ -158,7 +190,7 @@ export class PlanEvaluationOrchestratorService {
     );
 
     let finalScores = aggregated.scores;
-    let finalConfidence = aggregated.confidence;
+    const finalConfidence = aggregated.confidence;
     let passed = overallScore >= passThreshold;
     let escalation;
 
@@ -194,7 +226,11 @@ export class PlanEvaluationOrchestratorService {
 
     // Step 5: Decide on iteration
     if (!passed && attemptNumber < maxAttempts) {
-      attempt.iterationDecision = this.decideIteration(evaluatorResults, finalScores, passThreshold);
+      attempt.iterationDecision = this.decideIteration(
+        evaluatorResults,
+        finalScores,
+        passThreshold,
+      );
       this.logger.log(`Iteration decision: ${attempt.iterationDecision.mode}`);
       // In real implementation, would regenerate plan here
       // For now, we just continue with same plan (caller responsible for regeneration)
@@ -209,8 +245,8 @@ export class PlanEvaluationOrchestratorService {
     threshold: number,
   ): IterationDecision {
     const critiques = evaluatorResults
-      .filter(r => r.critique)
-      .map(r => r.critique);
+      .filter((r) => r.critique)
+      .map((r) => r.critique);
 
     // Analyze which dimensions are failing
     const failingDimensions = Object.entries(scores)
@@ -225,7 +261,7 @@ export class PlanEvaluationOrchestratorService {
 
     return {
       mode,
-      specificIssues: failingDimensions.map(dim => ({
+      specificIssues: failingDimensions.map((dim) => ({
         issue: `${dim} score too low`,
         fix: `Improve ${dim}`,
       })),

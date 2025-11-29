@@ -124,7 +124,9 @@ describe('MilestoneService', () => {
         'What is the latest news about AI?',
       );
 
-      const identifyTermsCall = (eventCoordinator.emit as jest.Mock).mock.calls.find(
+      const identifyTermsCall = (
+        eventCoordinator.emit as jest.Mock
+      ).mock.calls.find(
         (call) => call[2].templateId === 'stage1_identify_terms',
       );
 
@@ -364,7 +366,9 @@ describe('MilestoneService', () => {
         'What are the latest developments in artificial intelligence?',
       );
 
-      const identifyTermsCall = (eventCoordinator.emit as jest.Mock).mock.calls.find(
+      const identifyTermsCall = (
+        eventCoordinator.emit as jest.Mock
+      ).mock.calls.find(
         (call) => call[2].templateId === 'stage1_identify_terms',
       );
 
@@ -377,9 +381,11 @@ describe('MilestoneService', () => {
       expect(terms).not.toContain('in');
 
       // Should contain meaningful terms
-      expect(terms.some((t: string) =>
-        ['developments', 'artificial', 'intelligence'].includes(t)
-      )).toBe(true);
+      expect(
+        terms.some((t: string) =>
+          ['developments', 'artificial', 'intelligence'].includes(t),
+        ),
+      ).toBe(true);
     });
 
     it('should limit to 5 key terms', async () => {
@@ -395,7 +401,9 @@ describe('MilestoneService', () => {
         'machine learning deep learning neural networks artificial intelligence computer vision natural language processing',
       );
 
-      const identifyTermsCall = (eventCoordinator.emit as jest.Mock).mock.calls.find(
+      const identifyTermsCall = (
+        eventCoordinator.emit as jest.Mock
+      ).mock.calls.find(
         (call) => call[2].templateId === 'stage1_identify_terms',
       );
 
@@ -417,7 +425,9 @@ describe('MilestoneService', () => {
         'AI artificial intelligence machine',
       );
 
-      const identifyTermsCall = (eventCoordinator.emit as jest.Mock).mock.calls.find(
+      const identifyTermsCall = (
+        eventCoordinator.emit as jest.Mock
+      ).mock.calls.find(
         (call) => call[2].templateId === 'stage1_identify_terms',
       );
 

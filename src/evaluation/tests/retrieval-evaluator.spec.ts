@@ -44,7 +44,9 @@ describe('RetrievalEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('sourceRelevance', { contextRecall: 0.85 }),
         createMockEvaluatorResult('sourceQuality', { sourceQuality: 0.9 }),
-        createMockEvaluatorResult('coverageCompleteness', { contextPrecision: 0.8 }),
+        createMockEvaluatorResult('coverageCompleteness', {
+          contextPrecision: 0.8,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -80,7 +82,9 @@ describe('RetrievalEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('sourceRelevance', { contextRecall: 0.3 }),
         createMockEvaluatorResult('sourceQuality', { sourceQuality: 0.4 }),
-        createMockEvaluatorResult('coverageCompleteness', { contextPrecision: 0.35 }),
+        createMockEvaluatorResult('coverageCompleteness', {
+          contextPrecision: 0.35,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -112,7 +116,9 @@ describe('RetrievalEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('sourceRelevance', { contextRecall: 0.85 }),
         createMockEvaluatorResult('sourceQuality', { sourceQuality: 0.9 }),
-        createMockEvaluatorResult('coverageCompleteness', { contextPrecision: 0.8 }),
+        createMockEvaluatorResult('coverageCompleteness', {
+          contextPrecision: 0.8,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -240,7 +246,9 @@ describe('RetrievalEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('sourceRelevance', { contextRecall: 0.8 }),
         createMockEvaluatorResult('sourceQuality', { sourceQuality: 0.9 }),
-        createMockEvaluatorResult('coverageCompleteness', { contextPrecision: 0.7 }),
+        createMockEvaluatorResult('coverageCompleteness', {
+          contextPrecision: 0.7,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({

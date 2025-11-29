@@ -59,12 +59,18 @@ export class EvaluationService {
     fallback: T,
     context: string,
   ): Promise<T> {
-    console.log(`[EvaluationService] evaluateWithFallback called for ${context}`);
-    console.log(`[EvaluationService] Evaluation enabled: ${this.config.enabled}`);
+    console.log(
+      `[EvaluationService] evaluateWithFallback called for ${context}`,
+    );
+    console.log(
+      `[EvaluationService] Evaluation enabled: ${this.config.enabled}`,
+    );
 
     if (!this.config.enabled) {
       this.logger.debug(`Evaluation disabled, using fallback for ${context}`);
-      console.log(`[EvaluationService] Returning fallback - evaluation disabled`);
+      console.log(
+        `[EvaluationService] Returning fallback - evaluation disabled`,
+      );
       return fallback;
     }
 
@@ -159,7 +165,9 @@ export class EvaluationService {
       .getMany();
 
     // Transform to frontend-compatible format
-    const records = entities.map((entity) => this.transformToFrontendRecord(entity));
+    const records = entities.map((entity) =>
+      this.transformToFrontendRecord(entity),
+    );
 
     return {
       records,
@@ -298,7 +306,8 @@ export class EvaluationService {
         const scores = record.planEvaluation.finalScores || {};
         for (const [key, value] of Object.entries(scores)) {
           if (typeof value === 'number' && key in scoreAccumulators) {
-            scoreAccumulators[key as keyof typeof scoreAccumulators].sum += value;
+            scoreAccumulators[key as keyof typeof scoreAccumulators].sum +=
+              value;
             scoreAccumulators[key as keyof typeof scoreAccumulators].count++;
           }
         }
@@ -314,8 +323,13 @@ export class EvaluationService {
         // Process retrieval evaluation scores
         // Map contextRecall + contextPrecision to relevance score
         const retrievalScores = record.retrievalEvaluation.scores || {};
-        if ('contextRecall' in retrievalScores && 'contextPrecision' in retrievalScores) {
-          const relevanceScore = (retrievalScores.contextRecall + retrievalScores.contextPrecision) / 2;
+        if (
+          'contextRecall' in retrievalScores &&
+          'contextPrecision' in retrievalScores
+        ) {
+          const relevanceScore =
+            (retrievalScores.contextRecall + retrievalScores.contextPrecision) /
+            2;
           scoreAccumulators.relevance.sum += relevanceScore;
           scoreAccumulators.relevance.count++;
         }
@@ -337,7 +351,8 @@ export class EvaluationService {
               scoreAccumulators.relevance.sum += value;
               scoreAccumulators.relevance.count++;
             } else if (key in scoreAccumulators) {
-              scoreAccumulators[key as keyof typeof scoreAccumulators].sum += value;
+              scoreAccumulators[key as keyof typeof scoreAccumulators].sum +=
+                value;
               scoreAccumulators[key as keyof typeof scoreAccumulators].count++;
             }
           }
@@ -360,24 +375,35 @@ export class EvaluationService {
       failedCount,
       passRate,
       averageScores: {
-        intentAlignment: scoreAccumulators.intentAlignment.count > 0
-          ? scoreAccumulators.intentAlignment.sum / scoreAccumulators.intentAlignment.count
-          : 0,
-        queryCoverage: scoreAccumulators.queryCoverage.count > 0
-          ? scoreAccumulators.queryCoverage.sum / scoreAccumulators.queryCoverage.count
-          : 0,
-        scopeAppropriateness: scoreAccumulators.scopeAppropriateness.count > 0
-          ? scoreAccumulators.scopeAppropriateness.sum / scoreAccumulators.scopeAppropriateness.count
-          : 0,
-        relevance: scoreAccumulators.relevance.count > 0
-          ? scoreAccumulators.relevance.sum / scoreAccumulators.relevance.count
-          : 0,
-        completeness: scoreAccumulators.completeness.count > 0
-          ? scoreAccumulators.completeness.sum / scoreAccumulators.completeness.count
-          : 0,
-        accuracy: scoreAccumulators.accuracy.count > 0
-          ? scoreAccumulators.accuracy.sum / scoreAccumulators.accuracy.count
-          : 0,
+        intentAlignment:
+          scoreAccumulators.intentAlignment.count > 0
+            ? scoreAccumulators.intentAlignment.sum /
+              scoreAccumulators.intentAlignment.count
+            : 0,
+        queryCoverage:
+          scoreAccumulators.queryCoverage.count > 0
+            ? scoreAccumulators.queryCoverage.sum /
+              scoreAccumulators.queryCoverage.count
+            : 0,
+        scopeAppropriateness:
+          scoreAccumulators.scopeAppropriateness.count > 0
+            ? scoreAccumulators.scopeAppropriateness.sum /
+              scoreAccumulators.scopeAppropriateness.count
+            : 0,
+        relevance:
+          scoreAccumulators.relevance.count > 0
+            ? scoreAccumulators.relevance.sum /
+              scoreAccumulators.relevance.count
+            : 0,
+        completeness:
+          scoreAccumulators.completeness.count > 0
+            ? scoreAccumulators.completeness.sum /
+              scoreAccumulators.completeness.count
+            : 0,
+        accuracy:
+          scoreAccumulators.accuracy.count > 0
+            ? scoreAccumulators.accuracy.sum / scoreAccumulators.accuracy.count
+            : 0,
       },
       phaseBreakdown: [
         {
@@ -385,27 +411,38 @@ export class EvaluationService {
           total: phaseAccumulators.plan.total,
           passed: phaseAccumulators.plan.passed,
           failed: phaseAccumulators.plan.total - phaseAccumulators.plan.passed,
-          passRate: phaseAccumulators.plan.total > 0
-            ? (phaseAccumulators.plan.passed / phaseAccumulators.plan.total) * 100
-            : 0,
+          passRate:
+            phaseAccumulators.plan.total > 0
+              ? (phaseAccumulators.plan.passed / phaseAccumulators.plan.total) *
+                100
+              : 0,
         },
         {
           phase: 'retrieval',
           total: phaseAccumulators.retrieval.total,
           passed: phaseAccumulators.retrieval.passed,
-          failed: phaseAccumulators.retrieval.total - phaseAccumulators.retrieval.passed,
-          passRate: phaseAccumulators.retrieval.total > 0
-            ? (phaseAccumulators.retrieval.passed / phaseAccumulators.retrieval.total) * 100
-            : 0,
+          failed:
+            phaseAccumulators.retrieval.total -
+            phaseAccumulators.retrieval.passed,
+          passRate:
+            phaseAccumulators.retrieval.total > 0
+              ? (phaseAccumulators.retrieval.passed /
+                  phaseAccumulators.retrieval.total) *
+                100
+              : 0,
         },
         {
           phase: 'answer',
           total: phaseAccumulators.answer.total,
           passed: phaseAccumulators.answer.passed,
-          failed: phaseAccumulators.answer.total - phaseAccumulators.answer.passed,
-          passRate: phaseAccumulators.answer.total > 0
-            ? (phaseAccumulators.answer.passed / phaseAccumulators.answer.total) * 100
-            : 0,
+          failed:
+            phaseAccumulators.answer.total - phaseAccumulators.answer.passed,
+          passRate:
+            phaseAccumulators.answer.total > 0
+              ? (phaseAccumulators.answer.passed /
+                  phaseAccumulators.answer.total) *
+                100
+              : 0,
         },
       ],
       scoreDistribution: [

@@ -115,7 +115,9 @@ export class PlannerService {
       (p) => p.steps.length === 0,
     );
     if (emptyPhases.length > 0) {
-      console.log(`[PlannerService] Auto-recovering ${emptyPhases.length} empty phases by adding default steps`);
+      console.log(
+        `[PlannerService] Auto-recovering ${emptyPhases.length} empty phases by adding default steps`,
+      );
 
       // Log the auto-recovery action
       await this.logService.append({
@@ -124,9 +126,10 @@ export class PlannerService {
         timestamp: new Date(),
         planId: this.currentPlan.id,
         data: {
-          reason: 'LLM created phases without steps - auto-adding default steps',
+          reason:
+            'LLM created phases without steps - auto-adding default steps',
           emptyPhaseCount: emptyPhases.length,
-          emptyPhaseNames: emptyPhases.map(p => p.name),
+          emptyPhaseNames: emptyPhases.map((p) => p.name),
         },
       });
 
@@ -299,13 +302,16 @@ export class PlannerService {
     }
 
     // No synthesis phase found - automatically add one
-    console.log('[PlannerService] No synthesis phase found - adding default synthesis phase');
+    console.log(
+      '[PlannerService] No synthesis phase found - adding default synthesis phase',
+    );
 
     const synthesisPhase: Phase = {
       id: randomUUID(),
       planId: plan.id,
       name: 'Synthesis & Answer Generation',
-      description: 'Generate comprehensive final answer based on all gathered research',
+      description:
+        'Generate comprehensive final answer based on all gathered research',
       status: 'pending',
       steps: [],
       replanCheckpoint: false,
@@ -319,7 +325,8 @@ export class PlannerService {
       type: 'llm',
       toolName: 'synthesize',
       config: {
-        systemPrompt: 'You are a research synthesis assistant. Analyze all provided information to generate a comprehensive, well-structured answer to the user\'s query.',
+        systemPrompt:
+          "You are a research synthesis assistant. Analyze all provided information to generate a comprehensive, well-structured answer to the user's query.",
         prompt: `Based on all the research gathered, provide a comprehensive answer to the query: "${plan.query}"`,
       },
       dependencies: [],
@@ -341,7 +348,8 @@ export class PlannerService {
         reason: 'Plan did not include a synthesis/answer generation phase',
         phaseName: synthesisPhase.name,
         stepCount: synthesisPhase.steps.length,
-        message: 'CRITICAL: Automatically added synthesis phase to ensure research produces a final answer',
+        message:
+          'CRITICAL: Automatically added synthesis phase to ensure research produces a final answer',
       },
     });
   }
@@ -473,9 +481,14 @@ export class PlannerService {
         }
 
         // CRITICAL VALIDATION: Ensure toolName is provided
-        if (!args.toolName || typeof args.toolName !== 'string' || args.toolName.trim() === '') {
+        if (
+          !args.toolName ||
+          typeof args.toolName !== 'string' ||
+          args.toolName.trim() === ''
+        ) {
           result = {
-            error: 'toolName is required and must be a non-empty string. Available tools: tavily_search, web_fetch, synthesize',
+            error:
+              'toolName is required and must be a non-empty string. Available tools: tavily_search, web_fetch, synthesize',
             availableTools: ['tavily_search', 'web_fetch', 'synthesize'],
             providedToolName: args.toolName,
           };
@@ -483,7 +496,11 @@ export class PlannerService {
         }
 
         // CRITICAL VALIDATION: Ensure config is provided with meaningful parameters
-        if (!args.config || typeof args.config !== 'object' || Object.keys(args.config).length === 0) {
+        if (
+          !args.config ||
+          typeof args.config !== 'object' ||
+          Object.keys(args.config).length === 0
+        ) {
           result = {
             error: `config is REQUIRED and must be a non-empty object with specific parameters for ${args.toolName}. Examples:
 - tavily_search requires: {query: "specific search terms", max_results: 5}
@@ -497,25 +514,40 @@ export class PlannerService {
 
         // Tool-specific config validation
         if (args.toolName === 'tavily_search') {
-          if (!args.config.query || typeof args.config.query !== 'string' || args.config.query.trim() === '') {
+          if (
+            !args.config.query ||
+            typeof args.config.query !== 'string' ||
+            args.config.query.trim() === ''
+          ) {
             result = {
-              error: 'tavily_search requires a non-empty "query" field in config. Example: {query: "latest antimatter news 2024", max_results: 5}',
+              error:
+                'tavily_search requires a non-empty "query" field in config. Example: {query: "latest antimatter news 2024", max_results: 5}',
               providedConfig: args.config,
             };
             break;
           }
         } else if (args.toolName === 'web_fetch') {
-          if (!args.config.url || typeof args.config.url !== 'string' || args.config.url.trim() === '') {
+          if (
+            !args.config.url ||
+            typeof args.config.url !== 'string' ||
+            args.config.url.trim() === ''
+          ) {
             result = {
-              error: 'web_fetch requires a non-empty "url" field in config. Example: {url: "https://example.com/article"}',
+              error:
+                'web_fetch requires a non-empty "url" field in config. Example: {url: "https://example.com/article"}',
               providedConfig: args.config,
             };
             break;
           }
         } else if (args.toolName === 'synthesize') {
-          if (!args.config.prompt || typeof args.config.prompt !== 'string' || args.config.prompt.trim() === '') {
+          if (
+            !args.config.prompt ||
+            typeof args.config.prompt !== 'string' ||
+            args.config.prompt.trim() === ''
+          ) {
             result = {
-              error: 'synthesize requires a non-empty "prompt" field in config. Example: {prompt: "Synthesize the research findings about antimatter"}',
+              error:
+                'synthesize requires a non-empty "prompt" field in config. Example: {prompt: "Synthesize the research findings about antimatter"}',
               providedConfig: args.config,
             };
             break;
@@ -672,7 +704,8 @@ export class PlannerService {
               timestamp: new Date(),
               planId: this.currentPlan!.id,
               data: {
-                reason: 'Auto-adding default steps after multiple finalize failures',
+                reason:
+                  'Auto-adding default steps after multiple finalize failures',
                 emptyPhaseCount: emptyPhases.length,
                 failureCount: this.finalizeFailureCount,
               },

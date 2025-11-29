@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { PlannerService } from './planner.service';
 import { ExecutorRegistry } from '../executors/executor-registry.service';
 import { LogService } from '../logging/log.service';
+import { EventCoordinatorService } from './services/event-coordinator.service';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
 import { PlanStep } from './interfaces/plan-step.interface';
@@ -40,6 +41,7 @@ export class Orchestrator {
     private executorRegistry: ExecutorRegistry,
     private logService: LogService,
     private eventEmitter: EventEmitter2,
+    private eventCoordinator: EventCoordinatorService,
     private planEvaluationOrchestrator: PlanEvaluationOrchestratorService,
     private evaluationService: EvaluationService,
     private retrievalEvaluator: RetrievalEvaluatorService,
@@ -52,7 +54,7 @@ export class Orchestrator {
     const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
 
     // 1. PLANNING PHASE
-    await this.emit(logId, 'session_started', { query });
+    await this.eventCoordinator.emit(logId, 'session_started', { query });
 
     const plan = await this.plannerService.createPlan(query, logId);
 
@@ -60,7 +62,7 @@ export class Orchestrator {
 
     // PLAN EVALUATION
     console.log('[Orchestrator] Starting plan evaluation...');
-    await this.emit(logId, 'evaluation_started', {
+    await this.eventCoordinator.emit(logId, 'evaluation_started', {
       phase: 'plan',
       query: plan.query
     });
@@ -77,7 +79,7 @@ export class Orchestrator {
     });
     console.log('[Orchestrator] Plan evaluation completed:', JSON.stringify(evaluationResult, null, 2));
 
-    await this.emit(logId, 'evaluation_completed', {
+    await this.eventCoordinator.emit(logId, 'evaluation_completed', {
       phase: 'plan',
       passed: evaluationResult.passed,
       scores: evaluationResult.scores,
@@ -122,7 +124,7 @@ export class Orchestrator {
     }
 
     // Log the FULL plan with all phases and steps
-    await this.emit(logId, 'plan_created', {
+    await this.eventCoordinator.emit(logId, 'plan_created', {
       planId: plan.id,
       query: plan.query,
       status: plan.status,
@@ -189,7 +191,7 @@ export class Orchestrator {
 
         if (hasRetrievedContent) {
           console.log('[Orchestrator] Starting retrieval evaluation...');
-          await this.emit(logId, 'evaluation_started', {
+          await this.eventCoordinator.emit(logId, 'evaluation_started', {
             phase: 'retrieval',
             query: plan.query
           });
@@ -203,7 +205,7 @@ export class Orchestrator {
 
             console.log('[Orchestrator] Retrieval evaluation completed:', JSON.stringify(retrievalEvalResult, null, 2));
 
-            await this.emit(logId, 'evaluation_completed', {
+            await this.eventCoordinator.emit(logId, 'evaluation_completed', {
               phase: 'retrieval',
               passed: retrievalEvalResult.passed,
               scores: retrievalEvalResult.scores,
@@ -247,7 +249,7 @@ export class Orchestrator {
           const stepsAfterReplan = phase.steps.length;
           if (stepsAfterReplan > stepsBeforeReplan) {
             // Re-execute the phase with the new steps
-            await this.emit(logId, 'phase_started', {
+            await this.eventCoordinator.emit(logId, 'phase_started', {
               phaseId: phase.id,
               phaseName: phase.name,
               stepCount: phase.steps.length,
@@ -267,7 +269,7 @@ export class Orchestrator {
               const failed = batchResults.find((r) => r.status === 'failed');
               if (failed) {
                 phase.status = 'failed';
-                await this.emit(logId, 'phase_failed', {
+                await this.eventCoordinator.emit(logId, 'phase_failed', {
                   phaseId: phase.id,
                   phaseName: phase.name,
                   failedStepId: failed.stepId,
@@ -280,7 +282,7 @@ export class Orchestrator {
             }
 
             if (phaseResult.status !== 'failed') {
-              await this.emit(logId, 'phase_completed', {
+              await this.eventCoordinator.emit(logId, 'phase_completed', {
                 phaseId: phase.id,
                 phaseName: phase.name,
                 stepsCompleted: phaseResult.stepResults.length,
@@ -308,7 +310,7 @@ export class Orchestrator {
           logId,
         );
         if (recovery.action === 'abort') {
-          await this.emit(logId, 'session_failed', { reason: recovery.reason });
+          await this.eventCoordinator.emit(logId, 'session_failed', { reason: recovery.reason });
           throw new Error(`Research failed: ${recovery.reason}`);
         }
       }
@@ -329,7 +331,7 @@ export class Orchestrator {
 
       console.log('[Orchestrator] Answer evaluation completed:', JSON.stringify(answerEvalResult, null, 2));
 
-      await this.emit(logId, 'evaluation_completed', {
+      await this.eventCoordinator.emit(logId, 'evaluation_completed', {
         phase: 'answer',
         passed: answerEvalResult.passed,
         scores: answerEvalResult.scores,
@@ -363,7 +365,7 @@ export class Orchestrator {
     // 6. COMPLETION
     const totalExecutionTime = Date.now() - startTime;
 
-    await this.emit(logId, 'session_completed', {
+    await this.eventCoordinator.emit(logId, 'session_completed', {
       planId: plan.id,
       totalExecutionTime,
       phaseCount: plan.phases.length,
@@ -389,7 +391,7 @@ export class Orchestrator {
   ): Promise<PhaseResult> {
     phase.status = 'running';
 
-    await this.emit(
+    await this.eventCoordinator.emit(
       logId,
       'phase_started',
       {
@@ -417,7 +419,7 @@ export class Orchestrator {
       const failed = batchResults.find((r) => r.status === 'failed');
       if (failed) {
         phase.status = 'failed';
-        await this.emit(
+        await this.eventCoordinator.emit(
           logId,
           'phase_failed',
           {
@@ -433,7 +435,7 @@ export class Orchestrator {
     }
 
     phase.status = 'completed';
-    await this.emit(
+    await this.eventCoordinator.emit(
       logId,
       'phase_completed',
       {
@@ -469,7 +471,7 @@ export class Orchestrator {
       step.config = this.getDefaultConfig(step.toolName, plan, phaseResults);
     }
 
-    await this.emit(
+    await this.eventCoordinator.emit(
       logId,
       'step_started',
       {
@@ -489,7 +491,7 @@ export class Orchestrator {
 
       step.status = 'completed';
 
-      await this.emit(
+      await this.eventCoordinator.emit(
         logId,
         'step_completed',
         {
@@ -521,7 +523,7 @@ export class Orchestrator {
         error instanceof Error ? error.message : 'Unknown error';
       const errorStack = error instanceof Error ? error.stack : undefined;
 
-      await this.emit(
+      await this.eventCoordinator.emit(
         logId,
         'step_failed',
         {
@@ -849,7 +851,7 @@ export class Orchestrator {
       const templateData = this.buildMilestoneTemplateData(stageType, template.id, query, phase);
       const description = formatMilestoneDescription(template.template, templateData);
 
-      await this.emit(
+      await this.eventCoordinator.emit(
         logId,
         'milestone_started',
         {
@@ -887,7 +889,7 @@ export class Orchestrator {
     const milestoneId = `${phase.id}_${lastTemplate.id}`;
     const description = formatMilestoneDescription(lastTemplate.template, {});
 
-    await this.emit(
+    await this.eventCoordinator.emit(
       logId,
       'milestone_completed',
       {

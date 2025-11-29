@@ -7,6 +7,7 @@ import { LogService } from '../logging/log.service';
 import { EventCoordinatorService } from './services/event-coordinator.service';
 import { MilestoneService } from './services/milestone.service';
 import { ResultExtractorService } from './services/result-extractor.service';
+import { StepConfigurationService } from './services/step-configuration.service';
 import { Plan } from './interfaces/plan.interface';
 import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
 import { EvaluationService } from '../evaluation/services/evaluation.service';
@@ -22,6 +23,7 @@ describe('Orchestrator', () => {
   let mockEventCoordinator: jest.Mocked<EventCoordinatorService>;
   let mockMilestoneService: jest.Mocked<MilestoneService>;
   let mockResultExtractor: jest.Mocked<ResultExtractorService>;
+  let mockStepConfiguration: jest.Mocked<StepConfigurationService>;
   let mockPlanEvaluationOrchestrator: jest.Mocked<any>;
   let mockEvaluationService: jest.Mocked<any>;
   let mockRetrievalEvaluator: jest.Mocked<any>;
@@ -99,7 +101,13 @@ describe('Orchestrator', () => {
       extractFinalOutput: jest.fn().mockReturnValue(''),
       collectRetrievalContent: jest.fn().mockReturnValue([]),
       extractSearchQueries: jest.fn().mockReturnValue([]),
+      extractAllResults: jest.fn().mockReturnValue({ sources: [], output: '' }),
     } as unknown as jest.Mocked<ResultExtractorService>;
+
+    mockStepConfiguration = {
+      getDefaultConfig: jest.fn().mockReturnValue({}),
+      enrichSynthesizeStep: jest.fn(),
+    } as unknown as jest.Mocked<StepConfigurationService>;
 
     mockPlanEvaluationOrchestrator = {
       evaluatePlan: jest.fn().mockResolvedValue({
@@ -148,6 +156,10 @@ describe('Orchestrator', () => {
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
         { provide: MilestoneService, useValue: mockMilestoneService },
         { provide: ResultExtractorService, useValue: mockResultExtractor },
+        {
+          provide: StepConfigurationService,
+          useValue: mockStepConfiguration,
+        },
         {
           provide: PlanEvaluationOrchestratorService,
           useValue: mockPlanEvaluationOrchestrator,

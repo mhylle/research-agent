@@ -8,6 +8,7 @@ import { LogService } from '../logging/log.service';
 import { EventCoordinatorService } from './services/event-coordinator.service';
 import { MilestoneService } from './services/milestone.service';
 import { ResultExtractorService } from './services/result-extractor.service';
+import { StepConfigurationService } from './services/step-configuration.service';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
 import { PlanStep } from './interfaces/plan-step.interface';
@@ -42,6 +43,7 @@ export class Orchestrator {
     private eventCoordinator: EventCoordinatorService,
     private milestoneService: MilestoneService,
     private resultExtractor: ResultExtractorService,
+    private stepConfiguration: StepConfigurationService,
     private planEvaluationOrchestrator: PlanEvaluationOrchestratorService,
     private evaluationService: EvaluationService,
     private retrievalEvaluator: RetrievalEvaluatorService,
@@ -526,12 +528,12 @@ export class Orchestrator {
 
     // Enrich synthesize steps with query and accumulated results
     if (step.toolName === 'synthesize' && plan && phaseResults) {
-      this.enrichSynthesizeStep(step, plan, phaseResults);
+      this.stepConfiguration.enrichSynthesizeStep(step, plan, phaseResults);
     }
 
     // Provide default config for tools if missing
     if (!step.config || Object.keys(step.config).length === 0) {
-      step.config = this.getDefaultConfig(step.toolName, plan, phaseResults);
+      step.config = this.stepConfiguration.getDefaultConfig(step.toolName, plan, phaseResults);
     }
 
     await this.eventCoordinator.emit(
@@ -690,87 +692,6 @@ export class Orchestrator {
     return this.plannerService.decideRecovery(failureContext, logId);
   }
 
-  private getDefaultConfig(
-    toolName: string,
-    plan?: Plan,
-    phaseResults?: StepResult[],
-  ): Record<string, unknown> {
-    switch (toolName) {
-      case 'tavily_search':
-        // Default to searching for the main query
-        return { query: plan?.query || 'research query', max_results: 5 };
-
-      case 'web_fetch':
-        // Try to get URL from previous search results
-        if (phaseResults) {
-          for (const result of phaseResults) {
-            if (Array.isArray(result.output)) {
-              for (const item of result.output) {
-                if (item && typeof item === 'object' && 'url' in item) {
-                  return { url: item.url };
-                }
-              }
-            }
-          }
-        }
-        // Fallback: return empty config (will cause tool to fail gracefully)
-        return {};
-
-      default:
-        return {};
-    }
-  }
-
-  private enrichSynthesizeStep(
-    step: PlanStep,
-    plan: Plan,
-    accumulatedResults: StepResult[],
-  ): void {
-    // Build context from all previous phase results
-    const searchResults: unknown[] = [];
-    const fetchResults: string[] = [];
-
-    for (const result of accumulatedResults) {
-      if (result.status === 'completed' && result.output) {
-        // Collect search results (arrays of search result objects)
-        if (Array.isArray(result.output)) {
-          searchResults.push(...result.output);
-        }
-        // Collect fetch results (string content)
-        else if (typeof result.output === 'string') {
-          fetchResults.push(result.output);
-        }
-      }
-    }
-
-    // Build a comprehensive context string
-    let contextString = '';
-
-    if (searchResults.length > 0) {
-      contextString += '## Search Results\n\n';
-      contextString += JSON.stringify(searchResults, null, 2);
-      contextString += '\n\n';
-    }
-
-    if (fetchResults.length > 0) {
-      contextString += '## Fetched Content\n\n';
-      contextString += fetchResults.join('\n\n---\n\n');
-    }
-
-    // Enrich the step config (with null safety)
-    const existingConfig = step.config || {};
-    step.config = {
-      ...existingConfig,
-      query: plan.query,
-      context: contextString,
-      systemPrompt:
-        existingConfig.systemPrompt ||
-        'You are a research synthesis assistant. Analyze the provided search results and fetched content to answer the user query comprehensively.',
-      prompt:
-        existingConfig.prompt ||
-        `Based on the research query and gathered information, provide a comprehensive answer.\n\nQuery: ${plan.query}`,
-    };
-  }
 
   private async emit(
     logId: string,

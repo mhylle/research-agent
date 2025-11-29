@@ -18,6 +18,7 @@ import { ChatMessage } from '../llm/interfaces/chat-message.interface';
 import { planningTools } from './tools/planning-tools';
 import { recoveryTools } from './tools/recovery-tools';
 import { ToolDefinition } from '../tools/interfaces/tool-definition.interface';
+import { analyzeQuery, QueryEnhancementMetadata } from './utils/query-enhancer';
 
 @Injectable()
 export class PlannerService {
@@ -859,15 +860,41 @@ The user expects a comprehensive answer, not just raw data.`;
   }
 
   private buildPlanningPrompt(query: string): string {
+    // Analyze query for language and date extraction
+    const enhancement: QueryEnhancementMetadata = analyzeQuery(query);
+
+    const enhancementSection = `
+## Query Analysis & Enhancement Guidance
+- **Detected Language**: ${enhancement.detectedLanguage}
+- **Extracted Dates**: ${enhancement.formattedDates.length > 0 ? enhancement.formattedDates.join(', ') : 'None'}
+- **Has Temporal Reference**: ${enhancement.hasTemporalReference ? 'Yes' : 'No'}
+
+### CRITICAL SEARCH QUERY REQUIREMENTS
+${enhancement.suggestions.map(s => `- ${s}`).join('\n')}
+
+**EXAMPLES OF CORRECT QUERY GENERATION:**
+
+If user asks "Hvad sker der i Aarhus i dag og i morgen?" (Danish, asking about today and tomorrow):
+❌ WRONG: {query: "events in Aarhus today and tomorrow"} - Wrong language, vague dates
+❌ WRONG: {query: "events in Aarhus 2023"} - Wrong year
+✅ CORRECT: {query: "begivenheder Aarhus ${enhancement.formattedDates[0] || 'YYYY-MM-DD'}"} - Matches language, specific date
+
+If user asks "What's happening in Copenhagen this weekend?" (English):
+❌ WRONG: {query: "begivenheder København"} - Wrong language
+❌ WRONG: {query: "events Copenhagen"} - Missing dates
+✅ CORRECT: {query: "events Copenhagen 2025-12-07 OR 2025-12-08"} - Correct language, specific dates
+`;
+
     return `Create an execution plan for the following research query:
 
 "${query}"
+${enhancementSection}
 
 REQUIREMENTS:
 1. Start by calling create_plan
 2. Add information gathering phases (search, fetch, etc.) with their steps
 3. **CRITICAL: EVERY add_step call MUST include a config parameter with specific details:**
-   - For tavily_search: provide {query: "specific search terms", max_results: 5}
+   - For tavily_search: provide {query: "specific search terms IN THE USER'S LANGUAGE with SPECIFIC DATES", max_results: 5}
    - For web_fetch: provide {url: "https://specific-url.com"}
    - For synthesize: provide {prompt: "detailed instructions"}
 4. **MANDATORY: Add a final synthesis phase using the "synthesize" tool to generate the answer**
@@ -875,6 +902,8 @@ REQUIREMENTS:
 
 Remember:
 - EVERY step MUST have a config parameter with specific values
+- Search queries MUST be in the user's language (${enhancement.detectedLanguage})
+- Search queries MUST include specific dates (${enhancement.formattedDates.join(', ') || 'if temporal references exist'})
 - The plan MUST end with a synthesis phase that produces a comprehensive answer to the query.`;
   }
 

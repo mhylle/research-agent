@@ -182,6 +182,18 @@ export class PlanEvaluationOrchestratorService {
       aggregated.scores,
     );
 
+    // Step 2.5: Check dimension-specific thresholds
+    const dimensionCheck = this.scoreAggregator.checkDimensionThresholds(
+      aggregated.scores,
+      this.config.planEvaluation.dimensionThresholds,
+    );
+
+    if (!dimensionCheck.passed) {
+      this.logger.warn(
+        `Dimension thresholds not met: ${dimensionCheck.failingDimensions.join(', ')}`,
+      );
+    }
+
     // Step 3: Check escalation triggers
     const escalationTrigger = this.scoreAggregator.checkEscalationTriggers(
       aggregated,
@@ -191,7 +203,9 @@ export class PlanEvaluationOrchestratorService {
 
     let finalScores = aggregated.scores;
     const finalConfidence = aggregated.confidence;
-    let passed = overallScore >= passThreshold;
+    // Evaluation passes only if BOTH overall score AND all dimension thresholds are met
+    let passed =
+      overallScore >= passThreshold && dimensionCheck.passed;
     let escalation;
 
     // Step 4: Escalate if needed

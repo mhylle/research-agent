@@ -123,4 +123,35 @@ export class ScoreAggregatorService {
 
     return null;
   }
+
+  /**
+   * Check if all dimension-specific thresholds are met
+   * @param scores The dimension scores to check
+   * @param dimensionThresholds Optional dimension-specific thresholds
+   * @returns Object with passed flag and list of failing dimensions
+   */
+  checkDimensionThresholds(
+    scores: DimensionScores,
+    dimensionThresholds?: Record<string, number>,
+  ): { passed: boolean; failingDimensions: string[] } {
+    if (!dimensionThresholds) {
+      return { passed: true, failingDimensions: [] };
+    }
+
+    const failingDimensions: string[] = [];
+
+    for (const [dimension, threshold] of Object.entries(dimensionThresholds)) {
+      const score = scores[dimension];
+      if (typeof score === 'number' && score < threshold) {
+        failingDimensions.push(
+          `${dimension} (${score.toFixed(2)} < ${threshold})`,
+        );
+      }
+    }
+
+    return {
+      passed: failingDimensions.length === 0,
+      failingDimensions,
+    };
+  }
 }

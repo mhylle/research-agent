@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PanelEvaluatorService } from './panel-evaluator.service';
 import { ScoreAggregatorService } from './score-aggregator.service';
-import { AnswerDimensionScores, EvaluatorResult } from '../interfaces';
+import {
+  AnswerDimensionScores,
+  EvaluatorResult,
+  DEFAULT_EVALUATION_CONFIG,
+} from '../interfaces';
 
 export interface AnswerSource {
   url: string;
@@ -30,6 +34,7 @@ export interface AnswerEvaluationResult {
 @Injectable()
 export class AnswerEvaluatorService {
   private readonly logger = new Logger(AnswerEvaluatorService.name);
+  private readonly config = DEFAULT_EVALUATION_CONFIG;
 
   private readonly ANSWER_WEIGHTS: Record<string, number> = {
     faithfulness: 0.35,
@@ -96,13 +101,28 @@ export class AnswerEvaluatorService {
         this.ANSWER_WEIGHTS,
       );
 
-      const passed = overallScore >= this.MAJOR_FAILURE_THRESHOLD;
-      const shouldRegenerate = overallScore < this.MAJOR_FAILURE_THRESHOLD;
+      // Check dimension-specific thresholds
+      const dimensionCheck = this.scoreAggregator.checkDimensionThresholds(
+        aggregated.scores,
+        this.config.answerEvaluation.dimensionThresholds,
+      );
+
+      if (!dimensionCheck.passed) {
+        this.logger.warn(
+          `Answer dimension thresholds not met: ${dimensionCheck.failingDimensions.join(', ')}`,
+        );
+      }
+
+      // Evaluation passes only if BOTH overall score AND all dimension thresholds are met
+      const passed =
+        overallScore >= this.MAJOR_FAILURE_THRESHOLD && dimensionCheck.passed;
+      const shouldRegenerate = !passed;
 
       if (shouldRegenerate) {
-        this.logger.warn(
-          `Answer flagged for regeneration: ${overallScore.toFixed(2)}`,
-        );
+        const reason = !dimensionCheck.passed
+          ? `Dimension thresholds not met: ${dimensionCheck.failingDimensions.join(', ')}`
+          : `Overall score too low: ${overallScore.toFixed(2)}`;
+        this.logger.warn(`Answer flagged for regeneration: ${reason}`);
       }
 
       // Extract explanations from evaluator results

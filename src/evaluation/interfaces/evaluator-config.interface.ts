@@ -13,12 +13,23 @@ export interface EvaluationConfig {
     iterationEnabled: boolean;
     maxAttempts: number;
     passThreshold: number;
+    dimensionThresholds?: {
+      queryAccuracy?: number;
+      queryCoverage?: number;
+      intentAlignment?: number;
+      scopeAppropriateness?: number;
+    };
     failAction: 'continue' | 'warn' | 'block';
   };
 
   retrievalEvaluation: {
     enabled: boolean;
     severeThreshold: number;
+    dimensionThresholds?: {
+      contextRecall?: number;
+      contextPrecision?: number;
+      sourceQuality?: number;
+    };
     failAction: 'continue' | 'warn' | 'block';
   };
 
@@ -26,6 +37,13 @@ export interface EvaluationConfig {
     enabled: boolean;
     regenerationEnabled: boolean;
     majorFailureThreshold: number;
+    dimensionThresholds?: {
+      depth?: number;
+      completeness?: number;
+      answerRelevance?: number;
+      faithfulness?: number;
+      accuracy?: number;
+    };
     failAction: 'continue' | 'warn' | 'block';
   };
 
@@ -56,12 +74,23 @@ export const DEFAULT_EVALUATION_CONFIG: EvaluationConfig = {
     iterationEnabled: true,
     maxAttempts: 3,
     passThreshold: 0.7,
+    dimensionThresholds: {
+      queryAccuracy: 0.6,
+      queryCoverage: 0.6,
+      intentAlignment: 0.6,
+      scopeAppropriateness: 0.5,
+    },
     failAction: 'continue',
   },
 
   retrievalEvaluation: {
     enabled: true,
     severeThreshold: 0.5,
+    dimensionThresholds: {
+      contextRecall: 0.5,
+      contextPrecision: 0.5,
+      sourceQuality: 0.5,
+    },
     failAction: 'continue',
   },
 
@@ -69,6 +98,13 @@ export const DEFAULT_EVALUATION_CONFIG: EvaluationConfig = {
     enabled: true,
     regenerationEnabled: true,
     majorFailureThreshold: 0.5,
+    dimensionThresholds: {
+      depth: 0.6,
+      completeness: 0.7,
+      answerRelevance: 0.7,
+      faithfulness: 0.7,
+      accuracy: 0.6,
+    },
     failAction: 'continue',
   },
 

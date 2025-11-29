@@ -132,8 +132,38 @@ export class LogsService {
 
     const stages: TimelineNode[] = [];
     const phaseMap = new Map<string, any>();
+    const milestoneMap = new Map<string, any>();
+    let planningPhase: any = null;
+    const recoveryNodes: any[] = [];
 
-    // First pass: collect phase information
+    // First pass: collect planning phase
+    entries.forEach(entry => {
+      if (entry.eventType === 'planning_started') {
+        planningPhase = {
+          type: 'planning',
+          id: 'planning-' + entry.id,
+          name: 'Planning Phase',
+          icon: '🧠',
+          color: '#8b5cf6',
+          timestamp: entry.timestamp,
+          input: entry.data,
+          output: null,
+          status: 'running',
+          duration: 0,
+          isExpanded: false
+        };
+      }
+
+      if (entry.eventType === 'plan_created' && planningPhase) {
+        planningPhase.output = entry.data;
+        planningPhase.status = 'completed';
+        const startTime = new Date(planningPhase.timestamp).getTime();
+        const endTime = new Date(entry.timestamp).getTime();
+        planningPhase.duration = endTime - startTime;
+      }
+    });
+
+    // Second pass: collect phase information
     entries.forEach(entry => {
       if (entry.eventType === 'phase_added' && entry.phaseId) {
         phaseMap.set(entry.phaseId, {
@@ -142,25 +172,106 @@ export class LogsService {
           addedAt: entry.timestamp,
           startedAt: null,
           completedAt: null,
+          failedAt: null,
           input: entry.data,  // Store phase input data
           output: null,
-          steps: []
+          steps: [],
+          metadata: {
+            isAutoAdded: entry.data?.isAutoAdded || false
+          }
         });
       }
       if (entry.eventType === 'phase_started' && entry.phaseId) {
         const phase = phaseMap.get(entry.phaseId);
         if (phase) phase.startedAt = entry.timestamp;
       }
-      if ((entry.eventType === 'phase_completed' || entry.eventType === 'phase_failed') && entry.phaseId) {
+      if (entry.eventType === 'phase_completed' && entry.phaseId) {
         const phase = phaseMap.get(entry.phaseId);
         if (phase) {
           phase.completedAt = entry.timestamp;
           phase.output = entry.data;  // Store phase output/completion data
         }
       }
+      if (entry.eventType === 'phase_failed' && entry.phaseId) {
+        const phase = phaseMap.get(entry.phaseId);
+        if (phase) {
+          phase.failedAt = entry.timestamp;
+          phase.output = entry.data;
+          phase.error = {
+            message: entry.data?.error?.message || 'Phase failed',
+            code: entry.data?.error?.code,
+            details: entry.data?.error
+          };
+        }
+      }
     });
 
-    // Second pass: collect steps for each phase
+    // Third pass: collect milestones
+    entries.forEach(entry => {
+      if (entry.eventType === 'milestone_started' && entry.phaseId) {
+        const milestoneId = entry.data?.milestoneId || `milestone-${entry.id}`;
+        milestoneMap.set(milestoneId, {
+          type: 'milestone',
+          id: milestoneId,
+          phaseId: entry.phaseId,
+          name: entry.data?.description || entry.data?.template || 'Milestone',
+          icon: '🎯',
+          color: '#f59e0b',
+          timestamp: entry.timestamp,
+          status: 'running',
+          input: {
+            template: entry.data?.template,
+            data: entry.data?.templateData
+          },
+          output: null,
+          duration: 0,
+          isExpanded: false,
+          metadata: {
+            stage: entry.data?.stage,
+            progress: entry.data?.progress
+          }
+        });
+      }
+
+      if (entry.eventType === 'milestone_completed') {
+        const milestoneId = entry.data?.milestoneId;
+        const milestone = milestoneMap.get(milestoneId);
+        if (milestone) {
+          milestone.status = 'completed';
+          milestone.output = { progress: 100 };
+          const startTime = new Date(milestone.timestamp).getTime();
+          const endTime = new Date(entry.timestamp).getTime();
+          milestone.duration = endTime - startTime;
+        }
+      }
+    });
+
+    // Fourth pass: collect auto-recovery events
+    entries.forEach(entry => {
+      if (entry.eventType === 'auto_recovery') {
+        const recoveryNode: TimelineNode = {
+          type: 'recovery',
+          id: 'recovery-' + entry.id,
+          name: 'Auto-Recovery',
+          icon: '🔧',
+          color: '#ef4444',
+          timestamp: entry.timestamp,
+          duration: 0,
+          input: { reason: entry.data?.reason },
+          output: entry.data,
+          status: 'completed',
+          metadata: {
+            emptyPhaseCount: entry.data?.emptyPhaseCount,
+            failureCount: entry.data?.failureCount,
+            recoveryReason: entry.data?.reason
+          },
+          isExpanded: false
+        };
+        recoveryNodes.push(recoveryNode);
+      }
+    });
+
+    // Fifth pass: collect steps for each phase
     entries.forEach(entry => {
       if (entry.eventType === 'step_started' && entry.stepId && entry.phaseId) {
         const phase = phaseMap.get(entry.phaseId);
@@ -170,25 +281,59 @@ export class LogsService {
             toolName: entry.data?.toolName || 'Tool',
             startedAt: entry.timestamp,
             completedAt: null,
+            failedAt: null,
+            skippedAt: null,
             // For step_started, the input is in the 'config' field
             input: entry.data?.config || entry.data?.input || null,
             output: null,
-            duration: 0
+            duration: 0,
+            status: 'running'
           });
         } else {
           console.warn(`Step ${entry.stepId} references unknown phase ${entry.phaseId}`);
         }
       }
-      if ((entry.eventType === 'step_completed' || entry.eventType === 'step_failed') && entry.stepId && entry.phaseId) {
+      if (entry.eventType === 'step_completed' && entry.stepId && entry.phaseId) {
         const phase = phaseMap.get(entry.phaseId);
         if (phase) {
           const step = phase.steps.find((s: any) => s.stepId === entry.stepId);
           if (step) {
             step.completedAt = entry.timestamp;
+            step.status = 'completed';
             // For step_completed, update the input from the 'input' field and output from 'output' field
             step.input = entry.data?.input || step.input;  // Update input with actual input from completion event
             step.output = entry.data?.output || null;
             step.duration = entry.data?.durationMs || 0;
+          }
+        }
+      }
+      if (entry.eventType === 'step_failed' && entry.stepId && entry.phaseId) {
+        const phase = phaseMap.get(entry.phaseId);
+        if (phase) {
+          const step = phase.steps.find((s: any) => s.stepId === entry.stepId);
+          if (step) {
+            step.failedAt = entry.timestamp;
+            step.status = 'error';
+            step.input = entry.data?.input || step.input;
+            step.output = entry.data?.output || null;
+            step.duration = entry.data?.durationMs || 0;
+            step.error = {
+              message: entry.data?.error?.message || 'Step failed',
+              code: entry.data?.error?.code,
+              details: entry.data?.error
+            };
+          }
+        }
+      }
+      if (entry.eventType === 'step_skipped' && entry.stepId && entry.phaseId) {
+        const phase = phaseMap.get(entry.phaseId);
+        if (phase) {
+          const step = phase.steps.find((s: any) => s.stepId === entry.stepId);
+          if (step) {
+            step.skippedAt = entry.timestamp;
+            step.status = 'skipped';
+            step.input = entry.data?.input || step.input;
+            step.output = entry.data?.output || null;
           }
         }
       }
@@ -201,7 +346,7 @@ export class LogsService {
 
       // Build tool nodes from steps
       const toolNodes: TimelineNode[] = phase.steps.map((step: any, idx: number) => ({
-        type: 'tool',
+        type: 'tool' as const,
         id: `phase${phaseIndex}-tool${idx}`,
         name: this.getToolDisplayName(step.toolName),
         icon: this.getToolIcon(step.toolName),
@@ -210,21 +355,40 @@ export class LogsService {
         timestamp: step.startedAt,
         input: step.input,
         output: this.parseToolOutput(step.output),
+        status: step.status,
+        error: step.error,
         isExpanded: false
       }));
 
       console.log(`Phase ${phaseIndex} (${phase.name}): ${phase.steps.length} steps -> ${toolNodes.length} tool nodes`);
 
+      // Determine phase status
+      let phaseStatus: 'pending' | 'running' | 'completed' | 'error' | 'abandoned' = 'pending';
+      if (phase.failedAt) {
+        phaseStatus = 'error';
+      } else if (phase.completedAt) {
+        phaseStatus = 'completed';
+      } else if (phase.startedAt) {
+        phaseStatus = 'running';
+      } else if (phase.addedAt && !phase.startedAt) {
+        phaseStatus = 'abandoned';
+        phase.metadata.isAbandoned = true;
+      }
+
       // Calculate phase duration
       const startTime = phase.startedAt || phase.addedAt;
-      const endTime = phase.completedAt;
+      const endTime = phase.completedAt || phase.failedAt;
       const duration = startTime && endTime
         ? new Date(endTime).getTime() - new Date(startTime).getTime()
         : 0;
 
+      // Get milestones for this phase
+      const phaseMilestones: TimelineNode[] = Array.from(milestoneMap.values())
+        .filter((m: any) => m.phaseId === phase.phaseId);
+
       // Build stage node
       stages.push({
-        type: 'stage',
+        type: 'stage' as const,
         id: `phase${phaseIndex}`,
         name: this.getPhaseName(phase.name, phaseIndex),
         icon: this.getStageIcon(phaseIndex),
@@ -234,8 +398,24 @@ export class LogsService {
         input: this.formatPhaseInput(phase.input),
         output: this.formatPhaseOutput(phase.output, phase.steps),
         children: toolNodes,
+        status: phaseStatus,
+        error: phase.error,
+        metadata: phase.metadata,
+        milestones: phaseMilestones,
         isExpanded: false
       });
+    });
+
+    // Add planning phase at the beginning if it exists
+    if (planningPhase) {
+      stages.unshift(planningPhase);
+    }
+
+    // Insert recovery nodes at appropriate positions
+    // For simplicity, add them to the end for now
+    // In a more sophisticated implementation, you could insert them before the phase they recovered
+    recoveryNodes.forEach(node => {
+      stages.push(node);
     });
 
     return stages;

@@ -1,7 +1,7 @@
-<div class="json-viewer" *ngIf="hasData">
+<div class="json-viewer">
   <div class="json-viewer__header">
     <span class="json-viewer__title">{{ title }}</span>
-    <div class="json-viewer__actions">
+    <div class="json-viewer__actions" *ngIf="hasData">
       <button class="json-viewer__copy-btn" (click)="copyJson()">
         📋 Copy
       </button>
@@ -14,12 +14,17 @@
   <div
     class="json-viewer__content"
     [class.json-viewer__content--expanded]="isExpanded"
+    [class.json-viewer__content--empty]="!hasData"
   >
-    <pre *ngIf="!showRaw" [innerHTML]="formattedJson"></pre>
-    <pre *ngIf="showRaw">{{ rawJson }}</pre>
+    <div *ngIf="!hasData" class="json-viewer__empty">
+      <span class="json-viewer__empty-icon">📭</span>
+      <span class="json-viewer__empty-text">No output</span>
+    </div>
+    <pre *ngIf="hasData && !showRaw" [innerHTML]="formattedJson"></pre>
+    <pre *ngIf="hasData && showRaw">{{ rawJson }}</pre>
   </div>
 
-  <div class="json-viewer__expand" *ngIf="needsExpansion && !isExpanded">
+  <div class="json-viewer__expand" *ngIf="hasData && needsExpansion && !isExpanded">
     <button (click)="expand()">Show More</button>
   </div>
 </div>

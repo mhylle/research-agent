@@ -10,6 +10,7 @@ import { RetrievalEvaluatorService } from './services/retrieval-evaluator.servic
 import { AnswerEvaluatorService } from './services/answer-evaluator.service';
 import { EscalationHandlerService } from './services/escalation-handler.service';
 import { PlanEvaluationOrchestratorService } from './services/plan-evaluation-orchestrator.service';
+import { ResultClassifierService } from './services/result-classifier.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([EvaluationRecordEntity]), LLMModule],
@@ -22,6 +23,7 @@ import { PlanEvaluationOrchestratorService } from './services/plan-evaluation-or
     AnswerEvaluatorService,
     EscalationHandlerService,
     PlanEvaluationOrchestratorService,
+    ResultClassifierService,
   ],
   exports: [
     EvaluationService,
@@ -31,6 +33,7 @@ import { PlanEvaluationOrchestratorService } from './services/plan-evaluation-or
     AnswerEvaluatorService,
     EscalationHandlerService,
     PlanEvaluationOrchestratorService,
+    ResultClassifierService,
   ],
 })
 export class EvaluationModule {}

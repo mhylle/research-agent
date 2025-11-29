@@ -29,6 +29,7 @@ export interface EvaluationConfig {
       contextRecall?: number;
       contextPrecision?: number;
       sourceQuality?: number;
+      actionableInformation?: number;
     };
     failAction: 'continue' | 'warn' | 'block';
   };
@@ -90,6 +91,7 @@ export const DEFAULT_EVALUATION_CONFIG: EvaluationConfig = {
       contextRecall: 0.5,
       contextPrecision: 0.5,
       sourceQuality: 0.5,
+      actionableInformation: 0.6,
     },
     failAction: 'continue',
   },

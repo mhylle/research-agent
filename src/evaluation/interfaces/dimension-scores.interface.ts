@@ -5,6 +5,7 @@ export interface DimensionScores {
 export interface PlanDimensionScores extends DimensionScores {
   intentAlignment: number;
   queryCoverage: number;
+  queryAccuracy: number;
   scopeAppropriateness: number;
 }
 

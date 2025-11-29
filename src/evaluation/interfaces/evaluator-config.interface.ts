@@ -80,7 +80,7 @@ export const DEFAULT_EVALUATION_CONFIG: EvaluationConfig = {
     },
     coverageChecker: {
       model: 'qwen3:14b',
-      dimensions: ['queryCoverage', 'completeness', 'contextRecall'],
+      dimensions: ['queryCoverage', 'queryAccuracy', 'scopeAppropriateness'],
       promptTemplate: 'coverage-checker',
     },
     faithfulnessJudge: {

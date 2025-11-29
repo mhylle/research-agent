@@ -122,6 +122,14 @@ export class PanelEvaluatorService {
   ): string {
     let template = this.prompts[role];
 
+    // Inject current date and year for temporal awareness
+    const now = new Date();
+    const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const currentYear = now.getFullYear().toString();
+
+    template = template.replace('{currentDate}', currentDate);
+    template = template.replace('{currentYear}', currentYear);
+
     template = template.replace('{query}', context.query);
     template = template.replace('{plan}', JSON.stringify(context.plan, null, 2));
 

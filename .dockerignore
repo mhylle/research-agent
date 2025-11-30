@@ -1,11 +1,82 @@
+# Dependencies
 node_modules
+client/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+client/package-lock.json
+
+# Build output
 dist
+client/dist
+build
+*.tsbuildinfo
+
+# Version control
 .git
+.gitignore
+.gitattributes
+
+# Environment files
 .env
-data/
-logs/
+.env.*
+!.env.example
+!.env.production.template
+
+# Logs
+logs
 *.log
-*.md
-.vscode
+server.log
+test-output.log
+
+# Testing
 coverage
 .nyc_output
+test
+client/src/**/*.spec.ts
+*.spec.ts
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation (exclude from Docker build)
+*.md
+!README.md
+docs
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Data and output directories
+data/screenshots
+output
+.playwright-mcp
+
+# Development files
+.prettierrc
+.editorconfig
+eslint.config.mjs
+jest.config.js
+
+# Scripts
+scripts
+*.sh
+test-*.ts
+test-*.js
+
+# Angular specific
+client/.angular
+client/.vscode
+
+# Other
+.dockerignore
+docker-compose*.yml
+Dockerfile*

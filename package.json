@@ -27,7 +27,22 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "npm run typeorm migration:generate -- -d src/data-source.ts",
     "migration:run": "npm run typeorm migration:run -- -d src/data-source.ts",
-    "migration:revert": "npm run typeorm migration:revert -- -d src/data-source.ts"
+    "migration:revert": "npm run typeorm migration:revert -- -d src/data-source.ts",
+    "docker:build": "docker-compose build",
+    "docker:build:no-cache": "docker-compose build --no-cache",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:down:volumes": "docker-compose down -v",
+    "docker:restart": "docker-compose restart app",
+    "docker:logs": "docker-compose logs -f app",
+    "docker:logs:all": "docker-compose logs -f",
+    "docker:ps": "docker-compose ps",
+    "docker:migrate": "docker-compose exec app npm run migration:run",
+    "docker:shell": "docker-compose exec app sh",
+    "docker:db:shell": "docker-compose exec postgres psql -U research_agent -d research_agent_db",
+    "docker:dev:up": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d",
+    "docker:dev:down": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml down",
+    "docker:dev:logs": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",

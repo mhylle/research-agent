@@ -97,6 +97,51 @@ docker-compose down
 docker-compose down -v
 ```
 
+### Database Migrations
+
+The application uses TypeORM migrations for production-safe schema management.
+
+**Initial Setup (Fresh Database)**:
+```bash
+# 1. Start PostgreSQL
+docker-compose up -d
+
+# 2. Build TypeScript
+npm run build
+
+# 3. Run migrations
+npm run migration:run
+
+# 4. Start application
+npm start
+```
+
+**Schema Changes**:
+```bash
+# 1. Modify entity files in src/*/entities/*.entity.ts
+
+# 2. Generate migration
+npm run migration:generate src/migrations/DescriptiveName
+
+# 3. Review generated SQL in src/migrations/
+
+# 4. Build and apply
+npm run build
+npm run migration:run
+```
+
+**Rollback**:
+```bash
+# Revert last migration
+npm run migration:revert
+```
+
+**Important Notes**:
+- Migrations run manually (not on app startup)
+- Always run `npm run migration:run` before starting the app
+- Never edit existing migration files - create new ones
+- Production workflow: `npm run migration:run && npm start`
+
 ## Configuration
 
 The `.env` file supports the following variables:

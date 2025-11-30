@@ -149,10 +149,11 @@ export class EvaluationService {
       .orderBy('record.timestamp', 'DESC');
 
     if (passed !== undefined) {
-      // For SQLite with simple-json, we need to check the JSON text
+      // For PostgreSQL, cast text to jsonb first, then use ->> operator to extract
+      // Note: Column name is quoted in migration, so it preserves camelCase
       queryBuilder.andWhere(
-        `json_extract(record.planEvaluation, '$.passed') = :passed`,
-        { passed: passed ? 1 : 0 },
+        `(record."planEvaluation"::jsonb->>'passed')::boolean = :passed`,
+        { passed },
       );
     }
 

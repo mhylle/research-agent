@@ -14,6 +14,6 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD!,
   database: process.env.DB_DATABASE || 'research_agent_db',
   entities: [LogEntryEntity, ResearchResultEntity, EvaluationRecordEntity],
-  migrations: [__dirname + '/migrations/*.js'],
+  migrations: [__dirname + '/migrations/*.ts'],
   logging: process.env.NODE_ENV === 'development',
 });

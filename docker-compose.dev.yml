@@ -1,0 +1,54 @@
+version: '3.8'
+
+# Development overrides for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  postgres:
+    ports:
+      # Use different port for dev to avoid conflicts with local instances
+      - "5433:5432"
+    environment:
+      # Development database credentials
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password}
+    volumes:
+      # Add initialization script for development
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-builder
+      args:
+        NODE_ENV: development
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+
+      # Development database connection
+      DB_PASSWORD: ${DB_PASSWORD:-dev_password}
+
+      # Tavily API key is optional in development
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+    ports:
+      # Expose debug port
+      - "9229:9229"
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src:ro
+      - ./client:/app/client:ro
+      # Mount node_modules as volumes to avoid overwriting
+      - /app/node_modules
+      - /app/client/node_modules
+      # Development logs
+      - ./logs:/app/logs
+      # Development screenshots
+      - ./data/screenshots:/app/data/screenshots
+    command: ["npm", "run", "start:debug"]
+    # Override healthcheck for faster feedback in development
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

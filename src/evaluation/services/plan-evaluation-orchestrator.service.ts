@@ -49,7 +49,7 @@ export class PlanEvaluationOrchestratorService {
 
     const attempts: PlanAttempt[] = [];
     const currentPlan = input.plan;
-    const escalatedToLargeModel = false;
+    let escalatedToLargeModel = false;
 
     const maxAttempts = this.config.planEvaluation.maxAttempts;
     const passThreshold = this.config.planEvaluation.passThreshold;
@@ -82,15 +82,19 @@ export class PlanEvaluationOrchestratorService {
         );
 
         // Continue with the rest of the evaluation
-        await this.processAttemptResults(
+        const wasEscalated = await this.processAttemptResults(
           evaluatorResults,
           attemptNumber,
           maxAttempts,
           passThreshold,
           attempts,
           currentPlan,
-          escalatedToLargeModel,
         );
+
+        // Track if any attempt was escalated
+        if (wasEscalated) {
+          escalatedToLargeModel = true;
+        }
 
         // Check if passed and can exit early
         const lastAttempt = attempts[attempts.length - 1];
@@ -174,8 +178,7 @@ export class PlanEvaluationOrchestratorService {
     passThreshold: number,
     attempts: PlanAttempt[],
     currentPlan: any,
-    escalatedToLargeModel: boolean,
-  ): Promise<void> {
+  ): Promise<boolean> {
     // Step 2: Aggregate scores
     const aggregated = this.scoreAggregator.aggregateScores(evaluatorResults);
     const overallScore = this.scoreAggregator.calculateOverallScore(
@@ -206,6 +209,7 @@ export class PlanEvaluationOrchestratorService {
     // Evaluation passes only if BOTH overall score AND all dimension thresholds are met
     let passed = overallScore >= passThreshold && dimensionCheck.passed;
     let escalation;
+    let wasEscalated = false;
 
     // Step 4: Escalate if needed
     if (escalationTrigger) {
@@ -217,6 +221,8 @@ export class PlanEvaluationOrchestratorService {
         content: currentPlan,
         panelResults: evaluatorResults,
       });
+
+      wasEscalated = true;
 
       // Use escalation results
       if (Object.keys(escalation.scores).length > 0) {
@@ -250,6 +256,7 @@ export class PlanEvaluationOrchestratorService {
     }
 
     attempts.push(attempt);
+    return wasEscalated;
   }
 
   private decideIteration(

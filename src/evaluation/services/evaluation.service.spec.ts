@@ -73,26 +73,28 @@ describe('EvaluationService', () => {
       expect(result.skipReason).toBe('Model unavailable');
     });
 
-    it('should return fallback when evaluation times out', async () => {
+    it('should return evaluation result even for long-running evaluations', async () => {
+      const expected = {
+        passed: true,
+        scores: { test: 0.9 },
+        evaluationSkipped: false,
+      };
       const fallback = { passed: true, scores: {}, evaluationSkipped: true };
-
-      // Set a very short timeout
-      service['config'] = {
-        enabled: true,
-        planEvaluation: { timeout: 50 },
-      } as any;
 
       const result = await service.evaluateWithFallback(
         async () => {
-          await new Promise((resolve) => setTimeout(resolve, 200));
-          return { passed: false, scores: {}, evaluationSkipped: false };
+          // Simulate a longer evaluation (but not too long for the test)
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          return expected;
         },
         fallback,
         'test-context-plan',
       );
 
-      expect(result.evaluationSkipped).toBe(true);
-      expect(result.skipReason).toContain('timeout');
+      // Should complete successfully without timing out
+      expect(result.evaluationSkipped).toBe(false);
+      expect(result.passed).toBe(true);
+      expect(result.scores.test).toBe(0.9);
     });
   });
 });

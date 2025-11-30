@@ -17,6 +17,9 @@ describe('AnswerEvaluatorService', () => {
     mockScoreAggregator = {
       aggregateScores: jest.fn(),
       calculateOverallScore: jest.fn(),
+      checkDimensionThresholds: jest
+        .fn()
+        .mockReturnValue({ passed: true, failingDimensions: [] }),
     };
 
     const module: TestingModule = await Test.createTestingModule({

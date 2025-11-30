@@ -11,6 +11,7 @@ import { LogsService } from './logs.service';
 import { QuerySessionsDto } from './dto/query-sessions.dto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { QueryFailedError } from 'typeorm';
 
 @Controller('api/logs')
 export class LogsController {
@@ -23,12 +24,28 @@ export class LogsController {
 
   @Get('sessions/:logId')
   async getSessionDetails(@Param('logId') logId: string) {
-    return this.logsService.getSessionDetails(logId);
+    try {
+      return await this.logsService.getSessionDetails(logId);
+    } catch (error) {
+      // Handle invalid UUID format (PostgreSQL error code 22P02)
+      if (error instanceof QueryFailedError && (error as any).code === '22P02') {
+        throw new NotFoundException(`Invalid logId format: ${logId}`);
+      }
+      throw error;
+    }
   }
 
   @Get('graph/:logId')
   async getGraphData(@Param('logId') logId: string) {
-    return this.logsService.getGraphData(logId);
+    try {
+      return await this.logsService.getGraphData(logId);
+    } catch (error) {
+      // Handle invalid UUID format (PostgreSQL error code 22P02)
+      if (error instanceof QueryFailedError && (error as any).code === '22P02') {
+        throw new NotFoundException(`Invalid logId format: ${logId}`);
+      }
+      throw error;
+    }
   }
 
   @Get('screenshot/*path')

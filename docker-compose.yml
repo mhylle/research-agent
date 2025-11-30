@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: research_agent_postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-research_agent}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password}
+      POSTGRES_DB: ${DB_DATABASE:-research_agent_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U research_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - research_agent_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  research_agent_network:
+    driver: bridge

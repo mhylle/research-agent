@@ -2,6 +2,7 @@
 .env
 /logs/
 /data/logs/
+/data/fetched-content/
 *.log
 node_modules/
 dist/

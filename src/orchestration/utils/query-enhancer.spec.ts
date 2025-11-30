@@ -10,13 +10,21 @@ import {
 describe('QueryEnhancer', () => {
   describe('detectLanguage', () => {
     it('should detect Danish queries', () => {
-      expect(detectLanguage('Hvad sker der i Aarhus i dag og i morgen?')).toBe('da');
-      expect(detectLanguage('Hvor kan jeg finde information om København?')).toBe('da');
+      expect(detectLanguage('Hvad sker der i Aarhus i dag og i morgen?')).toBe(
+        'da',
+      );
+      expect(
+        detectLanguage('Hvor kan jeg finde information om København?'),
+      ).toBe('da');
     });
 
     it('should detect English queries', () => {
-      expect(detectLanguage("What's happening in Copenhagen today?")).toBe('en');
-      expect(detectLanguage('How can I find information about events?')).toBe('en');
+      expect(detectLanguage("What's happening in Copenhagen today?")).toBe(
+        'en',
+      );
+      expect(detectLanguage('How can I find information about events?')).toBe(
+        'en',
+      );
     });
 
     it('should detect Swedish queries', () => {
@@ -32,7 +40,9 @@ describe('QueryEnhancer', () => {
     });
 
     it('should detect French queries', () => {
-      expect(detectLanguage("Qu'est-ce qui se passe à Paris aujourd'hui?")).toBe('fr');
+      expect(
+        detectLanguage("Qu'est-ce qui se passe à Paris aujourd'hui?"),
+      ).toBe('fr');
     });
 
     it('should default to English for ambiguous queries', () => {
@@ -56,7 +66,11 @@ describe('QueryEnhancer', () => {
     });
 
     it('should extract "today and tomorrow" in Danish', () => {
-      const dates = extractDates('Hvad sker der i dag og i morgen?', 'da', testDate);
+      const dates = extractDates(
+        'Hvad sker der i dag og i morgen?',
+        'da',
+        testDate,
+      );
       expect(dates).toHaveLength(2);
       expect(formatDate(dates[0])).toBe('2025-11-29');
       expect(formatDate(dates[1])).toBe('2025-11-30');
@@ -75,7 +89,11 @@ describe('QueryEnhancer', () => {
     });
 
     it('should extract "this weekend" in English', () => {
-      const dates = extractDates("What's happening this weekend?", 'en', testDate);
+      const dates = extractDates(
+        "What's happening this weekend?",
+        'en',
+        testDate,
+      );
       expect(dates).toHaveLength(2);
       // From Friday 2025-11-29, next Saturday is 2025-11-29 + 0 days = Saturday 2025-11-29
       // Actually Friday is day 5, Saturday is day 6, so (6-5+7)%7 = 1 day ahead
@@ -128,7 +146,12 @@ describe('QueryEnhancer', () => {
     it('should build query with all components', () => {
       const date1 = new Date('2025-11-29T12:00:00Z');
       const date2 = new Date('2025-11-30T12:00:00Z');
-      const query = buildSearchQuery('begivenheder', 'Aarhus', [date1, date2], 'da');
+      const query = buildSearchQuery(
+        'begivenheder',
+        'Aarhus',
+        [date1, date2],
+        'da',
+      );
       expect(query).toBe('begivenheder Aarhus (2025-11-29 OR 2025-11-30)');
     });
   });
@@ -137,27 +160,41 @@ describe('QueryEnhancer', () => {
     const testDate = new Date('2025-11-29T12:00:00Z');
 
     it('should analyze Aarhus query correctly', () => {
-      const result = analyzeQuery('Hvad sker der i Aarhus i dag og i morgen?', testDate);
+      const result = analyzeQuery(
+        'Hvad sker der i Aarhus i dag og i morgen?',
+        testDate,
+      );
 
       expect(result.detectedLanguage).toBe('da');
       expect(result.extractedDates).toHaveLength(2);
       expect(result.formattedDates).toContain('2025-11-29');
       expect(result.formattedDates).toContain('2025-11-30');
       expect(result.hasTemporalReference).toBe(true);
-      expect(result.suggestions).toContain('Use da language for search queries to match user\'s language');
-      expect(result.suggestions).toContain('Include specific dates: 2025-11-29, 2025-11-30 (converted from temporal references)');
+      expect(result.suggestions).toContain(
+        "Use da language for search queries to match user's language",
+      );
+      expect(result.suggestions).toContain(
+        'Include specific dates: 2025-11-29, 2025-11-30 (converted from temporal references)',
+      );
       expect(result.suggestions).toContain('Include location: Aarhus');
     });
 
     it('should analyze English query correctly', () => {
-      const result = analyzeQuery("What's happening in Copenhagen today?", testDate);
+      const result = analyzeQuery(
+        "What's happening in Copenhagen today?",
+        testDate,
+      );
 
       expect(result.detectedLanguage).toBe('en');
       expect(result.extractedDates).toHaveLength(1);
       expect(result.formattedDates).toContain('2025-11-29');
       expect(result.hasTemporalReference).toBe(true);
-      expect(result.suggestions).toContain('Use en language for search queries to match user\'s language');
-      expect(result.suggestions).toContain('Include specific dates: 2025-11-29 (converted from temporal references)');
+      expect(result.suggestions).toContain(
+        "Use en language for search queries to match user's language",
+      );
+      expect(result.suggestions).toContain(
+        'Include specific dates: 2025-11-29 (converted from temporal references)',
+      );
       expect(result.suggestions).toContain('Include location: Copenhagen');
     });
 
@@ -168,7 +205,9 @@ describe('QueryEnhancer', () => {
       expect(result.extractedDates).toHaveLength(0);
       expect(result.formattedDates).toHaveLength(0);
       expect(result.hasTemporalReference).toBe(false);
-      expect(result.suggestions).toContain('Use en language for search queries to match user\'s language');
+      expect(result.suggestions).toContain(
+        "Use en language for search queries to match user's language",
+      );
     });
 
     it('should handle query without location', () => {
@@ -178,7 +217,9 @@ describe('QueryEnhancer', () => {
       expect(result.extractedDates).toHaveLength(1);
       expect(result.hasTemporalReference).toBe(true);
       // Should not have location suggestion
-      expect(result.suggestions.some(s => s.includes('Include location'))).toBe(false);
+      expect(
+        result.suggestions.some((s) => s.includes('Include location')),
+      ).toBe(false);
     });
   });
 });

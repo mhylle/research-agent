@@ -62,9 +62,7 @@ describe('SynthesisPhaseExecutor', () => {
 
   describe('canHandle', () => {
     it('should handle synthesis phases', () => {
-      expect(executor.canHandle(createMockPhase('synthesis-phase'))).toBe(
-        true,
-      );
+      expect(executor.canHandle(createMockPhase('synthesis-phase'))).toBe(true);
       expect(executor.canHandle(createMockPhase('answer-generation'))).toBe(
         true,
       );
@@ -74,15 +72,11 @@ describe('SynthesisPhaseExecutor', () => {
     });
 
     it('should handle case-insensitive matching', () => {
-      expect(executor.canHandle(createMockPhase('Synthesis Phase'))).toBe(
-        true,
-      );
+      expect(executor.canHandle(createMockPhase('Synthesis Phase'))).toBe(true);
       expect(executor.canHandle(createMockPhase('ANSWER Generation'))).toBe(
         true,
       );
-      expect(executor.canHandle(createMockPhase('Generate Report'))).toBe(
-        true,
-      );
+      expect(executor.canHandle(createMockPhase('Generate Report'))).toBe(true);
     });
 
     it('should handle partial word matches', () => {

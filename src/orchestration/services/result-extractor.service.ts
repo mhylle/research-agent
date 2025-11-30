@@ -213,7 +213,8 @@ export class ResultExtractorService {
     for (const phase of plan.phases) {
       for (const step of phase.steps) {
         if (
-          (step.toolName === 'web_search' || step.toolName === 'tavily_search') &&
+          (step.toolName === 'web_search' ||
+            step.toolName === 'tavily_search') &&
           step.config &&
           typeof step.config.query === 'string' &&
           step.config.query.trim().length > 0

@@ -169,7 +169,8 @@ export class Orchestrator {
           const stepsAfterReplan = phase.steps.length;
           if (stepsAfterReplan > stepsBeforeReplan) {
             // Re-execute the phase with the new steps using phase executor
-            const replanExecutor = this.phaseExecutorRegistry.getExecutor(phase);
+            const replanExecutor =
+              this.phaseExecutorRegistry.getExecutor(phase);
             const replanResult = await replanExecutor.execute(phase, {
               logId,
               plan,
@@ -292,7 +293,6 @@ export class Orchestrator {
     return this.plannerService.decideRecovery(failureContext, logId);
   }
 
-
   private async emit(
     logId: string,
     eventType: LogEventType,
@@ -326,5 +326,4 @@ export class Orchestrator {
       phaseName.includes('retriev')
     );
   }
-
 }

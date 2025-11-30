@@ -14,40 +14,136 @@ export function detectLanguage(query: string): string {
   const lowercaseQuery = query.toLowerCase();
 
   // Danish indicators
-  const danishWords = ['hvad', 'hvor', 'hvordan', 'hvornår', 'hvem', 'sker', 'der', 'i dag', 'morgen', 'være', 'kan', 'vil', 'skal', 'og', 'eller', 'med'];
-  const danishCount = danishWords.filter(word => lowercaseQuery.includes(word)).length;
+  const danishWords = [
+    'hvad',
+    'hvor',
+    'hvordan',
+    'hvornår',
+    'hvem',
+    'sker',
+    'der',
+    'i dag',
+    'morgen',
+    'være',
+    'kan',
+    'vil',
+    'skal',
+    'og',
+    'eller',
+    'med',
+  ];
+  const danishCount = danishWords.filter((word) =>
+    lowercaseQuery.includes(word),
+  ).length;
 
   // Swedish indicators
-  const swedishWords = ['vad', 'var', 'hur', 'när', 'vem', 'händer', 'idag', 'imorgon', 'vara', 'kan', 'vill', 'ska', 'och', 'eller', 'med'];
-  const swedishCount = swedishWords.filter(word => lowercaseQuery.includes(word)).length;
+  const swedishWords = [
+    'vad',
+    'var',
+    'hur',
+    'när',
+    'vem',
+    'händer',
+    'idag',
+    'imorgon',
+    'vara',
+    'kan',
+    'vill',
+    'ska',
+    'och',
+    'eller',
+    'med',
+  ];
+  const swedishCount = swedishWords.filter((word) =>
+    lowercaseQuery.includes(word),
+  ).length;
 
   // Norwegian indicators
-  const norwegianWords = ['hva', 'hvor', 'hvordan', 'når', 'hvem', 'skjer', 'i dag', 'morgen', 'være', 'kan', 'vil', 'skal', 'og', 'eller', 'med'];
-  const norwegianCount = norwegianWords.filter(word => lowercaseQuery.includes(word)).length;
+  const norwegianWords = [
+    'hva',
+    'hvor',
+    'hvordan',
+    'når',
+    'hvem',
+    'skjer',
+    'i dag',
+    'morgen',
+    'være',
+    'kan',
+    'vil',
+    'skal',
+    'og',
+    'eller',
+    'med',
+  ];
+  const norwegianCount = norwegianWords.filter((word) =>
+    lowercaseQuery.includes(word),
+  ).length;
 
   // German indicators
-  const germanWords = ['was', 'wo', 'wie', 'wann', 'wer', 'passiert', 'geschieht', 'heute', 'morgen', 'sein', 'kann', 'wird', 'soll', 'und', 'oder', 'mit'];
-  const germanCount = germanWords.filter(word => lowercaseQuery.includes(word)).length;
+  const germanWords = [
+    'was',
+    'wo',
+    'wie',
+    'wann',
+    'wer',
+    'passiert',
+    'geschieht',
+    'heute',
+    'morgen',
+    'sein',
+    'kann',
+    'wird',
+    'soll',
+    'und',
+    'oder',
+    'mit',
+  ];
+  const germanCount = germanWords.filter((word) =>
+    lowercaseQuery.includes(word),
+  ).length;
 
   // French indicators
-  const frenchWords = ['quoi', 'où', 'comment', 'quand', 'qui', 'passe', 'arrive', "aujourd'hui", 'demain', 'être', 'peut', 'va', 'doit', 'et', 'ou', 'avec'];
-  const frenchCount = frenchWords.filter(word => lowercaseQuery.includes(word)).length;
+  const frenchWords = [
+    'quoi',
+    'où',
+    'comment',
+    'quand',
+    'qui',
+    'passe',
+    'arrive',
+    "aujourd'hui",
+    'demain',
+    'être',
+    'peut',
+    'va',
+    'doit',
+    'et',
+    'ou',
+    'avec',
+  ];
+  const frenchCount = frenchWords.filter((word) =>
+    lowercaseQuery.includes(word),
+  ).length;
 
   // Find the language with the most matches
   const scores = {
-    'da': danishCount,
-    'sv': swedishCount,
-    'no': norwegianCount,
-    'de': germanCount,
-    'fr': frenchCount,
-    'en': 0, // Default fallback
+    da: danishCount,
+    sv: swedishCount,
+    no: norwegianCount,
+    de: germanCount,
+    fr: frenchCount,
+    en: 0, // Default fallback
   };
 
   const maxScore = Math.max(...Object.values(scores));
 
   // If we found strong language indicators (at least 2 matches), return that language
   if (maxScore >= 2) {
-    return Object.entries(scores).find(([_, score]) => score === maxScore)?.[0] || 'en';
+    return (
+      Object.entries(scores).find(([_, score]) => score === maxScore)?.[0] ||
+      'en'
+    );
   }
 
   // Default to English
@@ -74,7 +170,7 @@ interface TemporalPattern {
 export function extractDates(
   query: string,
   language: string,
-  currentDate: Date = new Date()
+  currentDate: Date = new Date(),
 ): Date[] {
   const lowercaseQuery = query.toLowerCase();
   const dates: Date[] = [];
@@ -92,15 +188,15 @@ export function extractDates(
     da: [
       {
         pattern: /i dag og i morgen/,
-        extractor: (_, now) => [now, addDays(now, 1)]
+        extractor: (_, now) => [now, addDays(now, 1)],
       },
       {
         pattern: /i dag/,
-        extractor: (_, now) => [now]
+        extractor: (_, now) => [now],
       },
       {
         pattern: /i morgen/,
-        extractor: (_, now) => [addDays(now, 1)]
+        extractor: (_, now) => [addDays(now, 1)],
       },
       {
         pattern: /i weekenden/,
@@ -108,154 +204,172 @@ export function extractDates(
           // Find next Saturday and Sunday
           const dayOfWeek = now.getDay();
           const daysUntilSaturday = (6 - dayOfWeek + 7) % 7 || 7;
-          return [addDays(now, daysUntilSaturday), addDays(now, daysUntilSaturday + 1)];
-        }
+          return [
+            addDays(now, daysUntilSaturday),
+            addDays(now, daysUntilSaturday + 1),
+          ];
+        },
       },
       {
         pattern: /næste uge/,
-        extractor: (_, now) => [addDays(now, 7)]
-      }
+        extractor: (_, now) => [addDays(now, 7)],
+      },
     ],
 
     // English patterns
     en: [
       {
         pattern: /today and tomorrow/,
-        extractor: (_, now) => [now, addDays(now, 1)]
+        extractor: (_, now) => [now, addDays(now, 1)],
       },
       {
         pattern: /today/,
-        extractor: (_, now) => [now]
+        extractor: (_, now) => [now],
       },
       {
         pattern: /tomorrow/,
-        extractor: (_, now) => [addDays(now, 1)]
+        extractor: (_, now) => [addDays(now, 1)],
       },
       {
         pattern: /this weekend/,
         extractor: (_, now) => {
           const dayOfWeek = now.getDay();
           const daysUntilSaturday = (6 - dayOfWeek + 7) % 7 || 7;
-          return [addDays(now, daysUntilSaturday), addDays(now, daysUntilSaturday + 1)];
-        }
+          return [
+            addDays(now, daysUntilSaturday),
+            addDays(now, daysUntilSaturday + 1),
+          ];
+        },
       },
       {
         pattern: /next week/,
-        extractor: (_, now) => [addDays(now, 7)]
-      }
+        extractor: (_, now) => [addDays(now, 7)],
+      },
     ],
 
     // Swedish patterns
     sv: [
       {
         pattern: /idag och imorgon/,
-        extractor: (_, now) => [now, addDays(now, 1)]
+        extractor: (_, now) => [now, addDays(now, 1)],
       },
       {
         pattern: /idag/,
-        extractor: (_, now) => [now]
+        extractor: (_, now) => [now],
       },
       {
         pattern: /imorgon/,
-        extractor: (_, now) => [addDays(now, 1)]
+        extractor: (_, now) => [addDays(now, 1)],
       },
       {
         pattern: /nästa helg/,
         extractor: (_, now) => {
           const dayOfWeek = now.getDay();
           const daysUntilSaturday = (6 - dayOfWeek + 7) % 7 || 7;
-          return [addDays(now, daysUntilSaturday), addDays(now, daysUntilSaturday + 1)];
-        }
+          return [
+            addDays(now, daysUntilSaturday),
+            addDays(now, daysUntilSaturday + 1),
+          ];
+        },
       },
       {
         pattern: /nästa vecka/,
-        extractor: (_, now) => [addDays(now, 7)]
-      }
+        extractor: (_, now) => [addDays(now, 7)],
+      },
     ],
 
     // Norwegian patterns
     no: [
       {
         pattern: /i dag og i morgen/,
-        extractor: (_, now) => [now, addDays(now, 1)]
+        extractor: (_, now) => [now, addDays(now, 1)],
       },
       {
         pattern: /i dag/,
-        extractor: (_, now) => [now]
+        extractor: (_, now) => [now],
       },
       {
         pattern: /i morgen/,
-        extractor: (_, now) => [addDays(now, 1)]
+        extractor: (_, now) => [addDays(now, 1)],
       },
       {
         pattern: /neste helg/,
         extractor: (_, now) => {
           const dayOfWeek = now.getDay();
           const daysUntilSaturday = (6 - dayOfWeek + 7) % 7 || 7;
-          return [addDays(now, daysUntilSaturday), addDays(now, daysUntilSaturday + 1)];
-        }
+          return [
+            addDays(now, daysUntilSaturday),
+            addDays(now, daysUntilSaturday + 1),
+          ];
+        },
       },
       {
         pattern: /neste uke/,
-        extractor: (_, now) => [addDays(now, 7)]
-      }
+        extractor: (_, now) => [addDays(now, 7)],
+      },
     ],
 
     // German patterns
     de: [
       {
         pattern: /heute und morgen/,
-        extractor: (_, now) => [now, addDays(now, 1)]
+        extractor: (_, now) => [now, addDays(now, 1)],
       },
       {
         pattern: /heute/,
-        extractor: (_, now) => [now]
+        extractor: (_, now) => [now],
       },
       {
         pattern: /morgen/,
-        extractor: (_, now) => [addDays(now, 1)]
+        extractor: (_, now) => [addDays(now, 1)],
       },
       {
         pattern: /nächstes wochenende/,
         extractor: (_, now) => {
           const dayOfWeek = now.getDay();
           const daysUntilSaturday = (6 - dayOfWeek + 7) % 7 || 7;
-          return [addDays(now, daysUntilSaturday), addDays(now, daysUntilSaturday + 1)];
-        }
+          return [
+            addDays(now, daysUntilSaturday),
+            addDays(now, daysUntilSaturday + 1),
+          ];
+        },
       },
       {
         pattern: /nächste woche/,
-        extractor: (_, now) => [addDays(now, 7)]
-      }
+        extractor: (_, now) => [addDays(now, 7)],
+      },
     ],
 
     // French patterns
     fr: [
       {
         pattern: /aujourd'hui et demain/,
-        extractor: (_, now) => [now, addDays(now, 1)]
+        extractor: (_, now) => [now, addDays(now, 1)],
       },
       {
         pattern: /aujourd'hui/,
-        extractor: (_, now) => [now]
+        extractor: (_, now) => [now],
       },
       {
         pattern: /demain/,
-        extractor: (_, now) => [addDays(now, 1)]
+        extractor: (_, now) => [addDays(now, 1)],
       },
       {
         pattern: /ce week-end/,
         extractor: (_, now) => {
           const dayOfWeek = now.getDay();
           const daysUntilSaturday = (6 - dayOfWeek + 7) % 7 || 7;
-          return [addDays(now, daysUntilSaturday), addDays(now, daysUntilSaturday + 1)];
-        }
+          return [
+            addDays(now, daysUntilSaturday),
+            addDays(now, daysUntilSaturday + 1),
+          ];
+        },
       },
       {
         pattern: /la semaine prochaine/,
-        extractor: (_, now) => [addDays(now, 7)]
-      }
-    ]
+        extractor: (_, now) => [addDays(now, 7)],
+      },
+    ],
   };
 
   // Get patterns for the detected language, fallback to English
@@ -300,7 +414,7 @@ export function buildSearchQuery(
   baseQuery: string,
   location?: string,
   dates?: Date[],
-  language?: string
+  language?: string,
 ): string {
   const parts: string[] = [];
 
@@ -343,7 +457,7 @@ export interface QueryEnhancementMetadata {
 
 export function analyzeQuery(
   query: string,
-  currentDate: Date = new Date()
+  currentDate: Date = new Date(),
 ): QueryEnhancementMetadata {
   const language = detectLanguage(query);
   const dates = extractDates(query, language, currentDate);
@@ -352,15 +466,21 @@ export function analyzeQuery(
   const suggestions: string[] = [];
 
   // Add language suggestion
-  suggestions.push(`Use ${language} language for search queries to match user's language`);
+  suggestions.push(
+    `Use ${language} language for search queries to match user's language`,
+  );
 
   // Add date suggestions
   if (dates.length > 0) {
-    suggestions.push(`Include specific dates: ${formattedDates.join(', ')} (converted from temporal references)`);
+    suggestions.push(
+      `Include specific dates: ${formattedDates.join(', ')} (converted from temporal references)`,
+    );
   }
 
   // Add location suggestion if applicable
-  const locationMatch = query.match(/\b(aarhus|københavn|odense|aalborg|esbjerg|copenhagen|stockholm|oslo|helsinki)\b/i);
+  const locationMatch = query.match(
+    /\b(aarhus|københavn|odense|aalborg|esbjerg|copenhagen|stockholm|oslo|helsinki)\b/i,
+  );
   if (locationMatch) {
     suggestions.push(`Include location: ${locationMatch[0]}`);
   }
@@ -370,6 +490,6 @@ export function analyzeQuery(
     extractedDates: dates,
     formattedDates,
     hasTemporalReference: dates.length > 0,
-    suggestions
+    suggestions,
   };
 }

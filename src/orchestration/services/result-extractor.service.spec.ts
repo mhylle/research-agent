@@ -313,7 +313,8 @@ describe('ResultExtractorService', () => {
               status: 'completed',
               stepId: 'step1',
               toolName: 'web_fetch',
-              output: 'Generic long output that is more than 50 characters long',
+              output:
+                'Generic long output that is more than 50 characters long',
             },
             {
               status: 'completed',
@@ -339,7 +340,8 @@ describe('ResultExtractorService', () => {
               status: 'completed',
               stepId: 'step1',
               toolName: 'web_fetch',
-              output: 'Generic long output that is more than 50 characters long',
+              output:
+                'Generic long output that is more than 50 characters long',
             },
           ],
         },

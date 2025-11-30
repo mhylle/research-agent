@@ -870,7 +870,7 @@ The user expects a comprehensive answer, not just raw data.`;
 - **Has Temporal Reference**: ${enhancement.hasTemporalReference ? 'Yes' : 'No'}
 
 ### CRITICAL SEARCH QUERY REQUIREMENTS
-${enhancement.suggestions.map(s => `- ${s}`).join('\n')}
+${enhancement.suggestions.map((s) => `- ${s}`).join('\n')}
 
 **EXAMPLES OF CORRECT QUERY GENERATION:**
 

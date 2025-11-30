@@ -22,7 +22,12 @@ export class FetchPhaseExecutor extends BasePhaseExecutor {
     stepConfiguration: StepConfigurationService,
     private readonly evaluationCoordinator: EvaluationCoordinatorService,
   ) {
-    super(eventCoordinator, milestoneService, executorRegistry, stepConfiguration);
+    super(
+      eventCoordinator,
+      milestoneService,
+      executorRegistry,
+      stepConfiguration,
+    );
   }
 
   /**
@@ -78,7 +83,10 @@ export class FetchPhaseExecutor extends BasePhaseExecutor {
           allResults,
         );
       } catch (error) {
-        console.error('[FetchPhaseExecutor] Retrieval evaluation failed:', error);
+        console.error(
+          '[FetchPhaseExecutor] Retrieval evaluation failed:',
+          error,
+        );
         // Don't throw - evaluation failure shouldn't break research execution
       }
     }

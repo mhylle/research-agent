@@ -158,7 +158,9 @@ describe('ResultClassifierService', () => {
       const result = service.classify(input);
 
       expect(result.type).toBe(ResultType.AGGREGATOR);
-      expect(result.reasons).toContain('High link density suggests listing page');
+      expect(result.reasons).toContain(
+        'High link density suggests listing page',
+      );
     });
   });
 

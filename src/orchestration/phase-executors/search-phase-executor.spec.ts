@@ -74,9 +74,7 @@ describe('SearchPhaseExecutor', () => {
     it('should handle search phases', () => {
       expect(executor.canHandle(createMockPhase('search-phase'))).toBe(true);
       expect(executor.canHandle(createMockPhase('initial-search'))).toBe(true);
-      expect(executor.canHandle(createMockPhase('query-execution'))).toBe(
-        true,
-      );
+      expect(executor.canHandle(createMockPhase('query-execution'))).toBe(true);
     });
 
     it('should handle case-insensitive matching', () => {

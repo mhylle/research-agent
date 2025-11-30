@@ -103,7 +103,10 @@ export class ResultClassifierService {
 
     if (aggregatorIndicators > 1.5) {
       type = ResultType.AGGREGATOR;
-      actionableInformationScore = Math.max(0, 0.3 - aggregatorIndicators * 0.1);
+      actionableInformationScore = Math.max(
+        0,
+        0.3 - aggregatorIndicators * 0.1,
+      );
       confidence = Math.min(0.95, 0.7 + aggregatorIndicators * 0.1);
       reasons.push('URL/title patterns indicate aggregator page');
       if (linkDensity > 0.5) {
@@ -116,13 +119,17 @@ export class ResultClassifierService {
         0.6 + specificContentIndicators * 0.2,
       );
       confidence = Math.min(0.95, 0.7 + specificContentIndicators * 0.1);
-      reasons.push('Content contains specific details (dates, times, locations)');
+      reasons.push(
+        'Content contains specific details (dates, times, locations)',
+      );
     } else {
       // Navigation or unclear
       type = ResultType.NAVIGATION;
       actionableInformationScore = 0.4;
       confidence = 0.5;
-      reasons.push('Unclear page type, appears to be navigation or general page');
+      reasons.push(
+        'Unclear page type, appears to be navigation or general page',
+      );
     }
 
     this.logger.debug(
@@ -181,7 +188,8 @@ export class ResultClassifierService {
   private analyzeContent(content: string): number {
     // Check for multiple event markers
     const eventMarkers = content.match(/\bevent\b/gi) || [];
-    const markerDensity = eventMarkers.length / Math.max(1, content.length / 100);
+    const markerDensity =
+      eventMarkers.length / Math.max(1, content.length / 100);
 
     // Too many "event" mentions suggests listing page
     if (markerDensity > 5) {

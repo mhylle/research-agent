@@ -8,15 +8,9 @@ import { AnswerEvaluatorService } from '../../evaluation/services/answer-evaluat
 import { EvaluationService } from '../../evaluation/services/evaluation.service';
 import { Plan } from '../interfaces/plan.interface';
 import { StepResult } from '../interfaces/phase.interface';
-import {
-  PlanEvaluationResult as IPlanEvaluationResult
-} from '../../evaluation/interfaces/evaluation-result.interface';
-import {
-  RetrievalEvaluationResult as IRetrievalEvaluationResult
-} from '../../evaluation/services/retrieval-evaluator.service';
-import {
-  AnswerEvaluationResult as IAnswerEvaluationResult
-} from '../../evaluation/services/answer-evaluator.service';
+import { PlanEvaluationResult as IPlanEvaluationResult } from '../../evaluation/interfaces/evaluation-result.interface';
+import { RetrievalEvaluationResult as IRetrievalEvaluationResult } from '../../evaluation/services/retrieval-evaluator.service';
+import { AnswerEvaluationResult as IAnswerEvaluationResult } from '../../evaluation/services/answer-evaluator.service';
 
 export type PlanEvaluationResult = IPlanEvaluationResult;
 export type RetrievalEvaluationResult = IRetrievalEvaluationResult;
@@ -92,7 +86,9 @@ export class EvaluationCoordinatorService {
     });
 
     // Save evaluation record to database
-    console.log('[EvaluationCoordinator] Saving evaluation record to database...');
+    console.log(
+      '[EvaluationCoordinator] Saving evaluation record to database...',
+    );
     try {
       await this.evaluationService.saveEvaluationRecord({
         logId,
@@ -109,9 +105,14 @@ export class EvaluationCoordinatorService {
         evaluationSkipped: evaluationResult.evaluationSkipped,
         skipReason: evaluationResult.skipReason,
       });
-      console.log('[EvaluationCoordinator] Evaluation record saved successfully');
+      console.log(
+        '[EvaluationCoordinator] Evaluation record saved successfully',
+      );
     } catch (error) {
-      console.error('[EvaluationCoordinator] Failed to save evaluation record:', error);
+      console.error(
+        '[EvaluationCoordinator] Failed to save evaluation record:',
+        error,
+      );
       // Don't throw - evaluation storage failure shouldn't break research execution
     }
 

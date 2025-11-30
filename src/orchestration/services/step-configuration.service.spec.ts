@@ -61,7 +61,11 @@ describe('StepConfigurationService', () => {
         },
       ];
 
-      const config = service.getDefaultConfig('web_fetch', undefined, phaseResults);
+      const config = service.getDefaultConfig(
+        'web_fetch',
+        undefined,
+        phaseResults,
+      );
 
       expect(config).toEqual({
         url: 'https://example.com',
@@ -85,7 +89,11 @@ describe('StepConfigurationService', () => {
         },
       ];
 
-      const config = service.getDefaultConfig('web_fetch', undefined, phaseResults);
+      const config = service.getDefaultConfig(
+        'web_fetch',
+        undefined,
+        phaseResults,
+      );
 
       expect(config).toEqual({});
     });
@@ -128,7 +136,11 @@ describe('StepConfigurationService', () => {
           status: 'completed',
           stepId: 'step-search',
           output: [
-            { url: 'https://example.com', title: 'Example', content: 'content1' },
+            {
+              url: 'https://example.com',
+              title: 'Example',
+              content: 'content1',
+            },
           ],
           input: {},
           toolName: 'tavily_search',

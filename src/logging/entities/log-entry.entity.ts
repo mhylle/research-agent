@@ -10,7 +10,7 @@ export class LogEntryEntity {
   @Index()
   logId: string;
 
-  @Column('datetime')
+  @Column('timestamp')
   @Index()
   timestamp: Date;
 

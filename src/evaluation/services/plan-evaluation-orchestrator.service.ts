@@ -204,8 +204,7 @@ export class PlanEvaluationOrchestratorService {
     let finalScores = aggregated.scores;
     const finalConfidence = aggregated.confidence;
     // Evaluation passes only if BOTH overall score AND all dimension thresholds are met
-    let passed =
-      overallScore >= passThreshold && dimensionCheck.passed;
+    let passed = overallScore >= passThreshold && dimensionCheck.passed;
     let escalation;
 
     // Step 4: Escalate if needed

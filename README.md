@@ -14,6 +14,8 @@ The Research Agent implements a 3-stage pipeline:
 - **Framework**: NestJS 11.x with TypeScript
 - **LLM Provider**: Ollama (qwen2.5) with OpenAI-compatible tool calling
 - **Search Provider**: Tavily API (pluggable architecture supports alternatives)
+- **Database**: PostgreSQL 16 with TypeORM
+- **Development**: Docker Compose
 - **Logging**: Structured logging with Winston
 - **Validation**: Request/response validation with class-validator
 
@@ -50,6 +52,49 @@ ollama pull qwen2.5
 
 # Start Ollama server
 ollama serve
+```
+
+## Database Setup
+
+### PostgreSQL (Development)
+
+The application uses PostgreSQL for data persistence. Start the database with Docker Compose:
+
+```bash
+# Start PostgreSQL
+docker-compose up -d postgres
+
+# Verify PostgreSQL is running
+docker-compose ps
+
+# View PostgreSQL logs
+docker-compose logs -f postgres
+```
+
+### Environment Configuration
+
+Copy the example environment file and configure your database:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your database credentials (defaults work for local development).
+
+### Database Management
+
+```bash
+# Connect to PostgreSQL
+docker-compose exec postgres psql -U research_agent -d research_agent_db
+
+# View tables
+\dt
+
+# Stop PostgreSQL
+docker-compose down
+
+# Remove all data (clean slate)
+docker-compose down -v
 ```
 
 ## Configuration

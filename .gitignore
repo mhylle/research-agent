@@ -7,6 +7,9 @@
 node_modules/
 dist/
 
+# PostgreSQL data
+data/postgres/
+
 # Angular build output
 client/dist/
 

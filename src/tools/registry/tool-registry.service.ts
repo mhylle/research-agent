@@ -25,4 +25,8 @@ export class ToolRegistry {
   getTool(name: string): ITool | undefined {
     return this.tools.get(name);
   }
+
+  getAllTools(): ITool[] {
+    return Array.from(this.tools.values());
+  }
 }

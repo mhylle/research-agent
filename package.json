@@ -23,7 +23,11 @@
     "client:test": "cd client && ng test",
     "dev": "concurrently \"npm run start:dev\" \"npm run client:dev\"",
     "build:all": "npm run build && npm run client:build",
-    "postinstall": "cd client && npm install"
+    "postinstall": "cd client && npm install",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "npm run typeorm migration:generate -- -d src/data-source.ts",
+    "migration:run": "npm run typeorm migration:run -- -d src/data-source.ts",
+    "migration:revert": "npm run typeorm migration:revert -- -d src/data-source.ts"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",

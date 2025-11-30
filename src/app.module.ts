@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AppController } from './app.controller';
@@ -19,13 +20,21 @@ import { EvaluationRecordEntity } from './evaluation/entities/evaluation-record.
 
 @Module({
   imports: [
-    // SQLite Database Configuration for Logging
-    TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: './data/logs/research.db',
-      entities: [LogEntryEntity, ResearchResultEntity, EvaluationRecordEntity],
-      synchronize: true, // Auto-create tables
-      logging: true, // Enable logging to debug database issues
+    // PostgreSQL Database Configuration
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DB_HOST'),
+        port: configService.get('DB_PORT'),
+        username: configService.get('DB_USERNAME'),
+        password: configService.get('DB_PASSWORD'),
+        database: configService.get('DB_DATABASE'),
+        entities: [LogEntryEntity, ResearchResultEntity, EvaluationRecordEntity],
+        synchronize: configService.get('NODE_ENV') === 'development',
+        logging: configService.get('NODE_ENV') === 'development',
+      }),
     }),
     ServeStaticModule.forRoot({
       rootPath: join(

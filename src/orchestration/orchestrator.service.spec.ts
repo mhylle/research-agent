@@ -4,8 +4,13 @@ import { Orchestrator } from './orchestrator.service';
 import { PlannerService } from './planner.service';
 import { ExecutorRegistry } from '../executors/executor-registry.service';
 import { LogService } from '../logging/log.service';
+import { EventCoordinatorService } from './services/event-coordinator.service';
+import { MilestoneService } from './services/milestone.service';
 import { Plan } from './interfaces/plan.interface';
 import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
+import { EvaluationService } from '../evaluation/services/evaluation.service';
+import { RetrievalEvaluatorService } from '../evaluation/services/retrieval-evaluator.service';
+import { AnswerEvaluatorService } from '../evaluation/services/answer-evaluator.service';
 
 describe('Orchestrator', () => {
   let orchestrator: Orchestrator;
@@ -13,7 +18,12 @@ describe('Orchestrator', () => {
   let mockExecutorRegistry: jest.Mocked<ExecutorRegistry>;
   let mockLogService: jest.Mocked<LogService>;
   let mockEventEmitter: jest.Mocked<EventEmitter2>;
+  let mockEventCoordinator: jest.Mocked<EventCoordinatorService>;
+  let mockMilestoneService: jest.Mocked<MilestoneService>;
   let mockPlanEvaluationOrchestrator: jest.Mocked<any>;
+  let mockEvaluationService: jest.Mocked<any>;
+  let mockRetrievalEvaluator: jest.Mocked<any>;
+  let mockAnswerEvaluator: jest.Mocked<any>;
 
   const mockPlan: Plan = {
     id: 'plan-1',
@@ -70,6 +80,18 @@ describe('Orchestrator', () => {
       emit: jest.fn(),
     } as unknown as jest.Mocked<EventEmitter2>;
 
+    mockEventCoordinator = {
+      emit: jest.fn().mockResolvedValue(undefined),
+      emitPhaseStarted: jest.fn().mockResolvedValue(undefined),
+      emitPhaseCompleted: jest.fn().mockResolvedValue(undefined),
+      emitPhaseFailed: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<EventCoordinatorService>;
+
+    mockMilestoneService = {
+      emitMilestonesForPhase: jest.fn().mockResolvedValue(undefined),
+      emitPhaseCompletion: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<MilestoneService>;
+
     mockPlanEvaluationOrchestrator = {
       evaluatePlan: jest.fn().mockResolvedValue({
         passed: true,
@@ -82,6 +104,31 @@ describe('Orchestrator', () => {
       }),
     };
 
+    mockEvaluationService = {
+      saveEvaluationRecord: jest.fn().mockResolvedValue(undefined),
+      updateEvaluationRecord: jest.fn().mockResolvedValue(undefined),
+    };
+
+    mockRetrievalEvaluator = {
+      evaluate: jest.fn().mockResolvedValue({
+        passed: true,
+        scores: { sourceQuality: 0.9, contentRelevance: 0.85 },
+        confidence: 0.87,
+        flaggedSevere: false,
+        evaluationSkipped: false,
+      }),
+    };
+
+    mockAnswerEvaluator = {
+      evaluate: jest.fn().mockResolvedValue({
+        passed: true,
+        scores: { answerAccuracy: 0.9, answerCompleteness: 0.85 },
+        confidence: 0.87,
+        shouldRegenerate: false,
+        evaluationSkipped: false,
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         Orchestrator,
@@ -89,7 +136,12 @@ describe('Orchestrator', () => {
         { provide: ExecutorRegistry, useValue: mockExecutorRegistry },
         { provide: LogService, useValue: mockLogService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
+        { provide: EventCoordinatorService, useValue: mockEventCoordinator },
+        { provide: MilestoneService, useValue: mockMilestoneService },
         { provide: PlanEvaluationOrchestratorService, useValue: mockPlanEvaluationOrchestrator },
+        { provide: EvaluationService, useValue: mockEvaluationService },
+        { provide: RetrievalEvaluatorService, useValue: mockRetrievalEvaluator },
+        { provide: AnswerEvaluatorService, useValue: mockAnswerEvaluator },
       ],
     }).compile();
 
@@ -117,12 +169,16 @@ describe('Orchestrator', () => {
       await orchestrator.executeResearch('test query');
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(mockLogService.append).toHaveBeenCalledWith(
-        expect.objectContaining({ eventType: 'session_started' }),
+      expect(mockEventCoordinator.emit).toHaveBeenCalledWith(
+        expect.any(String),
+        'session_started',
+        expect.objectContaining({ query: 'test query' }),
       );
       // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(mockLogService.append).toHaveBeenCalledWith(
-        expect.objectContaining({ eventType: 'session_completed' }),
+      expect(mockEventCoordinator.emit).toHaveBeenCalledWith(
+        expect.any(String),
+        'session_completed',
+        expect.any(Object),
       );
     });
   });

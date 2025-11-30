@@ -5,6 +5,8 @@ import { randomUUID } from 'crypto';
 import { PlannerService } from './planner.service';
 import { ExecutorRegistry } from '../executors/executor-registry.service';
 import { LogService } from '../logging/log.service';
+import { EventCoordinatorService } from './services/event-coordinator.service';
+import { MilestoneService } from './services/milestone.service';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
 import { PlanStep } from './interfaces/plan-step.interface';
@@ -13,10 +15,6 @@ import {
   FailureContext,
   RecoveryDecision,
 } from './interfaces/recovery.interface';
-import {
-  getMilestoneTemplates,
-  formatMilestoneDescription,
-} from '../logging/milestone-templates';
 import { PlanEvaluationOrchestratorService } from '../evaluation/services/plan-evaluation-orchestrator.service';
 import { EvaluationService } from '../evaluation/services/evaluation.service';
 import { RetrievalEvaluatorService } from '../evaluation/services/retrieval-evaluator.service';
@@ -40,6 +38,8 @@ export class Orchestrator {
     private executorRegistry: ExecutorRegistry,
     private logService: LogService,
     private eventEmitter: EventEmitter2,
+    private eventCoordinator: EventCoordinatorService,
+    private milestoneService: MilestoneService,
     private planEvaluationOrchestrator: PlanEvaluationOrchestratorService,
     private evaluationService: EvaluationService,
     private retrievalEvaluator: RetrievalEvaluatorService,
@@ -52,7 +52,7 @@ export class Orchestrator {
     const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
 
     // 1. PLANNING PHASE
-    await this.emit(logId, 'session_started', { query });
+    await this.eventCoordinator.emit(logId, 'session_started', { query });
 
     const plan = await this.plannerService.createPlan(query, logId);
 
@@ -60,7 +60,7 @@ export class Orchestrator {
 
     // PLAN EVALUATION
     console.log('[Orchestrator] Starting plan evaluation...');
-    await this.emit(logId, 'evaluation_started', {
+    await this.eventCoordinator.emit(logId, 'evaluation_started', {
       phase: 'plan',
       query: plan.query
     });
@@ -77,7 +77,7 @@ export class Orchestrator {
     });
     console.log('[Orchestrator] Plan evaluation completed:', JSON.stringify(evaluationResult, null, 2));
 
-    await this.emit(logId, 'evaluation_completed', {
+    await this.eventCoordinator.emit(logId, 'evaluation_completed', {
       phase: 'plan',
       passed: evaluationResult.passed,
       scores: evaluationResult.scores,
@@ -122,7 +122,7 @@ export class Orchestrator {
     }
 
     // Log the FULL plan with all phases and steps
-    await this.emit(logId, 'plan_created', {
+    await this.eventCoordinator.emit(logId, 'plan_created', {
       planId: plan.id,
       query: plan.query,
       status: plan.status,
@@ -189,7 +189,7 @@ export class Orchestrator {
 
         if (hasRetrievedContent) {
           console.log('[Orchestrator] Starting retrieval evaluation...');
-          await this.emit(logId, 'evaluation_started', {
+          await this.eventCoordinator.emit(logId, 'evaluation_started', {
             phase: 'retrieval',
             query: plan.query
           });
@@ -203,7 +203,7 @@ export class Orchestrator {
 
             console.log('[Orchestrator] Retrieval evaluation completed:', JSON.stringify(retrievalEvalResult, null, 2));
 
-            await this.emit(logId, 'evaluation_completed', {
+            await this.eventCoordinator.emit(logId, 'evaluation_completed', {
               phase: 'retrieval',
               passed: retrievalEvalResult.passed,
               scores: retrievalEvalResult.scores,
@@ -247,7 +247,7 @@ export class Orchestrator {
           const stepsAfterReplan = phase.steps.length;
           if (stepsAfterReplan > stepsBeforeReplan) {
             // Re-execute the phase with the new steps
-            await this.emit(logId, 'phase_started', {
+            await this.eventCoordinator.emit(logId, 'phase_started', {
               phaseId: phase.id,
               phaseName: phase.name,
               stepCount: phase.steps.length,
@@ -267,7 +267,7 @@ export class Orchestrator {
               const failed = batchResults.find((r) => r.status === 'failed');
               if (failed) {
                 phase.status = 'failed';
-                await this.emit(logId, 'phase_failed', {
+                await this.eventCoordinator.emit(logId, 'phase_failed', {
                   phaseId: phase.id,
                   phaseName: phase.name,
                   failedStepId: failed.stepId,
@@ -280,7 +280,7 @@ export class Orchestrator {
             }
 
             if (phaseResult.status !== 'failed') {
-              await this.emit(logId, 'phase_completed', {
+              await this.eventCoordinator.emit(logId, 'phase_completed', {
                 phaseId: phase.id,
                 phaseName: phase.name,
                 stepsCompleted: phaseResult.stepResults.length,
@@ -308,7 +308,7 @@ export class Orchestrator {
           logId,
         );
         if (recovery.action === 'abort') {
-          await this.emit(logId, 'session_failed', { reason: recovery.reason });
+          await this.eventCoordinator.emit(logId, 'session_failed', { reason: recovery.reason });
           throw new Error(`Research failed: ${recovery.reason}`);
         }
       }
@@ -329,7 +329,7 @@ export class Orchestrator {
 
       console.log('[Orchestrator] Answer evaluation completed:', JSON.stringify(answerEvalResult, null, 2));
 
-      await this.emit(logId, 'evaluation_completed', {
+      await this.eventCoordinator.emit(logId, 'evaluation_completed', {
         phase: 'answer',
         passed: answerEvalResult.passed,
         scores: answerEvalResult.scores,
@@ -363,7 +363,7 @@ export class Orchestrator {
     // 6. COMPLETION
     const totalExecutionTime = Date.now() - startTime;
 
-    await this.emit(logId, 'session_completed', {
+    await this.eventCoordinator.emit(logId, 'session_completed', {
       planId: plan.id,
       totalExecutionTime,
       phaseCount: plan.phases.length,
@@ -389,7 +389,7 @@ export class Orchestrator {
   ): Promise<PhaseResult> {
     phase.status = 'running';
 
-    await this.emit(
+    await this.eventCoordinator.emit(
       logId,
       'phase_started',
       {
@@ -401,7 +401,7 @@ export class Orchestrator {
     );
 
     // Emit milestones for this phase
-    await this.emitPhaseMilestones(phase, logId, plan.query);
+    await this.milestoneService.emitMilestonesForPhase(phase, logId, plan.query);
 
     const stepResults: StepResult[] = [];
     const stepQueue = this.buildExecutionQueue(phase.steps);
@@ -417,7 +417,7 @@ export class Orchestrator {
       const failed = batchResults.find((r) => r.status === 'failed');
       if (failed) {
         phase.status = 'failed';
-        await this.emit(
+        await this.eventCoordinator.emit(
           logId,
           'phase_failed',
           {
@@ -433,7 +433,7 @@ export class Orchestrator {
     }
 
     phase.status = 'completed';
-    await this.emit(
+    await this.eventCoordinator.emit(
       logId,
       'phase_completed',
       {
@@ -445,7 +445,7 @@ export class Orchestrator {
     );
 
     // Emit final milestone for the completed phase
-    await this.emitPhaseCompletionMilestone(phase, logId);
+    await this.milestoneService.emitPhaseCompletion(phase, logId);
 
     return { status: 'completed', stepResults };
   }
@@ -469,7 +469,7 @@ export class Orchestrator {
       step.config = this.getDefaultConfig(step.toolName, plan, phaseResults);
     }
 
-    await this.emit(
+    await this.eventCoordinator.emit(
       logId,
       'step_started',
       {
@@ -489,7 +489,7 @@ export class Orchestrator {
 
       step.status = 'completed';
 
-      await this.emit(
+      await this.eventCoordinator.emit(
         logId,
         'step_completed',
         {
@@ -521,7 +521,7 @@ export class Orchestrator {
         error instanceof Error ? error.message : 'Unknown error';
       const errorStack = error instanceof Error ? error.stack : undefined;
 
-      await this.emit(
+      await this.eventCoordinator.emit(
         logId,
         'step_failed',
         {
@@ -804,178 +804,6 @@ export class Orchestrator {
     console.log(`[Orchestrator] Emitting event: log.${logId} - ${eventType}`);
     this.eventEmitter.emit(`log.${logId}`, entry);
     this.eventEmitter.emit('log.all', entry);
-  }
-
-  /**
-   * Detect the stage type from phase name
-   */
-  private detectPhaseType(phaseName: string): 1 | 2 | 3 | null {
-    const name = phaseName.toLowerCase();
-    if (name.includes('search') || name.includes('initial') || name.includes('query')) {
-      return 1;
-    }
-    if (name.includes('fetch') || name.includes('content') || name.includes('gather')) {
-      return 2;
-    }
-    if (name.includes('synth') || name.includes('answer') || name.includes('generat')) {
-      return 3;
-    }
-    return null;
-  }
-
-  /**
-   * Emit milestones for a phase based on its type
-   */
-  private async emitPhaseMilestones(
-    phase: Phase,
-    logId: string,
-    query: string,
-  ): Promise<void> {
-    const stageType = this.detectPhaseType(phase.name);
-    if (!stageType) {
-      console.log(`[Orchestrator] Phase "${phase.name}" does not map to a milestone stage`);
-      return;
-    }
-
-    const templates = getMilestoneTemplates(stageType);
-    console.log(`[Orchestrator] Emitting ${templates.length} milestones for stage ${stageType} (${phase.name})`);
-
-    // Emit initial milestones for the phase
-    for (let i = 0; i < templates.length - 1; i++) {
-      const template = templates[i];
-      const milestoneId = `${phase.id}_${template.id}`;
-
-      // Build template data based on stage and milestone
-      const templateData = this.buildMilestoneTemplateData(stageType, template.id, query, phase);
-      const description = formatMilestoneDescription(template.template, templateData);
-
-      await this.emit(
-        logId,
-        'milestone_started',
-        {
-          milestoneId,
-          templateId: template.id,
-          stage: stageType,
-          description,
-          template: template.template,
-          templateData,
-          progress: template.expectedProgress,
-          status: 'running',
-        },
-        phase.id,
-      );
-
-      // Small delay between milestones for visual effect
-      await this.delay(100);
-    }
-  }
-
-  /**
-   * Emit the final milestone for a completed phase
-   */
-  private async emitPhaseCompletionMilestone(
-    phase: Phase,
-    logId: string,
-  ): Promise<void> {
-    const stageType = this.detectPhaseType(phase.name);
-    if (!stageType) return;
-
-    const templates = getMilestoneTemplates(stageType);
-    if (templates.length === 0) return;
-
-    const lastTemplate = templates[templates.length - 1];
-    const milestoneId = `${phase.id}_${lastTemplate.id}`;
-    const description = formatMilestoneDescription(lastTemplate.template, {});
-
-    await this.emit(
-      logId,
-      'milestone_completed',
-      {
-        milestoneId,
-        templateId: lastTemplate.id,
-        stage: stageType,
-        description,
-        template: lastTemplate.template,
-        templateData: {},
-        progress: lastTemplate.expectedProgress,
-        status: 'completed',
-      },
-      phase.id,
-    );
-  }
-
-  /**
-   * Build template data for milestone descriptions
-   */
-  private buildMilestoneTemplateData(
-    stage: 1 | 2 | 3,
-    templateId: string,
-    query: string,
-    phase: Phase,
-  ): Record<string, unknown> {
-    switch (stage) {
-      case 1:
-        if (templateId === 'stage1_identify_terms') {
-          // Extract key terms from query
-          const terms = this.extractKeyTerms(query);
-          return { terms: terms.join(', ') };
-        }
-        if (templateId === 'stage1_search') {
-          return {
-            count: phase.steps.length,
-            sources: 'Tavily (web sources, news, articles)',
-          };
-        }
-        return {};
-
-      case 2:
-        if (templateId === 'stage2_fetch') {
-          return { count: phase.steps.length };
-        }
-        if (templateId === 'stage2_extract') {
-          return { url: 'source content' };
-        }
-        return {};
-
-      case 3:
-        if (templateId === 'stage3_analyze') {
-          return { count: phase.steps.length };
-        }
-        return {};
-
-      default:
-        return {};
-    }
-  }
-
-  /**
-   * Extract key terms from a query string
-   */
-  private extractKeyTerms(query: string): string[] {
-    const stopWords = new Set([
-      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-      'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-      'could', 'should', 'may', 'might', 'can', 'what', 'how', 'why',
-      'when', 'where', 'who', 'which', 'this', 'that', 'these', 'those',
-      'latest', 'current', 'recent', 'about',
-    ]);
-
-    const words = query
-      .toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter((word) => word.length > 2 && !stopWords.has(word));
-
-    const uniqueWords = [...new Set(words)];
-    return uniqueWords.sort((a, b) => b.length - a.length).slice(0, 5);
-  }
-
-  /**
-   * Utility delay function
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

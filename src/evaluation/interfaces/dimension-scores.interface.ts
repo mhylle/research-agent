@@ -13,6 +13,7 @@ export interface RetrievalDimensionScores extends DimensionScores {
   contextRecall: number;
   contextPrecision: number;
   sourceQuality: number;
+  actionableInformation: number;
 }
 
 export interface AnswerDimensionScores extends DimensionScores {

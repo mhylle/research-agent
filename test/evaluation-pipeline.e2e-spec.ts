@@ -66,9 +66,9 @@ describe('Evaluation Pipeline (e2e)', () => {
     await app.init();
 
     orchestrator = moduleFixture.get<Orchestrator>(Orchestrator);
-    evaluationRepository = moduleFixture.get<Repository<EvaluationRecordEntity>>(
-      getRepositoryToken(EvaluationRecordEntity),
-    );
+    evaluationRepository = moduleFixture.get<
+      Repository<EvaluationRecordEntity>
+    >(getRepositoryToken(EvaluationRecordEntity));
   });
 
   afterAll(async () => {
@@ -97,7 +97,7 @@ describe('Evaluation Pipeline (e2e)', () => {
       expect(result.logId).toBeDefined();
 
       // Wait a bit for async evaluation storage
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify evaluation record was created
       const records = await evaluationRepository.find();
@@ -115,13 +115,17 @@ describe('Evaluation Pipeline (e2e)', () => {
       expect(record.retrievalEvaluation).toBeDefined();
       expect(record.retrievalEvaluation.passed).toBeDefined();
       expect(record.retrievalEvaluation.scores).toBeDefined();
-      expect(record.retrievalEvaluation.scores.contextRecall).toBeGreaterThan(0);
+      expect(record.retrievalEvaluation.scores.contextRecall).toBeGreaterThan(
+        0,
+      );
 
       // Verify answer evaluation was executed and stored
       expect(record.answerEvaluation).toBeDefined();
       expect(record.answerEvaluation.passed).toBeDefined();
       expect(record.answerEvaluation.finalScores).toBeDefined();
-      expect(record.answerEvaluation.finalScores.faithfulness).toBeGreaterThan(0);
+      expect(record.answerEvaluation.finalScores.faithfulness).toBeGreaterThan(
+        0,
+      );
 
       // Verify overall score is calculated
       expect(record.overallScore).toBeGreaterThan(0);
@@ -138,7 +142,7 @@ describe('Evaluation Pipeline (e2e)', () => {
       const result = await orchestrator.executeResearch(query);
       expect(result).toBeDefined();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify evaluation record indicates evaluation was skipped
       const records = await evaluationRepository.find();
@@ -161,7 +165,7 @@ describe('Evaluation Pipeline (e2e)', () => {
       const result = await orchestrator.executeResearch(query);
       expect(result).toBeDefined();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const records = await evaluationRepository.find();
       expect(records.length).toBe(1);
@@ -244,7 +248,9 @@ describe('Evaluation Pipeline (e2e)', () => {
       expect(stats.passRate).toBeCloseTo(expectedPassRate, 2);
 
       // Verify phase breakdown
-      const planPhase = stats.phaseBreakdown.find((p: any) => p.phase === 'plan');
+      const planPhase = stats.phaseBreakdown.find(
+        (p: any) => p.phase === 'plan',
+      );
       expect(planPhase).toBeDefined();
       expect(planPhase.total).toBeGreaterThan(0);
       expect(planPhase.passed + planPhase.failed).toBe(planPhase.total);
@@ -285,22 +291,34 @@ describe('Evaluation Pipeline (e2e)', () => {
     // Mock evaluation LLM responses
     mockOllamaService.generateResponse.mockImplementation((prompt: string) => {
       if (prompt.includes('Intent Analyst')) {
-        return Promise.resolve({ response: mockOllamaResponses.intentAnalyst.content });
+        return Promise.resolve({
+          response: mockOllamaResponses.intentAnalyst.content,
+        });
       }
       if (prompt.includes('Coverage Checker')) {
-        return Promise.resolve({ response: mockOllamaResponses.coverageChecker.content });
+        return Promise.resolve({
+          response: mockOllamaResponses.coverageChecker.content,
+        });
       }
       if (prompt.includes('Source Relevance')) {
-        return Promise.resolve({ response: mockOllamaResponses.sourceRelevance.content });
+        return Promise.resolve({
+          response: mockOllamaResponses.sourceRelevance.content,
+        });
       }
       if (prompt.includes('Source Quality')) {
-        return Promise.resolve({ response: mockOllamaResponses.sourceQuality.content });
+        return Promise.resolve({
+          response: mockOllamaResponses.sourceQuality.content,
+        });
       }
       if (prompt.includes('Faithfulness')) {
-        return Promise.resolve({ response: mockOllamaResponses.faithfulness.content });
+        return Promise.resolve({
+          response: mockOllamaResponses.faithfulness.content,
+        });
       }
       if (prompt.includes('Answer Relevance')) {
-        return Promise.resolve({ response: mockOllamaResponses.answerRelevance.content });
+        return Promise.resolve({
+          response: mockOllamaResponses.answerRelevance.content,
+        });
       }
 
       return Promise.resolve({
@@ -364,14 +382,22 @@ describe('Evaluation Pipeline (e2e)', () => {
           escalatedToLargeModel: false,
         },
         retrievalEvaluation: {
-          scores: { contextRecall: 0.85, contextPrecision: 0.8, sourceQuality: 0.9 },
+          scores: {
+            contextRecall: 0.85,
+            contextPrecision: 0.8,
+            sourceQuality: 0.9,
+          },
           passed: true,
           flaggedSevere: false,
           sourceDetails: [],
         },
         answerEvaluation: {
           attempts: [],
-          finalScores: { faithfulness: 0.9, answerRelevance: 0.85, completeness: 0.8 },
+          finalScores: {
+            faithfulness: 0.9,
+            answerRelevance: 0.85,
+            completeness: 0.8,
+          },
           passed: true,
           regenerated: false,
         },

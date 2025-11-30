@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OllamaService } from '../../llm/ollama.service';
-import { EvaluatorResult, EscalationResult, DEFAULT_EVALUATION_CONFIG, DimensionScores } from '../interfaces';
+import {
+  EvaluatorResult,
+  EscalationResult,
+  DEFAULT_EVALUATION_CONFIG,
+  DimensionScores,
+} from '../interfaces';
 import { ESCALATION_META_PROMPT } from '../prompts/escalation-meta.prompt';
 
 export interface EscalationInput {
@@ -19,7 +24,9 @@ export class EscalationHandlerService {
 
   async escalate(input: EscalationInput): Promise<EscalationResult> {
     const startTime = Date.now();
-    this.logger.log(`Escalating to ${this.config.escalationModel} due to: ${input.trigger}`);
+    this.logger.log(
+      `Escalating to ${this.config.escalationModel} due to: ${input.trigger}`,
+    );
 
     try {
       const prompt = this.buildPrompt(input);
@@ -61,27 +68,39 @@ export class EscalationHandlerService {
     let prompt = ESCALATION_META_PROMPT;
 
     prompt = prompt.replace('{query}', input.query);
-    prompt = prompt.replace('{content}', JSON.stringify(input.content, null, 2));
-    prompt = prompt.replace('{panelResults}', this.formatPanelResults(input.panelResults));
+    prompt = prompt.replace(
+      '{content}',
+      JSON.stringify(input.content, null, 2),
+    );
+    prompt = prompt.replace(
+      '{panelResults}',
+      this.formatPanelResults(input.panelResults),
+    );
     prompt = prompt.replace('{trigger}', this.describeTrigger(input.trigger));
 
     return prompt;
   }
 
   private formatPanelResults(results: EvaluatorResult[]): string {
-    return results.map(r => `
+    return results
+      .map(
+        (r) => `
 ### ${r.role} (${r.model})
 - Confidence: ${r.confidence}
 - Scores: ${JSON.stringify(r.scores)}
 - Critique: ${r.critique}
-    `).join('\n');
+    `,
+      )
+      .join('\n');
   }
 
   private describeTrigger(trigger: string): string {
     const descriptions: Record<string, string> = {
       low_confidence: 'All evaluators reported low confidence (< 0.6)',
-      disagreement: 'Evaluators significantly disagreed (scores differ by > 0.3)',
-      borderline: 'Aggregated score is borderline (within 0.05 of pass threshold)',
+      disagreement:
+        'Evaluators significantly disagreed (scores differ by > 0.3)',
+      borderline:
+        'Aggregated score is borderline (within 0.05 of pass threshold)',
     };
     return descriptions[trigger] || trigger;
   }

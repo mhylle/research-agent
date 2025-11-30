@@ -25,13 +25,15 @@ export const createMockRetrievalContent = () => [
   {
     url: 'https://example.com/quantum-basics',
     title: 'Quantum Computing Basics',
-    content: 'Quantum computing is a revolutionary approach to computation that leverages quantum mechanics...',
+    content:
+      'Quantum computing is a revolutionary approach to computation that leverages quantum mechanics...',
     fetchedAt: new Date('2024-01-01'),
   },
   {
     url: 'https://example.com/quantum-explained',
     title: 'Quantum Computers Explained',
-    content: 'Unlike classical computers, quantum computers use qubits instead of bits...',
+    content:
+      'Unlike classical computers, quantum computers use qubits instead of bits...',
     fetchedAt: new Date('2024-01-01'),
   },
 ];
@@ -70,7 +72,10 @@ export const createMockEvaluationRecord = (
       },
     ],
     finalScores: { intentAlignment: 0.9, queryCoverage: 0.85 },
-    explanations: { intentAlignment: 'Plan perfectly captures user intent', queryCoverage: 'All aspects covered' },
+    explanations: {
+      intentAlignment: 'Plan perfectly captures user intent',
+      queryCoverage: 'All aspects covered',
+    },
     passed: true,
     totalIterations: 1,
     escalatedToLargeModel: false,
@@ -81,7 +86,11 @@ export const createMockEvaluationRecord = (
       contextPrecision: 0.8,
       sourceQuality: 0.9,
     },
-    explanations: { contextRecall: 'Good coverage of key concepts', contextPrecision: 'Minimal irrelevant content', sourceQuality: 'Credible sources' },
+    explanations: {
+      contextRecall: 'Good coverage of key concepts',
+      contextPrecision: 'Minimal irrelevant content',
+      sourceQuality: 'Credible sources',
+    },
     passed: true,
     flaggedSevere: false,
     sourceDetails: [
@@ -118,7 +127,11 @@ export const createMockEvaluationRecord = (
       answerRelevance: 0.85,
       completeness: 0.8,
     },
-    explanations: { faithfulness: 'Answer is grounded in sources', answerRelevance: 'Addresses the query well', completeness: 'Good coverage' },
+    explanations: {
+      faithfulness: 'Answer is grounded in sources',
+      answerRelevance: 'Addresses the query well',
+      completeness: 'Good coverage',
+    },
     passed: true,
     regenerated: false,
   },
@@ -128,7 +141,10 @@ export const createMockEvaluationRecord = (
   ...overrides,
 });
 
-export const createMockEvaluatorResult = (role: string, scores: Record<string, number>) => ({
+export const createMockEvaluatorResult = (
+  role: string,
+  scores: Record<string, number>,
+) => ({
   role,
   scores,
   confidence: 0.9,
@@ -235,28 +251,44 @@ export const createMockOllamaService = () => ({
   generateResponse: jest.fn((prompt: string, options?: any) => {
     // Determine which evaluator is being called based on prompt content
     if (prompt.includes('Intent Analyst')) {
-      return Promise.resolve({ response: mockOllamaResponses.intentAnalyst.content });
+      return Promise.resolve({
+        response: mockOllamaResponses.intentAnalyst.content,
+      });
     }
     if (prompt.includes('Coverage Checker')) {
-      return Promise.resolve({ response: mockOllamaResponses.coverageChecker.content });
+      return Promise.resolve({
+        response: mockOllamaResponses.coverageChecker.content,
+      });
     }
     if (prompt.includes('Source Relevance')) {
-      return Promise.resolve({ response: mockOllamaResponses.sourceRelevance.content });
+      return Promise.resolve({
+        response: mockOllamaResponses.sourceRelevance.content,
+      });
     }
     if (prompt.includes('Source Quality')) {
-      return Promise.resolve({ response: mockOllamaResponses.sourceQuality.content });
+      return Promise.resolve({
+        response: mockOllamaResponses.sourceQuality.content,
+      });
     }
     if (prompt.includes('Coverage Completeness')) {
-      return Promise.resolve({ response: mockOllamaResponses.coverageCompleteness.content });
+      return Promise.resolve({
+        response: mockOllamaResponses.coverageCompleteness.content,
+      });
     }
     if (prompt.includes('Faithfulness')) {
-      return Promise.resolve({ response: mockOllamaResponses.faithfulness.content });
+      return Promise.resolve({
+        response: mockOllamaResponses.faithfulness.content,
+      });
     }
     if (prompt.includes('Answer Relevance')) {
-      return Promise.resolve({ response: mockOllamaResponses.answerRelevance.content });
+      return Promise.resolve({
+        response: mockOllamaResponses.answerRelevance.content,
+      });
     }
     if (prompt.includes('Answer Completeness')) {
-      return Promise.resolve({ response: mockOllamaResponses.answerCompleteness.content });
+      return Promise.resolve({
+        response: mockOllamaResponses.answerCompleteness.content,
+      });
     }
 
     // Default response

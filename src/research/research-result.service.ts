@@ -49,7 +49,9 @@ export class ResearchResultService {
   async getByLogId(logId: string): Promise<ResearchResultEntity> {
     const result = await this.findByLogId(logId);
     if (!result) {
-      throw new NotFoundException(`Research result not found for logId: ${logId}`);
+      throw new NotFoundException(
+        `Research result not found for logId: ${logId}`,
+      );
     }
     return result;
   }

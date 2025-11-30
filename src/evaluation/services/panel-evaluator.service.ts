@@ -48,7 +48,13 @@ export class PanelEvaluatorService {
 
   async evaluateWithRole(
     role: EvaluatorRole,
-    context: { query: string; plan: any; searchQueries?: string[]; sources?: string; answer?: string },
+    context: {
+      query: string;
+      plan: any;
+      searchQueries?: string[];
+      sources?: string;
+      answer?: string;
+    },
   ): Promise<EvaluatorResult> {
     const startTime = Date.now();
     const roleConfig = this.config.evaluators[role];
@@ -80,7 +86,9 @@ export class PanelEvaluatorService {
       };
 
       // Log what we're returning to debug missing explanations
-      this.logger.debug(`[evaluateWithRole] ${role} result - explanation: "${result.explanation?.substring(0, 100)}...", scores: ${JSON.stringify(result.scores)}`);
+      this.logger.debug(
+        `[evaluateWithRole] ${role} result - explanation: "${result.explanation?.substring(0, 100)}...", scores: ${JSON.stringify(result.scores)}`,
+      );
 
       return result;
     } catch (error) {
@@ -102,9 +110,18 @@ export class PanelEvaluatorService {
 
   async evaluateWithPanel(
     roles: EvaluatorRole[],
-    context: { query: string; plan: any; searchQueries?: string[]; sources?: string; answer?: string },
+    context: {
+      query: string;
+      plan: any;
+      searchQueries?: string[];
+      sources?: string;
+      answer?: string;
+    },
   ): Promise<EvaluatorResult[]> {
-    console.log(`[PanelEvaluatorService] evaluateWithPanel called with roles:`, roles);
+    console.log(
+      `[PanelEvaluatorService] evaluateWithPanel called with roles:`,
+      roles,
+    );
     console.log(`[PanelEvaluatorService] Context query:`, context.query);
 
     const evaluations = roles.map((role) =>
@@ -112,13 +129,21 @@ export class PanelEvaluatorService {
     );
     const results = await Promise.all(evaluations);
 
-    console.log(`[PanelEvaluatorService] Panel evaluation completed, ${results.length} results`);
+    console.log(
+      `[PanelEvaluatorService] Panel evaluation completed, ${results.length} results`,
+    );
     return results;
   }
 
   private buildPrompt(
     role: EvaluatorRole,
-    context: { query: string; plan: any; searchQueries?: string[]; sources?: string; answer?: string },
+    context: {
+      query: string;
+      plan: any;
+      searchQueries?: string[];
+      sources?: string;
+      answer?: string;
+    },
   ): string {
     let template = this.prompts[role];
 
@@ -131,7 +156,10 @@ export class PanelEvaluatorService {
     template = template.replace('{currentYear}', currentYear);
 
     template = template.replace('{query}', context.query);
-    template = template.replace('{plan}', JSON.stringify(context.plan, null, 2));
+    template = template.replace(
+      '{plan}',
+      JSON.stringify(context.plan, null, 2),
+    );
 
     if (context.searchQueries) {
       template = template.replace(
@@ -154,7 +182,9 @@ export class PanelEvaluatorService {
   private parseResponse(content: string): any {
     try {
       // Log the raw response for debugging
-      this.logger.debug(`[parseResponse] Raw content: ${content.substring(0, 500)}...`);
+      this.logger.debug(
+        `[parseResponse] Raw content: ${content.substring(0, 500)}...`,
+      );
 
       // Try to extract JSON from response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -162,13 +192,17 @@ export class PanelEvaluatorService {
         const parsed = JSON.parse(jsonMatch[0]);
 
         // Log what we parsed to debug missing explanations and score precision
-        this.logger.debug(`[parseResponse] Parsed JSON: ${JSON.stringify(parsed, null, 2)}`);
+        this.logger.debug(
+          `[parseResponse] Parsed JSON: ${JSON.stringify(parsed, null, 2)}`,
+        );
 
         // Check if scores need to be converted from 0-10 scale to 0-1 scale
         if (parsed.scores) {
           for (const [key, value] of Object.entries(parsed.scores)) {
             if (typeof value === 'number' && value > 1) {
-              this.logger.warn(`[parseResponse] Score ${key} is ${value}, converting from 0-10 to 0-1 scale`);
+              this.logger.warn(
+                `[parseResponse] Score ${key} is ${value}, converting from 0-10 to 0-1 scale`,
+              );
               parsed.scores[key] = value / 10;
             }
           }

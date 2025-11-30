@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PanelEvaluatorService } from './panel-evaluator.service';
 import { ScoreAggregatorService } from './score-aggregator.service';
-import { AnswerDimensionScores, EvaluatorResult } from '../interfaces';
+import {
+  AnswerDimensionScores,
+  EvaluatorResult,
+  DEFAULT_EVALUATION_CONFIG,
+} from '../interfaces';
 
 export interface AnswerSource {
   url: string;
@@ -30,11 +34,12 @@ export interface AnswerEvaluationResult {
 @Injectable()
 export class AnswerEvaluatorService {
   private readonly logger = new Logger(AnswerEvaluatorService.name);
+  private readonly config = DEFAULT_EVALUATION_CONFIG;
 
   private readonly ANSWER_WEIGHTS: Record<string, number> = {
     faithfulness: 0.35,
-    answerRelevance: 0.30,
-    completeness: 0.20,
+    answerRelevance: 0.3,
+    completeness: 0.2,
     accuracy: 0.15,
   };
 
@@ -45,8 +50,12 @@ export class AnswerEvaluatorService {
     private readonly scoreAggregator: ScoreAggregatorService,
   ) {}
 
-  async evaluate(input: AnswerEvaluationInput): Promise<AnswerEvaluationResult> {
-    this.logger.log(`Evaluating answer for query: ${input.query.substring(0, 50)}...`);
+  async evaluate(
+    input: AnswerEvaluationInput,
+  ): Promise<AnswerEvaluationResult> {
+    this.logger.log(
+      `Evaluating answer for query: ${input.query.substring(0, 50)}...`,
+    );
 
     try {
       // Skip evaluation if no answer was generated
@@ -54,12 +63,19 @@ export class AnswerEvaluatorService {
         this.logger.warn('No answer generated, skipping answer evaluation');
         return {
           passed: false,
-          scores: { faithfulness: 0, answerRelevance: 0, completeness: 0, accuracy: 0 },
+          scores: {
+            faithfulness: 0,
+            answerRelevance: 0,
+            completeness: 0,
+            accuracy: 0,
+          },
           explanations: {},
           confidence: 0,
           shouldRegenerate: true,
           critique: 'No answer was generated',
-          improvementSuggestions: ['Generate a comprehensive answer based on retrieved sources'],
+          improvementSuggestions: [
+            'Generate a comprehensive answer based on retrieved sources',
+          ],
           evaluationSkipped: true,
           skipReason: 'No answer generated',
         };
@@ -85,11 +101,28 @@ export class AnswerEvaluatorService {
         this.ANSWER_WEIGHTS,
       );
 
-      const passed = overallScore >= this.MAJOR_FAILURE_THRESHOLD;
-      const shouldRegenerate = overallScore < this.MAJOR_FAILURE_THRESHOLD;
+      // Check dimension-specific thresholds
+      const dimensionCheck = this.scoreAggregator.checkDimensionThresholds(
+        aggregated.scores,
+        this.config.answerEvaluation.dimensionThresholds,
+      );
+
+      if (!dimensionCheck.passed) {
+        this.logger.warn(
+          `Answer dimension thresholds not met: ${dimensionCheck.failingDimensions.join(', ')}`,
+        );
+      }
+
+      // Evaluation passes only if BOTH overall score AND all dimension thresholds are met
+      const passed =
+        overallScore >= this.MAJOR_FAILURE_THRESHOLD && dimensionCheck.passed;
+      const shouldRegenerate = !passed;
 
       if (shouldRegenerate) {
-        this.logger.warn(`Answer flagged for regeneration: ${overallScore.toFixed(2)}`);
+        const reason = !dimensionCheck.passed
+          ? `Dimension thresholds not met: ${dimensionCheck.failingDimensions.join(', ')}`
+          : `Overall score too low: ${overallScore.toFixed(2)}`;
+        this.logger.warn(`Answer flagged for regeneration: ${reason}`);
       }
 
       // Extract explanations from evaluator results
@@ -155,8 +188,8 @@ export class AnswerEvaluatorService {
 
   private buildCritique(results: EvaluatorResult[]): string {
     return results
-      .filter(r => r.critique)
-      .map(r => `[${r.role}]: ${r.critique}`)
+      .filter((r) => r.critique)
+      .map((r) => `[${r.role}]: ${r.critique}`)
       .join('\n');
   }
 
@@ -168,7 +201,9 @@ export class AnswerEvaluatorService {
     for (const result of results) {
       for (const [dimension, score] of Object.entries(result.scores)) {
         if (typeof score === 'number' && score < 0.6) {
-          suggestions.push(`Improve ${dimension} (currently ${(score * 100).toFixed(0)}%)`);
+          suggestions.push(
+            `Improve ${dimension} (currently ${(score * 100).toFixed(0)}%)`,
+          );
         }
       }
     }

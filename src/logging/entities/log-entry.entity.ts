@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Entity, Column, PrimaryColumn, Index } from 'typeorm';
 import type { LogEntryData } from '../interfaces/log-entry.interface';
 

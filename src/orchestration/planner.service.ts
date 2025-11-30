@@ -18,6 +18,7 @@ import { ChatMessage } from '../llm/interfaces/chat-message.interface';
 import { planningTools } from './tools/planning-tools';
 import { recoveryTools } from './tools/recovery-tools';
 import { ToolDefinition } from '../tools/interfaces/tool-definition.interface';
+import { analyzeQuery, QueryEnhancementMetadata } from './utils/query-enhancer';
 
 @Injectable()
 export class PlannerService {
@@ -115,7 +116,9 @@ export class PlannerService {
       (p) => p.steps.length === 0,
     );
     if (emptyPhases.length > 0) {
-      console.log(`[PlannerService] Auto-recovering ${emptyPhases.length} empty phases by adding default steps`);
+      console.log(
+        `[PlannerService] Auto-recovering ${emptyPhases.length} empty phases by adding default steps`,
+      );
 
       // Log the auto-recovery action
       await this.logService.append({
@@ -124,9 +127,10 @@ export class PlannerService {
         timestamp: new Date(),
         planId: this.currentPlan.id,
         data: {
-          reason: 'LLM created phases without steps - auto-adding default steps',
+          reason:
+            'LLM created phases without steps - auto-adding default steps',
           emptyPhaseCount: emptyPhases.length,
-          emptyPhaseNames: emptyPhases.map(p => p.name),
+          emptyPhaseNames: emptyPhases.map((p) => p.name),
         },
       });
 
@@ -299,13 +303,16 @@ export class PlannerService {
     }
 
     // No synthesis phase found - automatically add one
-    console.log('[PlannerService] No synthesis phase found - adding default synthesis phase');
+    console.log(
+      '[PlannerService] No synthesis phase found - adding default synthesis phase',
+    );
 
     const synthesisPhase: Phase = {
       id: randomUUID(),
       planId: plan.id,
       name: 'Synthesis & Answer Generation',
-      description: 'Generate comprehensive final answer based on all gathered research',
+      description:
+        'Generate comprehensive final answer based on all gathered research',
       status: 'pending',
       steps: [],
       replanCheckpoint: false,
@@ -319,7 +326,8 @@ export class PlannerService {
       type: 'llm',
       toolName: 'synthesize',
       config: {
-        systemPrompt: 'You are a research synthesis assistant. Analyze all provided information to generate a comprehensive, well-structured answer to the user\'s query.',
+        systemPrompt:
+          "You are a research synthesis assistant. Analyze all provided information to generate a comprehensive, well-structured answer to the user's query.",
         prompt: `Based on all the research gathered, provide a comprehensive answer to the query: "${plan.query}"`,
       },
       dependencies: [],
@@ -341,7 +349,8 @@ export class PlannerService {
         reason: 'Plan did not include a synthesis/answer generation phase',
         phaseName: synthesisPhase.name,
         stepCount: synthesisPhase.steps.length,
-        message: 'CRITICAL: Automatically added synthesis phase to ensure research produces a final answer',
+        message:
+          'CRITICAL: Automatically added synthesis phase to ensure research produces a final answer',
       },
     });
   }
@@ -473,9 +482,14 @@ export class PlannerService {
         }
 
         // CRITICAL VALIDATION: Ensure toolName is provided
-        if (!args.toolName || typeof args.toolName !== 'string' || args.toolName.trim() === '') {
+        if (
+          !args.toolName ||
+          typeof args.toolName !== 'string' ||
+          args.toolName.trim() === ''
+        ) {
           result = {
-            error: 'toolName is required and must be a non-empty string. Available tools: tavily_search, web_fetch, synthesize',
+            error:
+              'toolName is required and must be a non-empty string. Available tools: tavily_search, web_fetch, synthesize',
             availableTools: ['tavily_search', 'web_fetch', 'synthesize'],
             providedToolName: args.toolName,
           };
@@ -483,7 +497,11 @@ export class PlannerService {
         }
 
         // CRITICAL VALIDATION: Ensure config is provided with meaningful parameters
-        if (!args.config || typeof args.config !== 'object' || Object.keys(args.config).length === 0) {
+        if (
+          !args.config ||
+          typeof args.config !== 'object' ||
+          Object.keys(args.config).length === 0
+        ) {
           result = {
             error: `config is REQUIRED and must be a non-empty object with specific parameters for ${args.toolName}. Examples:
 - tavily_search requires: {query: "specific search terms", max_results: 5}
@@ -497,25 +515,40 @@ export class PlannerService {
 
         // Tool-specific config validation
         if (args.toolName === 'tavily_search') {
-          if (!args.config.query || typeof args.config.query !== 'string' || args.config.query.trim() === '') {
+          if (
+            !args.config.query ||
+            typeof args.config.query !== 'string' ||
+            args.config.query.trim() === ''
+          ) {
             result = {
-              error: 'tavily_search requires a non-empty "query" field in config. Example: {query: "latest antimatter news 2024", max_results: 5}',
+              error:
+                'tavily_search requires a non-empty "query" field in config. Example: {query: "latest antimatter news 2024", max_results: 5}',
               providedConfig: args.config,
             };
             break;
           }
         } else if (args.toolName === 'web_fetch') {
-          if (!args.config.url || typeof args.config.url !== 'string' || args.config.url.trim() === '') {
+          if (
+            !args.config.url ||
+            typeof args.config.url !== 'string' ||
+            args.config.url.trim() === ''
+          ) {
             result = {
-              error: 'web_fetch requires a non-empty "url" field in config. Example: {url: "https://example.com/article"}',
+              error:
+                'web_fetch requires a non-empty "url" field in config. Example: {url: "https://example.com/article"}',
               providedConfig: args.config,
             };
             break;
           }
         } else if (args.toolName === 'synthesize') {
-          if (!args.config.prompt || typeof args.config.prompt !== 'string' || args.config.prompt.trim() === '') {
+          if (
+            !args.config.prompt ||
+            typeof args.config.prompt !== 'string' ||
+            args.config.prompt.trim() === ''
+          ) {
             result = {
-              error: 'synthesize requires a non-empty "prompt" field in config. Example: {prompt: "Synthesize the research findings about antimatter"}',
+              error:
+                'synthesize requires a non-empty "prompt" field in config. Example: {prompt: "Synthesize the research findings about antimatter"}',
               providedConfig: args.config,
             };
             break;
@@ -672,7 +705,8 @@ export class PlannerService {
               timestamp: new Date(),
               planId: this.currentPlan!.id,
               data: {
-                reason: 'Auto-adding default steps after multiple finalize failures',
+                reason:
+                  'Auto-adding default steps after multiple finalize failures',
                 emptyPhaseCount: emptyPhases.length,
                 failureCount: this.finalizeFailureCount,
               },
@@ -826,15 +860,41 @@ The user expects a comprehensive answer, not just raw data.`;
   }
 
   private buildPlanningPrompt(query: string): string {
+    // Analyze query for language and date extraction
+    const enhancement: QueryEnhancementMetadata = analyzeQuery(query);
+
+    const enhancementSection = `
+## Query Analysis & Enhancement Guidance
+- **Detected Language**: ${enhancement.detectedLanguage}
+- **Extracted Dates**: ${enhancement.formattedDates.length > 0 ? enhancement.formattedDates.join(', ') : 'None'}
+- **Has Temporal Reference**: ${enhancement.hasTemporalReference ? 'Yes' : 'No'}
+
+### CRITICAL SEARCH QUERY REQUIREMENTS
+${enhancement.suggestions.map(s => `- ${s}`).join('\n')}
+
+**EXAMPLES OF CORRECT QUERY GENERATION:**
+
+If user asks "Hvad sker der i Aarhus i dag og i morgen?" (Danish, asking about today and tomorrow):
+❌ WRONG: {query: "events in Aarhus today and tomorrow"} - Wrong language, vague dates
+❌ WRONG: {query: "events in Aarhus 2023"} - Wrong year
+✅ CORRECT: {query: "begivenheder Aarhus ${enhancement.formattedDates[0] || 'YYYY-MM-DD'}"} - Matches language, specific date
+
+If user asks "What's happening in Copenhagen this weekend?" (English):
+❌ WRONG: {query: "begivenheder København"} - Wrong language
+❌ WRONG: {query: "events Copenhagen"} - Missing dates
+✅ CORRECT: {query: "events Copenhagen 2025-12-07 OR 2025-12-08"} - Correct language, specific dates
+`;
+
     return `Create an execution plan for the following research query:
 
 "${query}"
+${enhancementSection}
 
 REQUIREMENTS:
 1. Start by calling create_plan
 2. Add information gathering phases (search, fetch, etc.) with their steps
 3. **CRITICAL: EVERY add_step call MUST include a config parameter with specific details:**
-   - For tavily_search: provide {query: "specific search terms", max_results: 5}
+   - For tavily_search: provide {query: "specific search terms IN THE USER'S LANGUAGE with SPECIFIC DATES", max_results: 5}
    - For web_fetch: provide {url: "https://specific-url.com"}
    - For synthesize: provide {prompt: "detailed instructions"}
 4. **MANDATORY: Add a final synthesis phase using the "synthesize" tool to generate the answer**
@@ -842,6 +902,8 @@ REQUIREMENTS:
 
 Remember:
 - EVERY step MUST have a config parameter with specific values
+- Search queries MUST be in the user's language (${enhancement.detectedLanguage})
+- Search queries MUST include specific dates (${enhancement.formattedDates.join(', ') || 'if temporal references exist'})
 - The plan MUST end with a synthesis phase that produces a comprehensive answer to the query.`;
   }
 

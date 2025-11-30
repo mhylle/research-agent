@@ -37,10 +37,10 @@ describe('PanelEvaluatorService', () => {
       };
       mockOllamaService.chat.mockResolvedValue(mockResponse);
 
-      const result = await service.evaluateWithRole(
-        'intentAnalyst',
-        { query: 'test query', plan: {} },
-      );
+      const result = await service.evaluateWithRole('intentAnalyst', {
+        query: 'test query',
+        plan: {},
+      });
 
       expect(result.scores.intentAlignment).toBe(0.85);
       expect(result.confidence).toBe(0.9);
@@ -52,10 +52,10 @@ describe('PanelEvaluatorService', () => {
         message: { content: 'not valid json' },
       });
 
-      const result = await service.evaluateWithRole(
-        'intentAnalyst',
-        { query: 'test', plan: {} },
-      );
+      const result = await service.evaluateWithRole('intentAnalyst', {
+        query: 'test',
+        plan: {},
+      });
 
       expect(result.confidence).toBeLessThan(0.5);
     });

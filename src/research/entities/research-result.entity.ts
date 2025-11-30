@@ -1,4 +1,10 @@
-import { Entity, PrimaryColumn, Column, Index, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  Index,
+  CreateDateColumn,
+} from 'typeorm';
 
 export interface ResearchSource {
   url: string;

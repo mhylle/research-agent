@@ -55,7 +55,10 @@ export class ResearchStreamController {
           type: entry.eventType || 'message',
           id: entry.id || '',
         } as any as MessageEvent;
-        console.log(`[SSE] Sending event type="${messageEvent.type}" with data:`, JSON.stringify(uiEvent).substring(0, 100));
+        console.log(
+          `[SSE] Sending event type="${messageEvent.type}" with data:`,
+          JSON.stringify(uiEvent).substring(0, 100),
+        );
         subscriber.next(messageEvent);
       };
 
@@ -152,7 +155,9 @@ export class ResearchStreamController {
       case 'planning_started':
         return {
           title: '🤔 Planning Started',
-          description: String(data.message ?? 'LLM is generating research plan...'),
+          description: String(
+            data.message ?? 'LLM is generating research plan...',
+          ),
           status: 'planning',
           availableTools: data.availableTools as string[],
         };
@@ -282,7 +287,9 @@ export class ResearchStreamController {
       case 'milestone_progress':
       case 'milestone_completed':
         return {
-          title: String(data.formattedDescription ?? data.template ?? 'Processing...'),
+          title: String(
+            data.formattedDescription ?? data.template ?? 'Processing...',
+          ),
           description: String(data.formattedDescription ?? ''),
           nodeId: String(data.nodeId ?? ''),
           milestoneId: String(data.milestoneId ?? ''),
@@ -290,7 +297,8 @@ export class ResearchStreamController {
           template: String(data.template ?? ''),
           templateData: data.templateData as Record<string, unknown>,
           progress: data.progress as number,
-          status: entry.eventType === 'milestone_completed' ? 'completed' : 'running',
+          status:
+            entry.eventType === 'milestone_completed' ? 'completed' : 'running',
         };
 
       case 'tool.call.started':
@@ -370,7 +378,7 @@ export class ResearchStreamController {
     if (!scores) return '';
 
     const scoreList = Object.entries(scores)
-      .map(([dim, score]) => `${dim}: ${((score as number) * 100).toFixed(0)}%`)
+      .map(([dim, score]) => `${dim}: ${(score * 100).toFixed(0)}%`)
       .join(', ');
 
     return `${scoreList} (${data.totalIterations ?? 0} iteration${(data.totalIterations ?? 0) === 1 ? '' : 's'}${data.escalatedToLargeModel ? ', escalated' : ''})`;

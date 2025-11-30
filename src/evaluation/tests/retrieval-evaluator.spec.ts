@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RetrievalEvaluatorService } from '../services/retrieval-evaluator.service';
 import { PanelEvaluatorService } from '../services/panel-evaluator.service';
 import { ScoreAggregatorService } from '../services/score-aggregator.service';
+import { ResultClassifierService } from '../services/result-classifier.service';
 import {
   createMockRetrievalContent,
   createMockEvaluatorResult,
@@ -11,6 +12,7 @@ describe('RetrievalEvaluatorService', () => {
   let service: RetrievalEvaluatorService;
   let mockPanelEvaluator: any;
   let mockScoreAggregator: any;
+  let mockResultClassifier: any;
 
   beforeEach(async () => {
     mockPanelEvaluator = {
@@ -22,11 +24,31 @@ describe('RetrievalEvaluatorService', () => {
       calculateOverallScore: jest.fn(),
     };
 
+    mockResultClassifier = {
+      classifyBatch: jest.fn().mockReturnValue([
+        {
+          type: 'SPECIFIC_CONTENT',
+          actionableInformationScore: 0.85,
+          confidence: 0.9,
+          reasons: [],
+        },
+      ]),
+      getAggregateStats: jest.fn().mockReturnValue({
+        averageActionableScore: 0.85,
+        aggregatorCount: 0,
+        specificContentCount: 1,
+        navigationCount: 0,
+        overallConfidence: 0.9,
+        needsExtraction: false,
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RetrievalEvaluatorService,
         { provide: PanelEvaluatorService, useValue: mockPanelEvaluator },
         { provide: ScoreAggregatorService, useValue: mockScoreAggregator },
+        { provide: ResultClassifierService, useValue: mockResultClassifier },
       ],
     }).compile();
 
@@ -44,7 +66,9 @@ describe('RetrievalEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('sourceRelevance', { contextRecall: 0.85 }),
         createMockEvaluatorResult('sourceQuality', { sourceQuality: 0.9 }),
-        createMockEvaluatorResult('coverageCompleteness', { contextPrecision: 0.8 }),
+        createMockEvaluatorResult('coverageCompleteness', {
+          contextPrecision: 0.8,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -69,6 +93,7 @@ describe('RetrievalEvaluatorService', () => {
         contextRecall: 0.85,
         contextPrecision: 0.8,
         sourceQuality: 0.9,
+        actionableInformation: 0.85,
       });
       expect(result.confidence).toBe(0.85);
       expect(result.evaluationSkipped).toBe(false);
@@ -80,7 +105,9 @@ describe('RetrievalEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('sourceRelevance', { contextRecall: 0.3 }),
         createMockEvaluatorResult('sourceQuality', { sourceQuality: 0.4 }),
-        createMockEvaluatorResult('coverageCompleteness', { contextPrecision: 0.35 }),
+        createMockEvaluatorResult('coverageCompleteness', {
+          contextPrecision: 0.35,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -112,7 +139,9 @@ describe('RetrievalEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('sourceRelevance', { contextRecall: 0.85 }),
         createMockEvaluatorResult('sourceQuality', { sourceQuality: 0.9 }),
-        createMockEvaluatorResult('coverageCompleteness', { contextPrecision: 0.8 }),
+        createMockEvaluatorResult('coverageCompleteness', {
+          contextPrecision: 0.8,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({
@@ -209,6 +238,7 @@ describe('RetrievalEvaluatorService', () => {
         contextRecall: 0,
         contextPrecision: 0,
         sourceQuality: 0,
+        actionableInformation: 0,
       });
       expect(result.confidence).toBe(0);
     });
@@ -240,7 +270,9 @@ describe('RetrievalEvaluatorService', () => {
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('sourceRelevance', { contextRecall: 0.8 }),
         createMockEvaluatorResult('sourceQuality', { sourceQuality: 0.9 }),
-        createMockEvaluatorResult('coverageCompleteness', { contextPrecision: 0.7 }),
+        createMockEvaluatorResult('coverageCompleteness', {
+          contextPrecision: 0.7,
+        }),
       ]);
 
       mockScoreAggregator.aggregateScores.mockReturnValue({

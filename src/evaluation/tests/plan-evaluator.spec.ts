@@ -4,10 +4,7 @@ import { PanelEvaluatorService } from '../services/panel-evaluator.service';
 import { ScoreAggregatorService } from '../services/score-aggregator.service';
 import { EscalationHandlerService } from '../services/escalation-handler.service';
 import { EvaluationService } from '../services/evaluation.service';
-import {
-  createMockPlan,
-  createMockEvaluatorResult,
-} from './test-fixtures';
+import { createMockPlan, createMockEvaluatorResult } from './test-fixtures';
 
 describe('PlanEvaluationOrchestratorService', () => {
   let service: PlanEvaluationOrchestratorService;
@@ -61,12 +58,19 @@ describe('PlanEvaluationOrchestratorService', () => {
       // Mock panel evaluator results
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         createMockEvaluatorResult('intentAnalyst', { intentAlignment: 0.9 }),
-        createMockEvaluatorResult('coverageChecker', { queryCoverage: 0.85, scopeAppropriateness: 0.8 }),
+        createMockEvaluatorResult('coverageChecker', {
+          queryCoverage: 0.85,
+          scopeAppropriateness: 0.8,
+        }),
       ]);
 
       // Mock score aggregation
       mockScoreAggregator.aggregateScores.mockReturnValue({
-        scores: { intentAlignment: 0.9, queryCoverage: 0.85, scopeAppropriateness: 0.8 },
+        scores: {
+          intentAlignment: 0.9,
+          queryCoverage: 0.85,
+          scopeAppropriateness: 0.8,
+        },
         confidence: 0.87,
       });
 
@@ -110,9 +114,18 @@ describe('PlanEvaluationOrchestratorService', () => {
         ]);
 
       mockScoreAggregator.aggregateScores
-        .mockReturnValueOnce({ scores: { intentAlignment: 0.5 }, confidence: 0.9 })
-        .mockReturnValueOnce({ scores: { intentAlignment: 0.6 }, confidence: 0.9 })
-        .mockReturnValueOnce({ scores: { intentAlignment: 0.75 }, confidence: 0.9 });
+        .mockReturnValueOnce({
+          scores: { intentAlignment: 0.5 },
+          confidence: 0.9,
+        })
+        .mockReturnValueOnce({
+          scores: { intentAlignment: 0.6 },
+          confidence: 0.9,
+        })
+        .mockReturnValueOnce({
+          scores: { intentAlignment: 0.75 },
+          confidence: 0.9,
+        });
 
       mockScoreAggregator.calculateOverallScore
         .mockReturnValueOnce(0.5)
@@ -277,11 +290,14 @@ describe('PlanEvaluationOrchestratorService', () => {
 
     it('should include critique in result when evaluation fails', async () => {
       const plan = createMockPlan();
-      const critique = 'Plan lacks comprehensive coverage of quantum algorithms';
+      const critique =
+        'Plan lacks comprehensive coverage of quantum algorithms';
 
       mockPanelEvaluator.evaluateWithPanel.mockResolvedValue([
         {
-          ...createMockEvaluatorResult('intentAnalyst', { intentAlignment: 0.4 }),
+          ...createMockEvaluatorResult('intentAnalyst', {
+            intentAlignment: 0.4,
+          }),
           critique,
         },
       ]);

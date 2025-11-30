@@ -8,41 +8,19 @@ import { AnswerEvaluatorService } from '../../evaluation/services/answer-evaluat
 import { EvaluationService } from '../../evaluation/services/evaluation.service';
 import { Plan } from '../interfaces/plan.interface';
 import { StepResult } from '../interfaces/phase.interface';
+import {
+  PlanEvaluationResult as IPlanEvaluationResult
+} from '../../evaluation/interfaces/evaluation-result.interface';
+import {
+  RetrievalEvaluationResult as IRetrievalEvaluationResult
+} from '../../evaluation/services/retrieval-evaluator.service';
+import {
+  AnswerEvaluationResult as IAnswerEvaluationResult
+} from '../../evaluation/services/answer-evaluator.service';
 
-export interface PlanEvaluationResult {
-  passed: boolean;
-  scores: Record<string, number>;
-  confidence: number;
-  totalIterations: number;
-  escalatedToLargeModel: boolean;
-  evaluationSkipped: boolean;
-  skipReason?: string;
-  attempts: Array<{ scores: Record<string, number>; passed: boolean }>;
-  explanations: Record<string, string>;
-}
-
-export interface RetrievalEvaluationResult {
-  passed: boolean;
-  scores: Record<string, number>;
-  confidence: number;
-  flaggedSevere: boolean;
-  sourceDetails: Array<{ url: string; relevanceScore: number }>;
-  evaluationSkipped: boolean;
-  skipReason?: string;
-  explanations: Record<string, string>;
-}
-
-export interface AnswerEvaluationResult {
-  passed: boolean;
-  scores: Record<string, number>;
-  confidence: number;
-  shouldRegenerate: boolean;
-  evaluationSkipped: boolean;
-  skipReason?: string;
-  explanations: Record<string, string>;
-  critique: string;
-  improvementSuggestions: string[];
-}
+export type PlanEvaluationResult = IPlanEvaluationResult;
+export type RetrievalEvaluationResult = IRetrievalEvaluationResult;
+export type AnswerEvaluationResult = IAnswerEvaluationResult;
 
 /**
  * Coordinates all evaluation phases (plan, retrieval, answer).

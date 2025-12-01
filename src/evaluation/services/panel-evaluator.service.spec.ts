@@ -219,6 +219,133 @@ and tabs\there",
       expect(result.explanation).toContain('Line1');
       expect(result.critique).toBe('Good');
     });
+
+    it('should handle trailing commas before closing braces', async () => {
+      const mockResponse = {
+        message: {
+          content: `{
+            "scores": {
+              "intentAlignment": 0.8,
+            },
+            "confidence": 0.9,
+            "critique": "Good",
+          }`,
+        },
+      };
+      mockOllamaService.chat.mockResolvedValue(mockResponse);
+
+      const result = await service.evaluateWithRole('intentAnalyst', {
+        query: 'test',
+        plan: {},
+      });
+
+      expect(result.scores.intentAlignment).toBe(0.8);
+      expect(result.confidence).toBe(0.9);
+      expect(result.critique).toBe('Good');
+    });
+
+    it('should handle trailing commas before closing brackets', async () => {
+      const mockResponse = {
+        message: {
+          content: `{
+            "scores": {
+              "test": 0.8,
+            },
+            "confidence": 0.9,
+            "items": ["item1", "item2",],
+            "critique": "Good"
+          }`,
+        },
+      };
+      mockOllamaService.chat.mockResolvedValue(mockResponse);
+
+      const result = await service.evaluateWithRole('intentAnalyst', {
+        query: 'test',
+        plan: {},
+      });
+
+      expect(result.scores.test).toBe(0.8);
+      expect(result.confidence).toBe(0.9);
+      expect(result.critique).toBe('Good');
+    });
+
+    it('should handle trailing commas with whitespace', async () => {
+      const mockResponse = {
+        message: {
+          content: `{
+            "scores": {
+              "intentAlignment": 0.8,
+
+            },
+            "confidence": 0.9,
+            "critique": "Good",
+
+          }`,
+        },
+      };
+      mockOllamaService.chat.mockResolvedValue(mockResponse);
+
+      const result = await service.evaluateWithRole('intentAnalyst', {
+        query: 'test',
+        plan: {},
+      });
+
+      expect(result.scores.intentAlignment).toBe(0.8);
+      expect(result.confidence).toBe(0.9);
+      expect(result.critique).toBe('Good');
+    });
+
+    it('should handle trailing commas combined with comments', async () => {
+      const mockResponse = {
+        message: {
+          content: `{
+            "scores": {
+              "intentAlignment": 0.8, // comment
+            },
+            "confidence": 0.9, /* comment */
+            "critique": "Good",
+          }`,
+        },
+      };
+      mockOllamaService.chat.mockResolvedValue(mockResponse);
+
+      const result = await service.evaluateWithRole('intentAnalyst', {
+        query: 'test',
+        plan: {},
+      });
+
+      expect(result.scores.intentAlignment).toBe(0.8);
+      expect(result.confidence).toBe(0.9);
+      expect(result.critique).toBe('Good');
+    });
+
+    it('should handle nested objects with trailing commas', async () => {
+      const mockResponse = {
+        message: {
+          content: `{
+            "scores": {
+              "intentAlignment": 0.8,
+              "nested": {
+                "value": 0.9,
+              },
+            },
+            "confidence": 0.9,
+            "critique": "Good",
+          }`,
+        },
+      };
+      mockOllamaService.chat.mockResolvedValue(mockResponse);
+
+      const result = await service.evaluateWithRole('intentAnalyst', {
+        query: 'test',
+        plan: {},
+      });
+
+      expect(result.scores.intentAlignment).toBe(0.8);
+      expect(result.scores.nested.value).toBe(0.9);
+      expect(result.confidence).toBe(0.9);
+      expect(result.critique).toBe('Good');
+    });
   });
 
   describe('evaluateWithPanel', () => {

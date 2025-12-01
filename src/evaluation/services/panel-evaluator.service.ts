@@ -189,9 +189,10 @@ export class PanelEvaluatorService {
       // Try to extract JSON from response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        // Strip comments and sanitize JSON string before parsing
+        // Strip comments, remove trailing commas, and sanitize JSON string before parsing
         const commentStripped = this.stripJsonComments(jsonMatch[0]);
-        const sanitizedJson = this.sanitizeJsonString(commentStripped);
+        const trailingCommasRemoved = this.removeTrailingCommas(commentStripped);
+        const sanitizedJson = this.sanitizeJsonString(trailingCommasRemoved);
         const parsed = JSON.parse(sanitizedJson);
 
         // Log what we parsed to debug missing explanations and score precision
@@ -266,6 +267,17 @@ export class PanelEvaluatorService {
     }
 
     return result;
+  }
+
+  /**
+   * Remove trailing commas from JSON string that LLMs sometimes include.
+   * Handles commas before closing braces } and brackets ].
+   */
+  private removeTrailingCommas(str: string): string {
+    // Remove trailing commas before } or ]
+    return str
+      .replace(/,(\s*})/g, '$1')  // Remove , before }
+      .replace(/,(\s*\])/g, '$1'); // Remove , before ]
   }
 
   /**

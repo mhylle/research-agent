@@ -5,6 +5,7 @@ import { ITool } from '../interfaces/tool.interface';
 import { ToolDefinition } from '../interfaces/tool-definition.interface';
 import { SearchResult } from '../interfaces/search-result.interface';
 import { BraveSearchArgs } from './interfaces/brave-search-args.interface';
+import { ResearchLogger } from '../../logging/research-logger.service';
 
 @Injectable()
 export class BraveSearchProvider implements ITool {
@@ -36,7 +37,10 @@ export class BraveSearchProvider implements ITool {
   readonly apiKey: string;
   private readonly apiUrl = 'https://api.search.brave.com/res/v1/web/search';
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private logger: ResearchLogger,
+  ) {
     this.apiKey = this.configService.get<string>('BRAVE_API_KEY') || '';
   }
 
@@ -54,15 +58,17 @@ export class BraveSearchProvider implements ITool {
   }
 
   async execute(args: Record<string, any>): Promise<SearchResult[]> {
-    const { query, max_results = 5 } = this.validateArgs(args);
+    const validated = this.validateArgs(args);
+    const logId = `${this.definition.function.name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = Date.now();
 
-    console.log(`[BraveSearchProvider] Executing search: ${query}`);
+    console.log(`[BraveSearchProvider] Executing search: ${validated.query}`);
 
     try {
       const response = await axios.get(this.apiUrl, {
         params: {
-          q: query,
-          count: max_results,
+          q: validated.query,
+          count: validated.max_results || 5,
         },
         headers: {
           Accept: 'application/json',
@@ -83,9 +89,28 @@ export class BraveSearchProvider implements ITool {
         `[BraveSearchProvider] Search successful: ${results.length} results`,
       );
 
+      const executionTime = Date.now() - startTime;
+      this.logger.logToolExecution(
+        logId,
+        this.definition.function.name,
+        validated,
+        { resultCount: results.length, results },
+        executionTime,
+      );
+
       return results;
     } catch (error) {
       console.error(`[BraveSearchProvider] Search failed: ${error.message}`);
+
+      const executionTime = Date.now() - startTime;
+      this.logger.logToolExecution(
+        logId,
+        this.definition.function.name,
+        validated,
+        { error: error.message },
+        executionTime,
+      );
+
       throw new Error(`Brave search failed: ${error.message}`);
     }
   }

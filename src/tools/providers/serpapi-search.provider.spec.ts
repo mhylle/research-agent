@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { SerpApiSearchProvider } from './serpapi-search.provider';
+import { ResearchLogger } from '../../logging/research-logger.service';
 
 // Mock axios
 jest.mock('axios');
@@ -10,10 +11,15 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('SerpApiSearchProvider', () => {
   let provider: SerpApiSearchProvider;
   let configService: ConfigService;
+  let mockLogger: jest.Mocked<ResearchLogger>;
 
   const mockApiKey = 'test-serpapi-key';
 
   beforeEach(async () => {
+    mockLogger = {
+      logToolExecution: jest.fn(),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SerpApiSearchProvider,
@@ -25,6 +31,10 @@ describe('SerpApiSearchProvider', () => {
               return undefined;
             }),
           },
+        },
+        {
+          provide: ResearchLogger,
+          useValue: mockLogger,
         },
       ],
     }).compile();
@@ -112,6 +122,10 @@ describe('SerpApiSearchProvider', () => {
     });
 
     it('should handle missing API key gracefully', async () => {
+      const mockLoggerLocal = {
+        logToolExecution: jest.fn(),
+      } as any;
+
       const moduleWithoutKey = await Test.createTestingModule({
         providers: [
           SerpApiSearchProvider,
@@ -120,6 +134,10 @@ describe('SerpApiSearchProvider', () => {
             useValue: {
               get: jest.fn(() => undefined),
             },
+          },
+          {
+            provide: ResearchLogger,
+            useValue: mockLoggerLocal,
           },
         ],
       }).compile();

@@ -5,6 +5,7 @@ import { ITool } from '../interfaces/tool.interface';
 import { ToolDefinition } from '../interfaces/tool-definition.interface';
 import { SearchResult } from '../interfaces/search-result.interface';
 import { SerpApiSearchArgs } from './interfaces/serpapi-search-args.interface';
+import { ResearchLogger } from '../../logging/research-logger.service';
 
 @Injectable()
 export class SerpApiSearchProvider implements ITool {
@@ -36,7 +37,10 @@ export class SerpApiSearchProvider implements ITool {
   readonly apiKey: string;
   private readonly apiUrl = 'https://serpapi.com/search';
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private logger: ResearchLogger,
+  ) {
     this.apiKey = this.configService.get<string>('SERPAPI_API_KEY') || '';
   }
 
@@ -57,18 +61,20 @@ export class SerpApiSearchProvider implements ITool {
   }
 
   async execute(args: Record<string, any>): Promise<SearchResult[]> {
-    const { query, max_results = 5 } = this.validateArgs(args);
+    const validated = this.validateArgs(args);
+    const logId = `${this.definition.function.name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = Date.now();
 
     console.log(
-      `[SerpApiSearchProvider] Executing search for query: "${query}" (max_results: ${max_results})`,
+      `[SerpApiSearchProvider] Executing search for query: "${validated.query}" (max_results: ${validated.max_results || 5})`,
     );
 
     try {
       const response = await axios.get(this.apiUrl, {
         params: {
-          q: query,
+          q: validated.query,
           api_key: this.apiKey,
-          num: max_results,
+          num: validated.max_results || 5,
         },
         timeout: 10000,
       });
@@ -86,10 +92,29 @@ export class SerpApiSearchProvider implements ITool {
         `[SerpApiSearchProvider] Search completed successfully. Found ${results.length} results.`,
       );
 
+      const executionTime = Date.now() - startTime;
+      this.logger.logToolExecution(
+        logId,
+        this.definition.function.name,
+        validated,
+        { resultCount: results.length, results },
+        executionTime,
+      );
+
       return results;
     } catch (error) {
       const errorMessage = `SerpAPI search failed: ${error.message}`;
       console.error(`[SerpApiSearchProvider] ${errorMessage}`);
+
+      const executionTime = Date.now() - startTime;
+      this.logger.logToolExecution(
+        logId,
+        this.definition.function.name,
+        validated,
+        { error: errorMessage },
+        executionTime,
+      );
+
       throw new Error(errorMessage);
     }
   }

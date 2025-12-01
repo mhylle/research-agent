@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { TavilySearchProvider } from './tavily-search.provider';
+import { ResearchLogger } from '../../logging/research-logger.service';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -8,8 +9,13 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('TavilySearchProvider', () => {
   let provider: TavilySearchProvider;
+  let mockLogger: jest.Mocked<ResearchLogger>;
 
   beforeEach(async () => {
+    mockLogger = {
+      logToolExecution: jest.fn(),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TavilySearchProvider,
@@ -21,6 +27,10 @@ describe('TavilySearchProvider', () => {
               return null;
             }),
           },
+        },
+        {
+          provide: ResearchLogger,
+          useValue: mockLogger,
         },
       ],
     }).compile();

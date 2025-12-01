@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { BraveSearchProvider } from './brave-search.provider';
+import { ResearchLogger } from '../../logging/research-logger.service';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -9,8 +10,13 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('BraveSearchProvider', () => {
   let provider: BraveSearchProvider;
   let configService: ConfigService;
+  let mockLogger: jest.Mocked<ResearchLogger>;
 
   beforeEach(async () => {
+    mockLogger = {
+      logToolExecution: jest.fn(),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BraveSearchProvider,
@@ -22,6 +28,10 @@ describe('BraveSearchProvider', () => {
               return null;
             }),
           },
+        },
+        {
+          provide: ResearchLogger,
+          useValue: mockLogger,
         },
       ],
     }).compile();
@@ -265,6 +275,10 @@ describe('BraveSearchProvider', () => {
 
   describe('API key handling', () => {
     it('should handle missing API key', async () => {
+      const mockLoggerLocal = {
+        logToolExecution: jest.fn(),
+      } as any;
+
       const moduleWithoutKey: TestingModule = await Test.createTestingModule({
         providers: [
           BraveSearchProvider,
@@ -273,6 +287,10 @@ describe('BraveSearchProvider', () => {
             useValue: {
               get: jest.fn(() => null),
             },
+          },
+          {
+            provide: ResearchLogger,
+            useValue: mockLoggerLocal,
           },
         ],
       }).compile();
@@ -284,6 +302,10 @@ describe('BraveSearchProvider', () => {
     });
 
     it('should handle empty API key', async () => {
+      const mockLoggerLocal = {
+        logToolExecution: jest.fn(),
+      } as any;
+
       const moduleWithEmptyKey: TestingModule =
         await Test.createTestingModule({
           providers: [
@@ -293,6 +315,10 @@ describe('BraveSearchProvider', () => {
               useValue: {
                 get: jest.fn(() => ''),
               },
+            },
+            {
+              provide: ResearchLogger,
+              useValue: mockLoggerLocal,
             },
           ],
         }).compile();

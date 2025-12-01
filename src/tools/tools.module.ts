@@ -6,8 +6,10 @@ import { DuckDuckGoSearchProvider } from './providers/duckduckgo-search.provider
 import { BraveSearchProvider } from './providers/brave-search.provider';
 import { SerpApiSearchProvider } from './providers/serpapi-search.provider';
 import { ITool } from './interfaces/tool.interface';
+import { LoggingModule } from '../logging/logging.module';
 
 @Module({
+  imports: [LoggingModule],
   providers: [
     ToolRegistry,
     TavilySearchProvider,

@@ -4,10 +4,13 @@ import { ITool } from '../interfaces/tool.interface';
 import { ToolDefinition } from '../interfaces/tool-definition.interface';
 import { SearchResult } from '../interfaces/search-result.interface';
 import { DuckDuckGoSearchArgs } from './interfaces/duckduckgo-search-args.interface';
+import { ResearchLogger } from '../../logging/research-logger.service';
 
 @Injectable()
 export class DuckDuckGoSearchProvider implements ITool {
   readonly requiresApiKey = false; // DuckDuckGo is free
+
+  constructor(private logger: ResearchLogger) {}
 
   readonly definition: ToolDefinition = {
     type: 'function',
@@ -51,17 +54,19 @@ export class DuckDuckGoSearchProvider implements ITool {
   }
 
   async execute(args: Record<string, any>): Promise<SearchResult[]> {
-    const { query, max_results = 5 } = this.validateArgs(args);
+    const validated = this.validateArgs(args);
+    const logId = `${this.definition.function.name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = Date.now();
 
     console.log(
-      `[DuckDuckGoSearchProvider] Executing search: "${query}" (max: ${max_results})`,
+      `[DuckDuckGoSearchProvider] Executing search: "${validated.query}" (max: ${validated.max_results || 5})`,
     );
 
     try {
       // DuckDuckGo Instant Answer API
       const response = await axios.get(this.apiUrl, {
         params: {
-          q: query,
+          q: validated.query,
           format: 'json',
           no_html: 1,
           skip_disambig: 1,
@@ -74,6 +79,7 @@ export class DuckDuckGoSearchProvider implements ITool {
 
       const data = response.data;
       const results: SearchResult[] = [];
+      const max_results = validated.max_results || 5;
 
       // Extract abstract/instant answer if available
       if (data.Abstract && data.AbstractText) {
@@ -131,6 +137,16 @@ export class DuckDuckGoSearchProvider implements ITool {
       console.log(
         `[DuckDuckGoSearchProvider] Found ${results.length} results`,
       );
+
+      const executionTime = Date.now() - startTime;
+      this.logger.logToolExecution(
+        logId,
+        this.definition.function.name,
+        validated,
+        { resultCount: results.length, results },
+        executionTime,
+      );
+
       return results;
     } catch (error) {
       const errorMessage =
@@ -138,6 +154,16 @@ export class DuckDuckGoSearchProvider implements ITool {
       console.error(
         `[DuckDuckGoSearchProvider] Search failed: ${errorMessage}`,
       );
+
+      const executionTime = Date.now() - startTime;
+      this.logger.logToolExecution(
+        logId,
+        this.definition.function.name,
+        validated,
+        { error: errorMessage },
+        executionTime,
+      );
+
       throw new Error(`DuckDuckGo search failed: ${errorMessage}`);
     }
   }

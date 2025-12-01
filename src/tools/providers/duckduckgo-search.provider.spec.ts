@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DuckDuckGoSearchProvider } from './duckduckgo-search.provider';
+import { ResearchLogger } from '../../logging/research-logger.service';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -7,10 +8,21 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('DuckDuckGoSearchProvider', () => {
   let provider: DuckDuckGoSearchProvider;
+  let mockLogger: jest.Mocked<ResearchLogger>;
 
   beforeEach(async () => {
+    mockLogger = {
+      logToolExecution: jest.fn(),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [DuckDuckGoSearchProvider],
+      providers: [
+        DuckDuckGoSearchProvider,
+        {
+          provide: ResearchLogger,
+          useValue: mockLogger,
+        },
+      ],
     }).compile();
 
     provider = module.get<DuckDuckGoSearchProvider>(DuckDuckGoSearchProvider);

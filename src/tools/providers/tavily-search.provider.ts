@@ -5,6 +5,7 @@ import { ITool } from '../interfaces/tool.interface';
 import { ToolDefinition } from '../interfaces/tool-definition.interface';
 import { SearchResult } from '../interfaces/search-result.interface';
 import { TavilySearchArgs } from './interfaces/tavily-search-args.interface';
+import { ResearchLogger } from '../../logging/research-logger.service';
 
 @Injectable()
 export class TavilySearchProvider implements ITool {
@@ -33,7 +34,10 @@ export class TavilySearchProvider implements ITool {
   private readonly apiKey: string;
   private readonly apiUrl = 'https://api.tavily.com/search';
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private logger: ResearchLogger,
+  ) {
     this.apiKey = this.configService.get<string>('TAVILY_API_KEY') || '';
   }
 
@@ -54,15 +58,17 @@ export class TavilySearchProvider implements ITool {
   }
 
   async execute(args: Record<string, any>): Promise<SearchResult[]> {
-    const { query, max_results = 5 } = this.validateArgs(args);
+    const validated = this.validateArgs(args);
+    const logId = `${this.definition.function.name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = Date.now();
 
     try {
       const response = await axios.post(
         this.apiUrl,
         {
           api_key: this.apiKey,
-          query,
-          max_results,
+          query: validated.query,
+          max_results: validated.max_results || 5,
           search_depth: 'basic',
           include_answer: false,
         },
@@ -72,13 +78,32 @@ export class TavilySearchProvider implements ITool {
         },
       );
 
-      return response.data.results.map((result: any) => ({
+      const results = response.data.results.map((result: any) => ({
         title: result.title,
         url: result.url,
         content: result.content,
         score: result.score,
       }));
+
+      const executionTime = Date.now() - startTime;
+      this.logger.logToolExecution(
+        logId,
+        this.definition.function.name,
+        validated,
+        { resultCount: results.length, results },
+        executionTime,
+      );
+
+      return results;
     } catch (error) {
+      const executionTime = Date.now() - startTime;
+      this.logger.logToolExecution(
+        logId,
+        this.definition.function.name,
+        validated,
+        { error: error.message },
+        executionTime,
+      );
       throw new Error(`Tavily search failed: ${error.message}`);
     }
   }

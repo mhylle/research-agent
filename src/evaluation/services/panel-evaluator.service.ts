@@ -189,7 +189,10 @@ export class PanelEvaluatorService {
       // Try to extract JSON from response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+        // Strip comments and sanitize JSON string before parsing
+        const commentStripped = this.stripJsonComments(jsonMatch[0]);
+        const sanitizedJson = this.sanitizeJsonString(commentStripped);
+        const parsed = JSON.parse(sanitizedJson);
 
         // Log what we parsed to debug missing explanations and score precision
         this.logger.debug(
@@ -213,7 +216,115 @@ export class PanelEvaluatorService {
       return { confidence: 0.3, critique: 'Could not parse response' };
     } catch (error) {
       this.logger.error(`[parseResponse] Parse error: ${error.message}`);
+      this.logger.debug(`[parseResponse] Failed content: ${content}`);
       return { confidence: 0.3, critique: 'Invalid JSON response' };
+    }
+  }
+
+  /**
+   * Strip JavaScript-style comments from JSON string that LLMs sometimes include.
+   * Handles both single-line (//) and multi-line (/* *\/) comments, but only
+   * outside of string values to preserve URLs like "https://example.com".
+   */
+  private stripJsonComments(str: string): string {
+    let result = '';
+    let inString = false;
+    let i = 0;
+
+    while (i < str.length) {
+      // Track string boundaries (but not escaped quotes)
+      if (str[i] === '"' && (i === 0 || str[i - 1] !== '\\')) {
+        inString = !inString;
+        result += str[i];
+        i++;
+        continue;
+      }
+
+      // Skip comments only outside strings
+      if (!inString) {
+        // Single-line comment
+        if (str[i] === '/' && str[i + 1] === '/') {
+          while (i < str.length && str[i] !== '\n') i++;
+          continue;
+        }
+        // Multi-line comment
+        if (str[i] === '/' && str[i + 1] === '*') {
+          i += 2;
+          while (
+            i < str.length - 1 &&
+            !(str[i] === '*' && str[i + 1] === '/')
+          ) {
+            i++;
+          }
+          i += 2;
+          continue;
+        }
+      }
+
+      result += str[i];
+      i++;
+    }
+
+    return result;
+  }
+
+  /**
+   * Sanitize JSON string to handle control characters and malformed content from LLM responses.
+   * This method handles two types of control characters:
+   * 1. Unescaped control characters inside string values (need to be escaped)
+   * 2. Control characters that are part of JSON formatting (should be preserved)
+   */
+  private sanitizeJsonString(jsonStr: string): string {
+    try {
+      let result = '';
+      let inString = false;
+      let escapeNext = false;
+
+      for (let i = 0; i < jsonStr.length; i++) {
+        const char = jsonStr[i];
+        const charCode = char.charCodeAt(0);
+
+        // Track if we're inside a string value
+        if (char === '"' && !escapeNext) {
+          inString = !inString;
+          result += char;
+          continue;
+        }
+
+        // Track escape sequences
+        if (char === '\\' && !escapeNext) {
+          escapeNext = true;
+          result += char;
+          continue;
+        }
+
+        if (escapeNext) {
+          escapeNext = false;
+          result += char;
+          continue;
+        }
+
+        // If we're inside a string and encounter a control character, escape it
+        if (inString && charCode >= 0x00 && charCode <= 0x1f) {
+          const escapes: Record<string, string> = {
+            '\n': '\\n',
+            '\r': '\\r',
+            '\t': '\\t',
+            '\b': '\\b',
+            '\f': '\\f',
+          };
+          result += escapes[char] || '';
+        } else {
+          result += char;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      this.logger.warn(
+        `[sanitizeJsonString] Sanitization failed: ${error.message}`,
+      );
+      return jsonStr;
     }
   }
 }

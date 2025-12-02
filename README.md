@@ -314,7 +314,7 @@ The Angular UI will be served at `http://localhost:3000`
 - TypeScript 5+
 - SCSS (BEM methodology)
 - Angular Signals (state management)
-- D3.js v7 (graph visualizations)
+- D3.js v7.9.0 (graph visualizations, force simulation, animated effects)
 
 **Directory Structure:**
 ```
@@ -331,7 +331,9 @@ client/
 
 **Features:**
 - Single-page chat-style interface
-- **Real-Time Agent Activity UI** (NEW - See below)
+- **Real-Time Agent Activity UI** (See Agent Activity section below)
+- **Animated Knowledge Graph** (See Knowledge Graph section below)
+- **Research Quality Inspector** with evaluation dashboard
 - LocalStorage-based history (last 20 queries)
 - Error handling with retry
 - Responsive design (mobile, tablet, desktop)
@@ -346,13 +348,13 @@ In development, requests are proxied to `http://localhost:3000` via `proxy.conf.
 
 In production, the Angular build is served by NestJS using `@nestjs/serve-static`, so API calls use relative URLs.
 
-## Agent Activity Real-Time UI (Phase 3 - 80% Complete)
+## Agent Activity Real-Time UI (Phase 3 - COMPLETE)
 
 ### Overview
 
 Real-time visibility into research execution with granular task progress, error handling, and retry capabilities. Transform the black-box research process into a transparent, interactive experience.
 
-**Status**: Frontend complete (100%), Backend SSE endpoint required for full functionality.
+**Status**: FULLY IMPLEMENTED - Backend SSE endpoint and Token Cost Dashboard complete.
 
 ### Key Features
 
@@ -435,12 +437,10 @@ cd client && npm run start # Frontend
 
 ### API Endpoints
 
-**Existing**:
+**Research API**:
 - `POST /api/research/query` - Submit query, returns logId immediately
 - `POST /api/research/retry/:logId/:nodeId` - Retry failed task
-
-**Required** (not yet implemented):
-- `GET /research/stream/events/:logId` - SSE stream for real-time events
+- `GET /api/research/stream/:logId` - SSE stream for real-time events (IMPLEMENTED)
 
 ### Documentation
 
@@ -453,8 +453,11 @@ Comprehensive documentation available:
 
 ### Implementation Status
 
-**Completed** (16/20 tasks, 80%):
+**Completed** (20/20 tasks, 100%):
 - ✅ Backend milestone emission system (all stages)
+- ✅ Backend SSE endpoint (`/api/research/stream/:logId`)
+- ✅ 40+ event types for comprehensive monitoring
+- ✅ Existing log replay on SSE connection
 - ✅ Frontend service with SSE connection management
 - ✅ All UI components (5 components)
 - ✅ Retry mechanism (full stack)
@@ -462,28 +465,16 @@ Comprehensive documentation available:
 - ✅ Accessibility features (ARIA, keyboard nav)
 - ✅ Responsive design (mobile-first)
 - ✅ Loading skeletons
-
-**Remaining**:
-- ❌ Backend SSE endpoint implementation (critical)
-- ❌ LogId return timing fix (return immediately, not after completion)
-- 🔄 Final testing and documentation
-
-**Next Steps**:
-1. Implement SSE endpoint: `GET /research/stream/events/:logId`
-2. Fix logId timing: Return immediately upon query submission
-3. End-to-end testing with real SSE stream
-4. Production deployment
+- ✅ Token Cost Dashboard with breakdown by tool
+- ✅ Cost estimation based on token usage
+- ✅ Research Quality Inspector integration
 
 ### Current Limitations
 
-- SSE endpoint not implemented - frontend cannot receive real-time updates yet
-- LogId returned after completion instead of immediately
 - Single query at a time (multi-query support planned)
-- No token usage or cost estimation display (planned)
 
 ### Future Enhancements
 
-- Token usage and cost tracking in real-time
 - Multi-query support with tabs
 - Query pause/resume capability
 - Export research reports (PDF/Markdown)
@@ -668,6 +659,57 @@ Logs stored in `./logs/research-combined.log` (JSON format):
   - Node lifecycle events (start, complete, error)
 
 For detailed visualization documentation, see [docs/VISUALIZATION_FEATURES.md](docs/VISUALIZATION_FEATURES.md)
+
+## Animated Knowledge Graph (Phase 4 - Complete)
+
+### Overview
+
+Interactive force-directed graph visualization showing research execution flow with animated effects. Integrated into the Research Quality Inspector dashboard.
+
+### Features
+
+- **Force-Directed Layout**: D3.js v7.9.0 force simulation with collision detection
+- **Animated Particle Effects**: Particles flowing along edges showing data flow direction
+- **Pulsing Glow Rings**: Active/running nodes display animated pulsing glow effects
+- **Interactive Controls**: Drag nodes, zoom (0.5x-5x), pan across canvas
+- **Detailed Tooltips**: Hover for node details (name, type, status, duration)
+- **Control Panel**: Zoom in/out, reset view, toggle animations
+- **Legend**: Node types and status indicators
+
+### Node Types
+
+| Type | Color | Description |
+|------|-------|-------------|
+| Session | Blue (#3b82f6) | Root session node |
+| Phase | Purple (#8b5cf6) | Pipeline phases (Planning, Searching, Synthesis) |
+| Step | Green (#10b981) | Individual execution steps |
+| Tool | Varies | Tool executions (web_fetch, tavily_search, llm) |
+
+### Status Indicators
+
+| Status | Stroke Color | Animation |
+|--------|-------------|-----------|
+| Running | Blue | Pulsing glow ring |
+| Completed | Green | None |
+| Error | Red | None |
+| Pending | Gray | None |
+
+### Access
+
+1. Navigate to Research Quality Inspector (`/logs/:logId/quality`)
+2. Click "Show Knowledge Graph" button in "Research Flow Visualization" section
+3. Interact with the graph using drag, zoom, and pan controls
+
+### Components
+
+- **KnowledgeGraphComponent**: `/client/src/app/shared/components/knowledge-graph/knowledge-graph.ts`
+- **GraphBuilderService**: `/client/src/app/core/services/graph-builder.service.ts`
+
+### Performance
+
+- Toggle animations off for better performance on lower-end devices
+- Force simulation automatically stops after equilibrium
+- Lazy rendering: graph only renders when toggled visible
 
 ## Testing
 
@@ -931,7 +973,10 @@ Implementing comprehensive evaluation system for research quality assessment.
 
 ## Future Enhancements
 
-- [ ] **Real-time Graph Visualization** (Phase 4): Live monitoring with force-directed graphs and SSE
+- [x] **Real-time SSE Updates** (Phase 3): Live monitoring via Server-Sent Events - COMPLETED
+- [x] **Token Cost Dashboard** (Phase 3): Token usage tracking and cost estimation - COMPLETED
+- [x] **Animated Knowledge Graph** (Phase 4): Force-directed graph with animated particles and glow effects - COMPLETED
+- [ ] **Real-time Live Graph Updates** (Phase 5): SSE-integrated live graph updates
 - [ ] **Advanced Source Filtering**: Implement relevance scoring and deduplication
 - [ ] **Caching Layer**: Add Redis cache for search results and fetched content
 - [ ] **Multi-Language Support**: Extend to non-English queries

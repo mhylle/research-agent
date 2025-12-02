@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { LogSession, LogDetail, LogEntry, TimelineNode, GraphData } from '../../models';
+import { LogSession, LogDetail, LogEntry, TimelineNode, GraphData, ExecutionMetrics } from '../../models';
 import { TimelineData, TimelinePhase, TimelineMilestone } from '../../shared/components/quality-timeline/quality-timeline.component';
 import { environment } from '../../../environments/environment';
 
@@ -14,9 +14,11 @@ export class LogsService {
   selectedLogId = signal<string | null>(null);
   logDetail = signal<LogDetail | null>(null);
   graphData = signal<GraphData | null>(null);
+  executionMetrics = signal<ExecutionMetrics | null>(null);
   isLoadingSessions = signal<boolean>(false);
   isLoadingDetails = signal<boolean>(false);
   isLoadingGraph = signal<boolean>(false);
+  isLoadingMetrics = signal<boolean>(false);
   searchTerm = signal<string>('');
   statusFilter = signal<'all' | 'completed' | 'error'>('all');
   error = signal<string | null>(null);
@@ -131,6 +133,25 @@ export class LogsService {
       // Don't set error signal, graph is optional
     } finally {
       this.isLoadingGraph.set(false);
+    }
+  }
+
+  async loadExecutionMetrics(logId: string): Promise<ExecutionMetrics | null> {
+    this.isLoadingMetrics.set(true);
+
+    try {
+      const metrics = await firstValueFrom(
+        this.http.get<ExecutionMetrics>(`${environment.apiUrl}/logs/sessions/${logId}/metrics`)
+      );
+
+      this.executionMetrics.set(metrics);
+      return metrics;
+    } catch (err: any) {
+      console.error('Failed to load execution metrics:', err);
+      // Don't set error signal, metrics are optional
+      return null;
+    } finally {
+      this.isLoadingMetrics.set(false);
     }
   }
 

@@ -26,6 +26,29 @@
   <!-- Quality Timeline -->
   <app-quality-timeline [data]="timelineData()"></app-quality-timeline>
 
+  <!-- Knowledge Graph Section -->
+  <section class="knowledge-graph-section">
+    <div class="section-header">
+      <h2 class="section-title">
+        <span class="section-icon">🔮</span>
+        Research Flow Visualization
+      </h2>
+      <button class="toggle-graph-btn" (click)="toggleKnowledgeGraph()">
+        {{ showKnowledgeGraph() ? 'Hide Graph' : 'Show Graph' }}
+      </button>
+    </div>
+    @if (showKnowledgeGraph() && graphData()) {
+      <div class="graph-wrapper">
+        <app-knowledge-graph
+          [data]="graphData()"
+          [width]="1200"
+          [height]="600"
+          [autoAnimate]="true">
+        </app-knowledge-graph>
+      </div>
+    }
+  </section>
+
   <!-- Comparison Layout or Single View -->
   <div class="comparison-container" [class.compare-mode]="isCompareMode()">
     <!-- Session A (Current) -->
@@ -230,6 +253,14 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Token Cost Card -->
+    <div class="card token-cost-wrapper">
+      <app-token-cost-card
+        [metrics]="executionMetrics()"
+        [isLoading]="isLoadingMetrics()">
+      </app-token-cost-card>
     </div>
   </div>
     </div>

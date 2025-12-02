@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { LogsService } from './logs.service';
+import { LogService } from '../logging/log.service';
 import { QuerySessionsDto } from './dto/query-sessions.dto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -15,7 +16,10 @@ import { QueryFailedError } from 'typeorm';
 
 @Controller('api/logs')
 export class LogsController {
-  constructor(private logsService: LogsService) {}
+  constructor(
+    private logsService: LogsService,
+    private logService: LogService,
+  ) {}
 
   @Get('sessions')
   async getSessions(@Query() query: QuerySessionsDto) {
@@ -26,6 +30,19 @@ export class LogsController {
   async getSessionDetails(@Param('logId') logId: string) {
     try {
       return await this.logsService.getSessionDetails(logId);
+    } catch (error) {
+      // Handle invalid UUID format (PostgreSQL error code 22P02)
+      if (error instanceof QueryFailedError && (error as any).code === '22P02') {
+        throw new NotFoundException(`Invalid logId format: ${logId}`);
+      }
+      throw error;
+    }
+  }
+
+  @Get('sessions/:logId/metrics')
+  async getSessionMetrics(@Param('logId') logId: string) {
+    try {
+      return await this.logService.getExecutionMetrics(logId);
     } catch (error) {
       // Handle invalid UUID format (PostgreSQL error code 22P02)
       if (error instanceof QueryFailedError && (error as any).code === '22P02') {

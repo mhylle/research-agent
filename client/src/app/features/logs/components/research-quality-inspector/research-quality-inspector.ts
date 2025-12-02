@@ -1,14 +1,18 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { LogsService } from '../../../../core/services/logs.service';
+import { GraphBuilderService } from '../../../../core/services/graph-builder.service';
 import { RadarChartComponent, RadarSeries, RadarDataPoint } from '../../../../shared/components/radar-chart/radar-chart';
 import { SourceCredibilityComponent, SourceDetail } from '../source-credibility/source-credibility';
 import { SparklineComponent } from '../../../../shared/components/sparkline/sparkline';
 import { SessionPickerComponent } from '../session-picker/session-picker';
 import { QualityTimelineComponent, TimelineData, TimelinePhase } from '../../../../shared/components/quality-timeline/quality-timeline.component';
+import { TokenCostCardComponent } from '../../../../shared/components/token-cost-card/token-cost-card';
+import { KnowledgeGraphComponent } from '../../../../shared/components/knowledge-graph/knowledge-graph';
+import { ExecutionMetrics, GraphData } from '../../../../models';
 import { environment } from '../../../../../environments/environment';
 
 interface EvaluationScores {
@@ -50,12 +54,13 @@ interface QualityInspectorData {
 
 @Component({
   selector: 'app-research-quality-inspector',
-  imports: [CommonModule, RadarChartComponent, SourceCredibilityComponent, SparklineComponent, SessionPickerComponent, QualityTimelineComponent],
+  imports: [CommonModule, RadarChartComponent, SourceCredibilityComponent, SparklineComponent, SessionPickerComponent, QualityTimelineComponent, TokenCostCardComponent, KnowledgeGraphComponent],
   templateUrl: './research-quality-inspector.html',
   styleUrls: ['./research-quality-inspector.scss']
 })
 export class ResearchQualityInspectorComponent implements OnInit {
   logsService = inject(LogsService);
+  graphBuilder = inject(GraphBuilderService);
   route = inject(ActivatedRoute);
   router = inject(Router);
   http = inject(HttpClient);
@@ -64,6 +69,27 @@ export class ResearchQualityInspectorComponent implements OnInit {
   compareData = signal<QualityInspectorData | null>(null);
   isLoadingCompare = signal<boolean>(false);
   showSessionPicker = signal<boolean>(false);
+  executionMetrics = signal<ExecutionMetrics | null>(null);
+  isLoadingMetrics = signal<boolean>(false);
+  showKnowledgeGraph = signal<boolean>(true);
+
+  // Computed signal for knowledge graph data
+  graphData = computed<GraphData | null>(() => {
+    const logDetail = this.logsService.logDetail();
+    if (!logDetail) return null;
+
+    return this.graphBuilder.buildGraphFromLogs(logDetail);
+  });
+
+  // Effect to load execution metrics when log changes
+  private metricsLoader = effect(() => {
+    const logDetail = this.logsService.logDetail();
+    if (logDetail?.logId) {
+      this.loadExecutionMetrics(logDetail.logId);
+    } else {
+      this.executionMetrics.set(null);
+    }
+  });
 
   inspectorData = computed<QualityInspectorData | null>(() => {
     const logDetail = this.logsService.logDetail();
@@ -494,6 +520,25 @@ export class ResearchQualityInspectorComponent implements OnInit {
       : 0;
 
     return avg > 0 ? [avg] : [];
+  }
+
+  private async loadExecutionMetrics(logId: string): Promise<void> {
+    this.isLoadingMetrics.set(true);
+    try {
+      const metrics = await firstValueFrom(
+        this.http.get<ExecutionMetrics>(`${environment.apiUrl}/logs/sessions/${logId}/metrics`)
+      );
+      this.executionMetrics.set(metrics);
+    } catch (err) {
+      console.error('Failed to load execution metrics:', err);
+      this.executionMetrics.set(null);
+    } finally {
+      this.isLoadingMetrics.set(false);
+    }
+  }
+
+  toggleKnowledgeGraph(): void {
+    this.showKnowledgeGraph.update(v => !v);
   }
 
 }

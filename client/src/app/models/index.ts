@@ -7,3 +7,4 @@ export * from './timeline-node.model';
 export * from './graph-node.model';
 export * from './activity-task.model';
 export * from './evaluation.model';
+export * from './execution-metrics.model';

@@ -270,6 +270,191 @@ export class PlannerService {
   }
 
   /**
+   * Regenerates a plan based on evaluation feedback.
+   * This is called when plan evaluation fails and provides the LLM with specific
+   * guidance on how to fix the issues identified by the evaluators.
+   */
+  async regeneratePlanWithFeedback(
+    query: string,
+    logId: string,
+    feedback: {
+      critique: string;
+      specificIssues: Array<{ issue: string; fix: string }>;
+      failingDimensions: string[];
+      scores: Record<string, number>;
+      attemptNumber: number;
+    },
+  ): Promise<Plan> {
+    this.currentPlan = null;
+    this.phaseResults.clear();
+    this.finalizeFailureCount = 0;
+    this.planCreationCount = 0;
+
+    const availableTools = this.toolExecutor.getAvailableTools();
+    const systemPrompt = this.buildPlannerSystemPrompt(availableTools);
+
+    // Emit planning_started event with feedback context
+    const planningStartEntry = await this.logService.append({
+      logId,
+      eventType: 'planning_started',
+      timestamp: new Date(),
+      data: {
+        query,
+        availableTools: availableTools.map((t) => t.function.name),
+        message: `LLM is regenerating plan (attempt ${feedback.attemptNumber + 1})...`,
+        isRegeneration: true,
+        attemptNumber: feedback.attemptNumber + 1,
+        feedback: {
+          critique: feedback.critique,
+          failingDimensions: feedback.failingDimensions,
+        },
+      },
+    });
+    this.eventEmitter.emit(`log.${logId}`, planningStartEntry);
+
+    // Build prompt that includes feedback
+    const feedbackPrompt = this.buildPlanningPromptWithFeedback(query, feedback);
+
+    const messages: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: feedbackPrompt },
+    ];
+
+    let planningComplete = false;
+    const maxIterations = 20;
+    let iteration = 0;
+
+    while (!planningComplete && iteration < maxIterations) {
+      iteration++;
+
+      const iterationEntry = await this.logService.append({
+        logId,
+        eventType: 'planning_iteration',
+        timestamp: new Date(),
+        data: {
+          iteration,
+          maxIterations,
+          message: `Regeneration iteration ${iteration}/${maxIterations} (attempt ${feedback.attemptNumber + 1})`,
+          isRegeneration: true,
+        },
+      });
+      this.eventEmitter.emit(`log.${logId}`, iterationEntry);
+
+      const response = await this.llmService.chat(messages, planningTools);
+
+      if (response.message.tool_calls?.length > 0) {
+        for (const toolCall of response.message.tool_calls) {
+          const result = await this.executePlanningTool(toolCall, logId);
+
+          if (toolCall.function.name === 'finalize_plan') {
+            if (!result.error) {
+              planningComplete = true;
+            }
+          }
+
+          messages.push(response.message);
+          messages.push({ role: 'tool', content: JSON.stringify(result) });
+        }
+      } else {
+        messages.push(response.message);
+        messages.push({
+          role: 'user',
+          content:
+            'Continue building the plan or call finalize_plan when complete.',
+        });
+      }
+    }
+
+    if (!this.currentPlan) {
+      throw new Error('Plan regeneration failed: no plan created');
+    }
+
+    // Auto-recovery for empty phases
+    const emptyPhases = this.currentPlan.phases.filter(
+      (p) => p.steps.length === 0,
+    );
+    if (emptyPhases.length > 0) {
+      console.log(
+        `[PlannerService] Auto-recovering ${emptyPhases.length} empty phases by adding default steps`,
+      );
+
+      await this.logService.append({
+        logId,
+        eventType: 'auto_recovery',
+        timestamp: new Date(),
+        planId: this.currentPlan.id,
+        data: {
+          reason:
+            'LLM created phases without steps during regeneration - auto-adding default steps',
+          emptyPhaseCount: emptyPhases.length,
+          emptyPhaseNames: emptyPhases.map((p) => p.name),
+        },
+      });
+
+      for (const phase of emptyPhases) {
+        this.autoAddDefaultSteps(phase, logId);
+      }
+    }
+
+    // Ensure synthesis phase exists
+    await this.ensureSynthesisPhase(this.currentPlan, logId);
+
+    this.currentPlan.status = 'executing';
+    return this.currentPlan;
+  }
+
+  /**
+   * Builds a planning prompt that includes feedback from the evaluation.
+   */
+  private buildPlanningPromptWithFeedback(
+    query: string,
+    feedback: {
+      critique: string;
+      specificIssues: Array<{ issue: string; fix: string }>;
+      failingDimensions: string[];
+      scores: Record<string, number>;
+    },
+  ): string {
+    const basePrompt = this.buildPlanningPrompt(query);
+
+    const scoresList = Object.entries(feedback.scores)
+      .map(([dim, score]) => `- ${dim}: ${(score * 100).toFixed(0)}%`)
+      .join('\n');
+
+    const issuesList = feedback.specificIssues
+      .map((issue) => `- Issue: ${issue.issue}\n  Fix: ${issue.fix}`)
+      .join('\n');
+
+    return `${basePrompt}
+
+## IMPORTANT: PREVIOUS PLAN FAILED EVALUATION
+
+The previous plan you generated failed evaluation. You MUST address the following issues:
+
+### Evaluation Scores (0-100%)
+${scoresList}
+
+### Failing Dimensions
+${feedback.failingDimensions.join(', ')}
+
+### Critique from Evaluators
+${feedback.critique}
+
+### Specific Issues to Fix
+${issuesList}
+
+## CRITICAL REQUIREMENTS
+1. **MATCH THE USER'S QUERY EXACTLY** - Your search queries MUST relate to what the user asked
+2. **USE THE USER'S LANGUAGE** - If the user asks in Danish, search in Danish
+3. **INCLUDE SPECIFIC DATES** - If the user mentions time references, include actual dates
+4. **DO NOT HALLUCINATE** - Do not make up unrelated topics
+
+The user asked: "${query}"
+
+Your plan MUST directly address this query, not some other topic.`;
+  }
+
+  /**
    * Ensures the plan has a synthesis/answer generation phase.
    * This is CRITICAL - every research plan MUST produce a final answer.
    */
@@ -809,16 +994,27 @@ ${toolList}
 
 ## Planning Process
 1. Call create_plan to initialize the plan
-2. For each major phase (e.g., search, fetch, synthesize):
+2. **FIRST: Check if knowledge_search is relevant** - If the query relates to previously researched topics, start with knowledge_search to leverage existing research
+3. For each major phase (e.g., search, fetch, synthesize):
    a. Call add_phase to create the phase - NOTE THE RETURNED phaseId
    b. **IMMEDIATELY call add_step one or more times with that phaseId**
    c. **CRITICAL: ALWAYS provide the config parameter with specific, detailed parameters:**
+      - For knowledge_search: include {query: "semantic search query", max_results: 5} - USE THIS FIRST for related/follow-up questions
       - For tavily_search: include {query: "specific search terms", max_results: 5}
       - For web_fetch: include {url: "https://specific-url.com"}
       - For synthesize: include {prompt: "detailed synthesis instructions"}
    d. Only after adding steps with complete configs, move to the next phase
-3. Set replanCheckpoint=true on phases where results might change the approach
-4. Call finalize_plan when ALL phases have steps with complete configs
+4. Set replanCheckpoint=true on phases where results might change the approach
+5. Call finalize_plan when ALL phases have steps with complete configs
+
+## When to Use knowledge_search (Internal Knowledge Base)
+**ALWAYS consider knowledge_search FIRST when:**
+- The query mentions "previous research", "earlier", "related to", or similar references
+- The query is a follow-up or expansion on a topic that may have been researched before
+- The query asks to compare, contrast, or build upon existing knowledge
+- You want to avoid redundant external searches for already-researched topics
+
+**knowledge_search uses semantic search** to find relevant prior research results. It's faster and provides context from previous investigations.
 
 ## CRITICAL REQUIREMENTS - ABSOLUTE MUST-HAVES
 - **EVERY PLAN MUST END WITH A SYNTHESIS/ANSWER GENERATION PHASE**

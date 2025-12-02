@@ -65,6 +65,10 @@
     @include button-secondary;
     padding: $spacing-sm $spacing-md;
     font-size: $font-size-sm;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
     &.active {
       background: $moss;
@@ -72,6 +76,18 @@
 
       &:hover {
         background: $moss-light;
+      }
+    }
+
+    &.quality-inspector-link {
+      margin-left: auto;
+      background: $clay-bg;
+      color: $clay;
+      font-weight: $font-semibold;
+
+      &:hover {
+        background: $clay;
+        color: white;
       }
     }
   }

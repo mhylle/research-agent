@@ -5,11 +5,13 @@ import { WebFetchProvider } from './providers/web-fetch.provider';
 import { DuckDuckGoSearchProvider } from './providers/duckduckgo-search.provider';
 import { BraveSearchProvider } from './providers/brave-search.provider';
 import { SerpApiSearchProvider } from './providers/serpapi-search.provider';
+import { KnowledgeSearchProvider } from './providers/knowledge-search.provider';
 import { ITool } from './interfaces/tool.interface';
 import { LoggingModule } from '../logging/logging.module';
+import { KnowledgeModule } from '../knowledge/knowledge.module';
 
 @Module({
-  imports: [LoggingModule],
+  imports: [LoggingModule, KnowledgeModule],
   providers: [
     ToolRegistry,
     TavilySearchProvider,
@@ -17,12 +19,14 @@ import { LoggingModule } from '../logging/logging.module';
     DuckDuckGoSearchProvider,
     BraveSearchProvider,
     SerpApiSearchProvider,
+    KnowledgeSearchProvider,
   ],
   exports: [
     ToolRegistry,
     TavilySearchProvider,
     WebFetchProvider,
     DuckDuckGoSearchProvider,
+    KnowledgeSearchProvider,
   ],
 })
 export class ToolsModule implements OnModuleInit {
@@ -33,6 +37,7 @@ export class ToolsModule implements OnModuleInit {
     private readonly duckduckgoSearch: DuckDuckGoSearchProvider,
     private readonly braveSearch: BraveSearchProvider,
     private readonly serpapiSearch: SerpApiSearchProvider,
+    private readonly knowledgeSearch: KnowledgeSearchProvider,
   ) {}
 
   onModuleInit() {
@@ -42,6 +47,7 @@ export class ToolsModule implements OnModuleInit {
     this.tryRegisterProvider(this.duckduckgoSearch, 'DuckDuckGo');
     this.tryRegisterProvider(this.braveSearch, 'Brave');
     this.tryRegisterProvider(this.serpapiSearch, 'SerpAPI');
+    this.tryRegisterProvider(this.knowledgeSearch, 'Knowledge');
 
     this.logActiveProviders();
   }

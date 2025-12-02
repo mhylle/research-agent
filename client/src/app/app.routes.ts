@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { ResearchComponent } from './features/research/research';
 import { LogsPageComponent } from './features/logs/logs-page/logs-page';
 import { EvaluationDashboardComponent } from './features/evaluation-dashboard/evaluation-dashboard.component';
+import { ResearchQualityInspectorComponent } from './features/logs/components/research-quality-inspector/research-quality-inspector';
 
 export const routes: Routes = [
   {
@@ -15,6 +16,10 @@ export const routes: Routes = [
   {
     path: 'logs/:logId',
     component: LogsPageComponent
+  },
+  {
+    path: 'quality-inspector/:logId',
+    component: ResearchQualityInspectorComponent
   },
   {
     path: 'evaluation-dashboard',

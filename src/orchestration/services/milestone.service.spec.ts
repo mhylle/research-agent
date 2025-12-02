@@ -107,8 +107,16 @@ describe('MilestoneService', () => {
 
       await service.emitMilestonesForPhase(phase, 'log1', 'test query');
 
-      // Stage 1 has 4 templates, should emit 3 (all except the last)
-      expect(eventCoordinator.emit).toHaveBeenCalledTimes(3);
+      // Stage 1 has 4 templates, should emit 3 started + 3 completed (all except the last)
+      // = 6 total events
+      expect(eventCoordinator.emit).toHaveBeenCalledTimes(6);
+
+      // Verify we have 3 milestone_started events and 3 milestone_completed events
+      const calls = (eventCoordinator.emit as jest.Mock).mock.calls;
+      const startedEvents = calls.filter(call => call[1] === 'milestone_started');
+      const completedEvents = calls.filter(call => call[1] === 'milestone_completed');
+      expect(startedEvents).toHaveLength(3);
+      expect(completedEvents).toHaveLength(3);
     });
 
     it('should include template data for identify_terms milestone', async () => {
@@ -188,6 +196,63 @@ describe('MilestoneService', () => {
       expect(searchCall[2].description).toBe(
         'Searching 2 databases: Tavily (web sources, news, articles)',
       );
+    });
+
+    it('should include output data in completed milestone events', async () => {
+      const phase: Phase = {
+        id: 'phase1',
+        name: 'Search Phase',
+        steps: [{} as any, {} as any],
+      } as Phase;
+
+      await service.emitMilestonesForPhase(
+        phase,
+        'log1',
+        'What is the capital of France?',
+      );
+
+      // Get all milestone_completed events
+      const completedCalls = (eventCoordinator.emit as jest.Mock).mock.calls
+        .filter((call) => call[1] === 'milestone_completed');
+
+      // Should have 3 completed events (all except last milestone)
+      expect(completedCalls).toHaveLength(3);
+
+      // Check that each completed event has output data
+      completedCalls.forEach((call) => {
+        expect(call[2].output).toBeDefined();
+        expect(call[2].output).not.toBeNull();
+        expect(typeof call[2].output).toBe('object');
+      });
+
+      // Verify specific outputs
+      const deconstructCall = completedCalls.find(
+        (call) => call[2].templateId === 'stage1_deconstruct',
+      );
+      expect(deconstructCall[2].output).toMatchObject({
+        action: 'Query deconstructed',
+        query: 'What is the capital of France?',
+        complexity: expect.stringMatching(/simple|medium|complex/),
+      });
+
+      const identifyTermsCall = completedCalls.find(
+        (call) => call[2].templateId === 'stage1_identify_terms',
+      );
+      expect(identifyTermsCall[2].output).toMatchObject({
+        action: 'Key terms identified',
+        terms: expect.arrayContaining([expect.any(String)]),
+        termCount: expect.any(Number),
+      });
+
+      const searchCall = completedCalls.find(
+        (call) => call[2].templateId === 'stage1_search',
+      );
+      expect(searchCall[2].output).toMatchObject({
+        action: 'Database search initiated',
+        databases: expect.arrayContaining(['Tavily']),
+        searchCount: 2,
+        status: 'searching',
+      });
     });
   });
 
@@ -281,6 +346,87 @@ describe('MilestoneService', () => {
         'milestone_completed',
         expect.objectContaining({
           milestoneId: 'phase1_stage1_filter',
+        }),
+        'phase1',
+      );
+    });
+
+    it('should include output data with step results', async () => {
+      const phase: Phase = {
+        id: 'phase1',
+        name: 'Search Phase',
+        steps: [],
+      } as Phase;
+
+      const stepResults = [
+        { stepId: 'step1', output: [{ url: 'test1.com' }], toolName: 'tavily_search' },
+        { stepId: 'step2', output: [{ url: 'test2.com' }], toolName: 'tavily_search' },
+      ];
+
+      await service.emitPhaseCompletion(phase, 'log1', stepResults);
+
+      expect(eventCoordinator.emit).toHaveBeenCalledWith(
+        'log1',
+        'milestone_completed',
+        expect.objectContaining({
+          output: expect.objectContaining({
+            phaseName: 'Search Phase',
+            stepsCompleted: 2,
+            totalSteps: 2,
+            searchResultsFound: 2,
+          }),
+        }),
+        'phase1',
+      );
+    });
+
+    it('should include synthesis content preview in output', async () => {
+      const phase: Phase = {
+        id: 'phase3',
+        name: 'Synthesize Answer',
+        steps: [],
+      } as Phase;
+
+      const longContent = 'A'.repeat(300);
+      const stepResults = [
+        { stepId: 'step1', output: longContent, toolName: 'llm' },
+      ];
+
+      await service.emitPhaseCompletion(phase, 'log1', stepResults);
+
+      expect(eventCoordinator.emit).toHaveBeenCalledWith(
+        'log1',
+        'milestone_completed',
+        expect.objectContaining({
+          output: expect.objectContaining({
+            phaseName: 'Synthesize Answer',
+            contentGenerated: true,
+            contentLength: 300,
+            preview: expect.stringContaining('A'.repeat(200)),
+          }),
+        }),
+        'phase3',
+      );
+    });
+
+    it('should handle empty step results gracefully', async () => {
+      const phase: Phase = {
+        id: 'phase1',
+        name: 'Search Phase',
+        steps: [],
+      } as Phase;
+
+      await service.emitPhaseCompletion(phase, 'log1', []);
+
+      expect(eventCoordinator.emit).toHaveBeenCalledWith(
+        'log1',
+        'milestone_completed',
+        expect.objectContaining({
+          output: expect.objectContaining({
+            phaseName: 'Search Phase',
+            stepsCompleted: 0,
+            message: 'Phase completed with no steps executed',
+          }),
         }),
         'phase1',
       );

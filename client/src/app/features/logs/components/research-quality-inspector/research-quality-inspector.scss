@@ -1,0 +1,550 @@
+@use '../../../../../styles/variables' as *;
+
+.quality-inspector {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: $spacing-lg;
+  background: $oatmeal;
+}
+
+// ============================================================================
+// Header Section
+// ============================================================================
+.inspector-header {
+  margin-bottom: $spacing-xl;
+  padding: $spacing-lg;
+  background: $stone;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.inspector-title {
+  font-family: $font-family-heading;
+  font-size: $font-size-3xl;
+  font-weight: $font-bold;
+  color: $charcoal;
+  margin: 0;
+}
+
+.header-meta {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+}
+
+.log-badge,
+.duration-badge {
+  padding: $spacing-xs $spacing-sm;
+  background: $oatmeal;
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  color: $slate;
+}
+
+.compare-button,
+.clear-compare-button {
+  padding: $spacing-xs $spacing-md;
+  background: $moss;
+  color: #fff;
+  border: none;
+  border-radius: $border-radius;
+  font-size: $font-size-sm;
+  font-weight: $font-semibold;
+  cursor: pointer;
+  transition: all $transition-base;
+
+  &:hover {
+    background: $moss-light;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.clear-compare-button {
+  background: $clay;
+
+  &:hover {
+    background: $clay-light;
+  }
+}
+
+.query-text {
+  font-size: $font-size-lg;
+  color: $charcoal-light;
+  line-height: $line-height-loose;
+  margin: 0;
+}
+
+// ============================================================================
+// Dashboard Grid Layout
+// ============================================================================
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px 1fr;
+  gap: $spacing-lg;
+
+  @media (max-width: $breakpoint-lg) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ============================================================================
+// Card Base Styles
+// ============================================================================
+.card {
+  background: $stone;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+  padding: $spacing-lg;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.card-title {
+  font-family: $font-family-heading;
+  font-size: $font-size-xl;
+  font-weight: $font-semibold;
+  color: $charcoal;
+  margin: 0;
+}
+
+// ============================================================================
+// Plan Evolution Card (Left Column)
+// ============================================================================
+.plan-evolution-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.regenerated-badge {
+  padding: $spacing-xs $spacing-sm;
+  background: $moss-bg;
+  color: $moss;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-semibold;
+}
+
+.chart-container {
+  min-height: 350px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: $spacing-lg;
+}
+
+.pivot-section {
+  margin-top: auto;
+  padding-top: $spacing-md;
+  border-top: 2px solid $stone-300;
+}
+
+.pivot-title {
+  font-family: $font-family-heading;
+  font-size: $font-size-lg;
+  font-weight: $font-semibold;
+  color: $charcoal;
+  margin: 0 0 $spacing-sm 0;
+}
+
+.critique-text {
+  font-size: $font-size-base;
+  color: $slate;
+  line-height: $line-height-loose;
+  margin: 0;
+}
+
+// ============================================================================
+// Middle Column
+// ============================================================================
+.middle-column {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// Metric Cards (Circular Progress)
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-md;
+}
+
+.metric-title {
+  font-family: $font-family-heading;
+  font-size: $font-size-lg;
+  font-weight: $font-semibold;
+  color: $charcoal;
+  margin: 0 0 $spacing-md 0;
+  text-align: center;
+}
+
+.circular-progress {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.progress-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.progress-bg {
+  fill: none;
+  stroke: $stone-300;
+  stroke-width: 8;
+}
+
+.progress-fill {
+  fill: none;
+  stroke: $moss;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset $transition-base;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: $font-size-2xl;
+  font-weight: $font-bold;
+  color: $charcoal;
+}
+
+// Sparkline Wrapper (for circular progress cards)
+.sparkline-wrapper {
+  margin-top: $spacing-sm;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: $spacing-xs;
+  background: $oatmeal;
+  border-radius: $border-radius-sm;
+}
+
+// Retrieval Card
+.retrieval-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-container-small {
+  min-height: 280px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+// Progression Sparkline (for radar chart cards)
+.progression-sparkline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm;
+  margin-top: $spacing-md;
+  background: $oatmeal;
+  border-radius: $border-radius;
+}
+
+.sparkline-label {
+  font-size: $font-size-sm;
+  font-weight: $font-medium;
+  color: $slate;
+}
+
+// Source Credibility Section
+.source-credibility-section {
+  margin-top: $spacing-md;
+}
+
+// Source Metrics Row
+.metrics-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-sm;
+}
+
+.mini-metric {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: $spacing-md;
+  background: $oatmeal;
+  border-radius: $border-radius;
+  text-align: center;
+}
+
+.mini-metric-label {
+  font-size: $font-size-sm;
+  color: $slate;
+  font-weight: $font-medium;
+}
+
+.mini-metric-value {
+  font-size: $font-size-xl;
+  font-weight: $font-bold;
+  color: $charcoal;
+}
+
+// ============================================================================
+// Final Answer Quality Card (Right Column)
+// ============================================================================
+.answer-quality-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.hallucination-badge {
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-semibold;
+  text-transform: capitalize;
+
+  &.low-risk {
+    background: $moss-bg;
+    color: $moss;
+  }
+
+  &.medium-risk {
+    background: $clay-bg;
+    color: $clay;
+  }
+
+  &.high-risk {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+}
+
+.answer-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  margin-top: auto;
+}
+
+.bar-metric {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bar-label {
+  font-size: $font-size-base;
+  font-weight: $font-medium;
+  color: $charcoal-light;
+}
+
+.bar-value {
+  font-size: $font-size-base;
+  font-weight: $font-bold;
+  color: $charcoal;
+}
+
+.bar-container {
+  height: 12px;
+  background: $stone-300;
+  border-radius: $border-radius-full;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, $moss-light, $moss);
+  border-radius: $border-radius-full;
+  transition: width $transition-base;
+}
+
+// ============================================================================
+// Empty State
+// ============================================================================
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  padding: $spacing-xl;
+  background: $stone;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+
+  p {
+    font-size: $font-size-lg;
+    color: $slate;
+    text-align: center;
+  }
+}
+
+// ============================================================================
+// Responsive Design
+// ============================================================================
+@media (max-width: $breakpoint-lg) {
+  .quality-inspector {
+    padding: $spacing-md;
+  }
+
+  .inspector-header {
+    padding: $spacing-md;
+  }
+
+  .inspector-title {
+    font-size: $font-size-2xl;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-container,
+  .chart-container-small {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .inspector-title {
+    font-size: $font-size-xl;
+  }
+
+  .header-meta {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .metrics-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ============================================================================
+// Comparison Mode
+// ============================================================================
+.comparison-container {
+  &.compare-mode {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-lg;
+
+    @media (max-width: $breakpoint-xl) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.session-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.session-label {
+  font-family: $font-family-heading;
+  font-size: $font-size-lg;
+  font-weight: $font-semibold;
+  color: $charcoal;
+  padding: $spacing-md;
+  background: $stone;
+  border-radius: $border-radius;
+  margin-bottom: $spacing-md;
+  text-align: center;
+  box-shadow: $shadow-md;
+}
+
+.session-b {
+  .session-label {
+    background: rgba($stone, 0.7);
+  }
+
+  .card {
+    background: rgba($stone, 0.9);
+  }
+}
+
+.loading-compare {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.loading-message {
+  font-size: $font-size-lg;
+  color: $slate;
+  text-align: center;
+}
+
+// Delta Badge
+.delta-badge {
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-bold;
+
+  &.positive {
+    background: $moss-bg;
+    color: $moss;
+  }
+
+  &.negative {
+    background: $clay-bg;
+    color: $clay;
+  }
+}
+
+// Comparison divider
+.comparison-container.compare-mode::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent, $stone-300, transparent);
+  transform: translateX(-50%);
+  pointer-events: none;
+
+  @media (max-width: $breakpoint-xl) {
+    display: none;
+  }
+}
+
+// Adjust dashboard grid for comparison mode
+.compare-mode .dashboard-grid {
+  @media (max-width: $breakpoint-xl) {
+    grid-template-columns: 1fr;
+  }
+}

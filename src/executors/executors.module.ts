@@ -21,6 +21,10 @@ export class ExecutorsModule implements OnModuleInit {
     // Register tool executors
     this.executorRegistry.register('tavily_search', this.toolExecutor);
     this.executorRegistry.register('web_fetch', this.toolExecutor);
+    this.executorRegistry.register('duckduckgo_search', this.toolExecutor);
+    this.executorRegistry.register('brave_search', this.toolExecutor);
+    this.executorRegistry.register('serpapi_search', this.toolExecutor);
+    this.executorRegistry.register('knowledge_search', this.toolExecutor);
 
     // Register LLM executors (all variations the LLM might generate)
     this.executorRegistry.register('synthesize', this.llmExecutor);

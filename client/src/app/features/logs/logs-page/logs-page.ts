@@ -1,14 +1,15 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { LogsService } from '../../../core/services/logs.service';
 import { LogsListComponent } from '../components/logs-list/logs-list';
 import { LogTimelineComponent } from '../components/log-timeline/log-timeline';
 import { TimelineGraphComponent } from '../components/timeline-graph/timeline-graph';
+import { QualityTimelineComponent } from '../../../shared/components/quality-timeline/quality-timeline.component';
 
 @Component({
   selector: 'app-logs-page',
-  imports: [CommonModule, LogsListComponent, LogTimelineComponent, TimelineGraphComponent],
+  imports: [CommonModule, RouterModule, LogsListComponent, LogTimelineComponent, TimelineGraphComponent, QualityTimelineComponent],
   templateUrl: './logs-page.html',
   styleUrls: ['./logs-page.scss']
 })

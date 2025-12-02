@@ -2,6 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { LogSession, LogDetail, LogEntry, TimelineNode, GraphData } from '../../models';
+import { TimelineData, TimelinePhase, TimelineMilestone } from '../../shared/components/quality-timeline/quality-timeline.component';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -50,6 +51,12 @@ export class LogsService {
     const detail = this.logDetail();
     if (!detail) return [];
     return this.buildTimelineFromEntries(detail.entries);
+  });
+
+  qualityTimelineData = computed(() => {
+    const detail = this.logDetail();
+    if (!detail) return null;
+    return this.buildQualityTimelineData(detail.entries);
   });
 
   constructor(private http: HttpClient) {}
@@ -135,8 +142,10 @@ export class LogsService {
     const milestoneMap = new Map<string, any>();
     let planningPhase: any = null;
     const recoveryNodes: any[] = [];
+    const planRegenerationNodes: any[] = [];
+    const planEvaluationWarnings: any[] = [];
 
-    // First pass: collect planning phase
+    // First pass: collect planning phase, regeneration events, and evaluation warnings
     entries.forEach(entry => {
       if (entry.eventType === 'planning_started') {
         planningPhase = {
@@ -160,6 +169,60 @@ export class LogsService {
         const startTime = new Date(planningPhase.timestamp).getTime();
         const endTime = new Date(entry.timestamp).getTime();
         planningPhase.duration = endTime - startTime;
+      }
+
+      // Handle plan regeneration events
+      if (entry.eventType === 'plan_regeneration_started') {
+        const regenerationNode: TimelineNode = {
+          type: 'plan_regeneration',
+          id: 'plan-regen-' + entry.id,
+          name: `Plan Regeneration - Attempt ${entry.data?.attemptNumber || 'N/A'}`,
+          icon: '🔄',
+          color: '#f59e0b',
+          timestamp: entry.timestamp,
+          duration: 0,
+          input: {
+            attemptNumber: entry.data?.attemptNumber,
+            previousScores: entry.data?.previousScores,
+            failingDimensions: entry.data?.failingDimensions
+          },
+          output: { critique: entry.data?.critique },
+          status: 'completed',
+          metadata: {
+            attemptNumber: entry.data?.attemptNumber,
+            previousScores: entry.data?.previousScores,
+            failingDimensions: entry.data?.failingDimensions,
+            critique: entry.data?.critique
+          },
+          isExpanded: true  // Expand by default to show feedback
+        };
+        planRegenerationNodes.push(regenerationNode);
+      }
+
+      // Handle plan evaluation warnings
+      if (entry.eventType === 'plan_evaluation_warning') {
+        const warningNode: TimelineNode = {
+          type: 'plan_evaluation_warning',
+          id: 'plan-eval-warning-' + entry.id,
+          name: 'Plan Evaluation Warning',
+          icon: '⚠️',
+          color: '#ef4444',
+          timestamp: entry.timestamp,
+          duration: 0,
+          input: null,
+          output: {
+            message: entry.data?.message,
+            finalScores: entry.data?.finalScores,
+            passed: entry.data?.passed
+          },
+          status: 'warning',
+          metadata: {
+            finalScores: entry.data?.finalScores,
+            message: entry.data?.message
+          },
+          isExpanded: true  // Expand by default to show warning
+        };
+        planEvaluationWarnings.push(warningNode);
       }
     });
 
@@ -238,7 +301,8 @@ export class LogsService {
         const milestone = milestoneMap.get(milestoneId);
         if (milestone) {
           milestone.status = 'completed';
-          milestone.output = { progress: 100 };
+          // Use actual output data from the event, fallback to progress indicator
+          milestone.output = entry.data?.output || { progress: 100 };
           const startTime = new Date(milestone.timestamp).getTime();
           const endTime = new Date(entry.timestamp).getTime();
           milestone.duration = endTime - startTime;
@@ -406,19 +470,35 @@ export class LogsService {
       });
     });
 
+    // Build final timeline with proper ordering
+    const finalTimeline: TimelineNode[] = [];
+
     // Add planning phase at the beginning if it exists
     if (planningPhase) {
-      stages.unshift(planningPhase);
+      finalTimeline.push(planningPhase);
     }
 
-    // Insert recovery nodes at appropriate positions
-    // For simplicity, add them to the end for now
-    // In a more sophisticated implementation, you could insert them before the phase they recovered
-    recoveryNodes.forEach(node => {
-      stages.push(node);
+    // Add plan regeneration nodes after planning (these occur during planning evaluation)
+    planRegenerationNodes.forEach(node => {
+      finalTimeline.push(node);
     });
 
-    return stages;
+    // Add plan evaluation warnings after regenerations (if max attempts reached)
+    planEvaluationWarnings.forEach(node => {
+      finalTimeline.push(node);
+    });
+
+    // Add all phase nodes
+    stages.forEach(stage => {
+      finalTimeline.push(stage);
+    });
+
+    // Add recovery nodes at the end
+    recoveryNodes.forEach(node => {
+      finalTimeline.push(node);
+    });
+
+    return finalTimeline;
   }
 
   private getPhaseName(name: string, index: number): string {
@@ -560,5 +640,138 @@ export class LogsService {
 
   clearError(): void {
     this.error.set(null);
+  }
+
+  private buildQualityTimelineData(entries: LogEntry[]): TimelineData | null {
+    if (!entries || entries.length === 0) return null;
+
+    const phases: TimelinePhase[] = [];
+    const milestones: TimelineMilestone[] = [];
+
+    // Track evaluation data by phase
+    const evaluationsByPhase = new Map<string, any[]>();
+    const phaseInfo = new Map<string, any>();
+
+    // First pass: collect phase start/complete events
+    entries.forEach(entry => {
+      if (entry.eventType === 'phase_started' && entry.phaseId) {
+        phaseInfo.set(entry.phaseId, {
+          name: entry.data?.name || 'Phase',
+          startTime: entry.timestamp,
+          endTime: null
+        });
+      }
+
+      if (entry.eventType === 'phase_completed' && entry.phaseId) {
+        const info = phaseInfo.get(entry.phaseId);
+        if (info) {
+          info.endTime = entry.timestamp;
+        }
+      }
+
+      // Collect evaluations
+      if (entry.eventType === 'evaluation_completed') {
+        const phase = entry.data?.phase || 'unknown';
+        if (!evaluationsByPhase.has(phase)) {
+          evaluationsByPhase.set(phase, []);
+        }
+        evaluationsByPhase.get(phase)!.push({
+          timestamp: entry.timestamp,
+          scores: entry.data?.scores || {},
+          passed: entry.data?.passed,
+          confidence: entry.data?.confidence
+        });
+      }
+
+      // Collect milestones
+      if (entry.eventType === 'milestone_completed') {
+        milestones.push({
+          timestamp: entry.timestamp,
+          progress: entry.data?.progress || 0,
+          description: entry.data?.description || entry.data?.template || 'Milestone'
+        });
+      }
+    });
+
+    // Build phase timeline data
+    const planningEvals = evaluationsByPhase.get('plan') || [];
+    const retrievalEvals = evaluationsByPhase.get('retrieval') || [];
+    const answerEvals = evaluationsByPhase.get('answer') || [];
+
+    // Planning phase
+    if (planningEvals.length > 0) {
+      const scores = planningEvals.map(e => this.calculateAverageScore(e.scores));
+      const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const lastEval = planningEvals[planningEvals.length - 1];
+
+      phases.push({
+        name: 'Planning',
+        attempts: planningEvals.length,
+        scores: scores,
+        avgScore: avgScore,
+        duration: this.calculatePhaseDuration(planningEvals),
+        timestamp: planningEvals[0].timestamp,
+        status: lastEval.passed ? 'success' : 'failed'
+      });
+    }
+
+    // Retrieval phase
+    if (retrievalEvals.length > 0) {
+      const scores = retrievalEvals.map(e => this.calculateAverageScore(e.scores));
+      const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const lastEval = retrievalEvals[retrievalEvals.length - 1];
+
+      // Count sources from search events
+      const searchEvents = entries.filter(e =>
+        e.eventType === 'step_completed' &&
+        e.data?.toolName?.toLowerCase().includes('search')
+      );
+      const sourceCount = searchEvents.reduce((count, e) => {
+        const results = e.data?.output?.results || [];
+        return count + results.length;
+      }, 0);
+
+      phases.push({
+        name: `Search (${sourceCount} sources)`,
+        attempts: retrievalEvals.length,
+        scores: scores,
+        avgScore: avgScore,
+        duration: this.calculatePhaseDuration(retrievalEvals),
+        timestamp: retrievalEvals[0].timestamp,
+        status: lastEval.passed ? 'success' : 'failed'
+      });
+    }
+
+    // Answer phase
+    if (answerEvals.length > 0) {
+      const scores = answerEvals.map(e => this.calculateAverageScore(e.scores));
+      const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const lastEval = answerEvals[answerEvals.length - 1];
+
+      phases.push({
+        name: 'Synthesis',
+        attempts: answerEvals.length,
+        scores: scores,
+        avgScore: avgScore,
+        duration: this.calculatePhaseDuration(answerEvals),
+        timestamp: answerEvals[0].timestamp,
+        status: lastEval.passed ? 'success' : 'failed'
+      });
+    }
+
+    return { phases, milestones };
+  }
+
+  private calculateAverageScore(scores: any): number {
+    const scoreValues = Object.values(scores).filter(v => typeof v === 'number') as number[];
+    if (scoreValues.length === 0) return 0;
+    return scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length;
+  }
+
+  private calculatePhaseDuration(evals: any[]): number {
+    if (evals.length < 2) return 0;
+    const start = new Date(evals[0].timestamp).getTime();
+    const end = new Date(evals[evals.length - 1].timestamp).getTime();
+    return end - start;
   }
 }

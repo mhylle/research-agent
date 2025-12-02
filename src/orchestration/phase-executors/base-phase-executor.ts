@@ -69,8 +69,12 @@ export abstract class BasePhaseExecutor implements IPhaseExecutor {
       stepResults.length,
     );
 
-    // 6. Emit phase completion milestone
-    await this.milestoneService.emitPhaseCompletion(phase, context.logId);
+    // 6. Emit phase completion milestone with step results for output data
+    await this.milestoneService.emitPhaseCompletion(
+      phase,
+      context.logId,
+      stepResults,
+    );
 
     return { status: 'completed', stepResults };
   }

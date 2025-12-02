@@ -25,9 +25,21 @@
       >
         📊 Graph View
       </button>
+      <a
+        class="tab-button quality-inspector-link"
+        [routerLink]="['/quality-inspector', logsService.selectedLogId()]"
+      >
+        🔍 Quality Inspector
+      </a>
     </div>
 
     <div class="view-content" *ngIf="logsService.selectedSession()">
+      <!-- Quality Timeline -->
+      <app-quality-timeline
+        *ngIf="activeView === 'timeline' && logsService.qualityTimelineData()"
+        [data]="logsService.qualityTimelineData()"
+      />
+
       <app-log-timeline
         *ngIf="activeView === 'timeline'"
         [session]="logsService.selectedSession()!"

@@ -8,12 +8,14 @@ import { ResearchResultService } from './research-result.service';
 import { ResearchResultEntity } from './entities/research-result.entity';
 import { OrchestrationModule } from '../orchestration/orchestration.module';
 import { LoggingModule } from '../logging/logging.module';
+import { KnowledgeModule } from '../knowledge/knowledge.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ResearchResultEntity]),
     OrchestrationModule,
     LoggingModule,
+    KnowledgeModule,
   ],
   controllers: [
     ResearchController,

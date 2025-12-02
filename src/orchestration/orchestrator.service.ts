@@ -47,18 +47,88 @@ export class Orchestrator {
     const startTime = Date.now();
     const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
 
-    // 1. PLANNING PHASE
+    // 1. PLANNING PHASE WITH EVALUATION FEEDBACK LOOP
     await this.eventCoordinator.emit(logId, 'session_started', { query });
 
-    const plan = await this.plannerService.createPlan(query, logId);
+    const MAX_PLAN_ATTEMPTS = 3;
+    let plan = await this.plannerService.createPlan(query, logId);
+    let planAttempt = 1;
 
     console.log(
-      `[Orchestrator] Plan created with ${plan.phases.length} phases, entering execution loop...`,
+      `[Orchestrator] Plan created with ${plan.phases.length} phases, evaluating...`,
     );
 
-    // PLAN EVALUATION
-    const searchQueries = this.resultExtractor.extractSearchQueries(plan);
-    await this.evaluationCoordinator.evaluatePlan(logId, plan, searchQueries);
+    // PLAN EVALUATION WITH FEEDBACK LOOP
+    while (planAttempt <= MAX_PLAN_ATTEMPTS) {
+      const searchQueries = this.resultExtractor.extractSearchQueries(plan);
+      const evaluationResult = await this.evaluationCoordinator.evaluatePlan(
+        logId,
+        plan,
+        searchQueries,
+      );
+
+      if (evaluationResult.passed || evaluationResult.evaluationSkipped) {
+        console.log(
+          `[Orchestrator] Plan evaluation passed on attempt ${planAttempt}`,
+        );
+        break;
+      }
+
+      // Plan failed evaluation - extract feedback and regenerate
+      console.log(
+        `[Orchestrator] Plan evaluation FAILED on attempt ${planAttempt}/${MAX_PLAN_ATTEMPTS}`,
+      );
+
+      if (planAttempt >= MAX_PLAN_ATTEMPTS) {
+        console.log(
+          `[Orchestrator] Max plan attempts (${MAX_PLAN_ATTEMPTS}) reached - proceeding with current plan`,
+        );
+        // Log warning that we're proceeding with a failing plan
+        await this.eventCoordinator.emit(logId, 'plan_evaluation_warning', {
+          message: `Plan failed evaluation after ${MAX_PLAN_ATTEMPTS} attempts - proceeding anyway`,
+          finalScores: evaluationResult.scores,
+          passed: false,
+        });
+        break;
+      }
+
+      // Extract feedback from evaluation result
+      const lastAttempt =
+        evaluationResult.attempts[evaluationResult.attempts.length - 1];
+      const feedback = this.extractEvaluationFeedback(
+        evaluationResult,
+        lastAttempt,
+        planAttempt,
+      );
+
+      console.log(
+        `[Orchestrator] Regenerating plan with feedback: ${feedback.critique.substring(0, 100)}...`,
+      );
+
+      // Emit plan regeneration event
+      await this.eventCoordinator.emit(logId, 'plan_regeneration_started', {
+        attemptNumber: planAttempt + 1,
+        previousScores: evaluationResult.scores,
+        failingDimensions: feedback.failingDimensions,
+        critique: feedback.critique,
+      });
+
+      // Regenerate plan with feedback
+      plan = await this.plannerService.regeneratePlanWithFeedback(
+        query,
+        logId,
+        feedback,
+      );
+
+      planAttempt++;
+      console.log(
+        `[Orchestrator] Plan regenerated (attempt ${planAttempt}), re-evaluating...`,
+      );
+    }
+
+    console.log(
+      `[Orchestrator] Plan finalized after ${planAttempt} attempt(s), entering execution loop...`,
+    );
 
     // Log the FULL plan with all phases and steps
     await this.eventCoordinator.emit(logId, 'plan_created', {
@@ -325,5 +395,103 @@ export class Orchestrator {
       phaseName.includes('gather') ||
       phaseName.includes('retriev')
     );
+  }
+
+  /**
+   * Extract structured feedback from evaluation result for plan regeneration.
+   * This extracts critique, failing dimensions, and specific issues from the
+   * evaluation to provide actionable feedback to the planner.
+   */
+  private extractEvaluationFeedback(
+    evaluationResult: {
+      passed: boolean;
+      scores: Record<string, number>;
+      attempts: Array<{
+        evaluatorResults: Array<{
+          role: string;
+          critique: string;
+          explanation?: string;
+        }>;
+        iterationDecision?: {
+          specificIssues: Array<{ issue: string; fix: string }>;
+          feedbackToPlanner: string;
+        };
+      }>;
+    },
+    lastAttempt: {
+      evaluatorResults: Array<{
+        role: string;
+        critique: string;
+        explanation?: string;
+      }>;
+      iterationDecision?: {
+        specificIssues: Array<{ issue: string; fix: string }>;
+        feedbackToPlanner: string;
+      };
+    } | undefined,
+    attemptNumber: number,
+  ): {
+    critique: string;
+    specificIssues: Array<{ issue: string; fix: string }>;
+    failingDimensions: string[];
+    scores: Record<string, number>;
+    attemptNumber: number;
+  } {
+    // Extract failing dimensions (scores below threshold)
+    const PASS_THRESHOLD = 0.6;
+    const failingDimensions = Object.entries(evaluationResult.scores)
+      .filter(([_, score]) => score < PASS_THRESHOLD)
+      .map(([dim, _]) => dim);
+
+    // Extract critique from evaluator results
+    let critique = '';
+    const specificIssues: Array<{ issue: string; fix: string }> = [];
+
+    if (lastAttempt) {
+      // Collect critiques from all evaluators
+      const critiques = lastAttempt.evaluatorResults
+        .filter((r) => r.critique && r.critique.trim() !== '')
+        .map((r) => `[${r.role}]: ${r.critique}`);
+
+      critique = critiques.join('\n\n');
+
+      // Use iteration decision if available
+      if (lastAttempt.iterationDecision) {
+        if (lastAttempt.iterationDecision.feedbackToPlanner) {
+          critique =
+            lastAttempt.iterationDecision.feedbackToPlanner + '\n\n' + critique;
+        }
+        if (lastAttempt.iterationDecision.specificIssues) {
+          specificIssues.push(...lastAttempt.iterationDecision.specificIssues);
+        }
+      }
+    }
+
+    // If no critique was extracted, generate a generic one based on failing dimensions
+    if (!critique || critique.trim() === '') {
+      critique = `The plan failed evaluation. Failing dimensions: ${failingDimensions.join(', ')}. Please ensure the search queries directly address the user's question and use appropriate language/dates.`;
+    }
+
+    // Add specific issues for common failure patterns
+    if (failingDimensions.includes('queryCoverage')) {
+      specificIssues.push({
+        issue: 'Search queries do not cover the key aspects of the user query',
+        fix: 'Ensure all search queries directly relate to what the user is asking about',
+      });
+    }
+    if (failingDimensions.includes('queryAccuracy')) {
+      specificIssues.push({
+        issue: 'Search queries do not accurately reflect the user intent',
+        fix: 'Match the language and topic of the user query exactly',
+      });
+    }
+
+    return {
+      critique,
+      specificIssues,
+      failingDimensions,
+      scores: evaluationResult.scores,
+      attemptNumber,
+    };
   }
 }

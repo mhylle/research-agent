@@ -24,6 +24,11 @@
         </div>
       } @else if (selectedEvaluation(); as evaluation) {
         <div class="evaluation-detail">
+          <!-- Quality Timeline -->
+          @if (timelineData()) {
+            <app-quality-timeline [data]="timelineData()" />
+          }
+
           <!-- Header -->
           <div class="detail-section">
             <h2>Overview</h2>

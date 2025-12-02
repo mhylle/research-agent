@@ -1,0 +1,445 @@
+<div class="quality-inspector" *ngIf="inspectorData() as data">
+  <!-- Header Section -->
+  <header class="inspector-header">
+    <div class="header-content">
+      <h1 class="inspector-title">Research Quality Inspector</h1>
+      <div class="header-meta">
+        <span class="log-badge">{{ data.logId }}</span>
+        <span class="duration-badge">{{ formatDuration(data.totalDuration) }}</span>
+        <button
+          *ngIf="!isCompareMode()"
+          class="compare-button"
+          (click)="openSessionPicker()">
+          Compare
+        </button>
+        <button
+          *ngIf="isCompareMode()"
+          class="clear-compare-button"
+          (click)="clearComparison()">
+          Clear Comparison
+        </button>
+      </div>
+    </div>
+    <p class="query-text">{{ data.query }}</p>
+  </header>
+
+  <!-- Quality Timeline -->
+  <app-quality-timeline [data]="timelineData()"></app-quality-timeline>
+
+  <!-- Comparison Layout or Single View -->
+  <div class="comparison-container" [class.compare-mode]="isCompareMode()">
+    <!-- Session A (Current) -->
+    <div class="session-column session-a">
+      <div class="session-label" *ngIf="isCompareMode()">Session A (Current)</div>
+
+      <!-- Dashboard Grid -->
+      <div class="dashboard-grid">
+    <!-- Plan Evolution Card (Left) -->
+    <div class="card plan-evolution-card">
+      <div class="card-header">
+        <h2 class="card-title">Plan Evolution</h2>
+        <span class="regenerated-badge" *ngIf="data.planRegenerated">Regenerated</span>
+      </div>
+
+      <div class="chart-container">
+        <app-radar-chart
+          [series]="getPlanEvolutionSeries()"
+          [width]="350"
+          [height]="350"
+          [maxValue]="100"
+          [showLegend]="true">
+        </app-radar-chart>
+      </div>
+
+      <div class="progression-sparkline" *ngIf="getOverallPlanProgressionSparkline().length > 1">
+        <span class="sparkline-label">Overall Progression</span>
+        <app-sparkline
+          [data]="getOverallPlanProgressionSparkline()"
+          [width]="80"
+          [height]="24"
+          [showDelta]="true"
+          deltaLabel="improvement">
+        </app-sparkline>
+      </div>
+
+      <div class="pivot-section" *ngIf="data.planRegenerated && data.planAttempts[0]?.critique">
+        <h3 class="pivot-title">Pivot Reason (Critique)</h3>
+        <p class="critique-text">{{ data.planAttempts[0].critique }}</p>
+      </div>
+    </div>
+
+    <!-- Middle Column -->
+    <div class="middle-column">
+      <!-- Query Accuracy -->
+      <div class="card metric-card">
+        <h3 class="metric-title">Query Accuracy</h3>
+        <div class="circular-progress">
+          <svg viewBox="0 0 120 120" class="progress-svg">
+            <circle cx="60" cy="60" r="50" class="progress-bg"></circle>
+            <circle
+              cx="60"
+              cy="60"
+              r="50"
+              class="progress-fill"
+              [style.stroke-dasharray]="314"
+              [style.stroke-dashoffset]="314 - (314 * ((data.planAttempts[data.planAttempts.length - 1]?.scores?.queryAccuracy ?? 0) / 100))">
+            </circle>
+          </svg>
+          <span class="progress-text">{{ ((data.planAttempts[data.planAttempts.length - 1]?.scores?.queryAccuracy ?? 0)).toFixed(0) }}%</span>
+        </div>
+        <div class="sparkline-wrapper" *ngIf="getQueryAccuracySparkline().length > 1">
+          <app-sparkline
+            [data]="getQueryAccuracySparkline()"
+            [width]="40"
+            [height]="16"
+            [showDelta]="true"
+            deltaLabel="improvement">
+          </app-sparkline>
+        </div>
+      </div>
+
+      <!-- Context Recall -->
+      <div class="card metric-card">
+        <h3 class="metric-title">Context Recall</h3>
+        <div class="circular-progress">
+          <svg viewBox="0 0 120 120" class="progress-svg">
+            <circle cx="60" cy="60" r="50" class="progress-bg"></circle>
+            <circle
+              cx="60"
+              cy="60"
+              r="50"
+              class="progress-fill"
+              [style.stroke-dasharray]="314"
+              [style.stroke-dashoffset]="314 - (314 * ((data.retrievalScores?.contextRecall || 0) / 100))">
+            </circle>
+          </svg>
+          <span class="progress-text">{{ (data.retrievalScores?.contextRecall || 0).toFixed(0) }}%</span>
+        </div>
+        <div class="sparkline-wrapper" *ngIf="getContextRecallSparkline().length > 1">
+          <app-sparkline
+            [data]="getContextRecallSparkline()"
+            [width]="40"
+            [height]="16"
+            [showDelta]="true"
+            deltaLabel="change">
+          </app-sparkline>
+        </div>
+      </div>
+
+      <!-- Retrieval Quality -->
+      <div class="card retrieval-card">
+        <h3 class="card-title">Retrieval Quality</h3>
+        <div class="chart-container-small">
+          <app-radar-chart
+            [series]="getRetrievalQualitySeries()"
+            [width]="280"
+            [height]="280"
+            [maxValue]="100"
+            [showLegend]="false">
+          </app-radar-chart>
+        </div>
+        <div class="progression-sparkline" *ngIf="getRetrievalProgressionSparkline().length >= 1">
+          <span class="sparkline-label">Quality Score</span>
+          <app-sparkline
+            [data]="getRetrievalProgressionSparkline()"
+            [width]="80"
+            [height]="24"
+            [showDelta]="false">
+          </app-sparkline>
+        </div>
+      </div>
+
+      <!-- Source Credibility Breakdown -->
+      <div class="source-credibility-section" *ngIf="data.sourceDetails && data.sourceDetails.length > 0">
+        <app-source-credibility [sources]="data.sourceDetails"></app-source-credibility>
+      </div>
+
+      <!-- Source Metrics -->
+      <div class="metrics-row">
+        <div class="mini-metric">
+          <span class="mini-metric-label">Source Quality</span>
+          <span class="mini-metric-value">{{ (data.retrievalScores?.sourceQuality || 0).toFixed(0) }}%</span>
+        </div>
+        <div class="mini-metric">
+          <span class="mini-metric-label">Completeness</span>
+          <span class="mini-metric-value">{{ (data.retrievalScores?.coverageCompleteness || 0).toFixed(0) }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Final Answer Quality Card (Right) -->
+    <div class="card answer-quality-card">
+      <div class="card-header">
+        <h2 class="card-title">Final Answer Quality</h2>
+        <span class="hallucination-badge"
+              [class.low-risk]="data.hallucinationRisk === 'low'"
+              [class.medium-risk]="data.hallucinationRisk === 'medium'"
+              [class.high-risk]="data.hallucinationRisk === 'high'">
+          Hallucination Risk: {{ data.hallucinationRisk }}
+        </span>
+      </div>
+
+      <div class="chart-container">
+        <app-radar-chart
+          [series]="getAnswerQualitySeries()"
+          [width]="350"
+          [height]="350"
+          [maxValue]="100"
+          [showLegend]="false">
+        </app-radar-chart>
+      </div>
+
+      <div class="progression-sparkline" *ngIf="getAnswerProgressionSparkline().length >= 1">
+        <span class="sparkline-label">Overall Quality</span>
+        <app-sparkline
+          [data]="getAnswerProgressionSparkline()"
+          [width]="80"
+          [height]="24"
+          [showDelta]="false">
+        </app-sparkline>
+      </div>
+
+      <div class="answer-metrics">
+        <div class="bar-metric">
+          <div class="bar-header">
+            <span class="bar-label">Relevance</span>
+            <span class="bar-value">{{ (data.answerScores?.answerRelevance || 0).toFixed(0) }}%</span>
+          </div>
+          <div class="bar-container">
+            <div class="bar-fill" [style.width.%]="data.answerScores?.answerRelevance || 0"></div>
+          </div>
+        </div>
+
+        <div class="bar-metric">
+          <div class="bar-header">
+            <span class="bar-label">Accuracy</span>
+            <span class="bar-value">{{ (data.answerScores?.accuracy || 0).toFixed(0) }}%</span>
+          </div>
+          <div class="bar-container">
+            <div class="bar-fill" [style.width.%]="data.answerScores?.accuracy || 0"></div>
+          </div>
+        </div>
+
+        <div class="bar-metric">
+          <div class="bar-header">
+            <span class="bar-label">Faithfulness</span>
+            <span class="bar-value">{{ (data.answerScores?.faithfulness || 0).toFixed(0) }}%</span>
+          </div>
+          <div class="bar-container">
+            <div class="bar-fill" [style.width.%]="data.answerScores?.faithfulness || 0"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+    </div>
+
+    <!-- Session B (Compare) -->
+    <div class="session-column session-b" *ngIf="isCompareMode() && compareData() as compareData">
+      <div class="session-label">Session B (Compare)</div>
+
+      <!-- Dashboard Grid for Compare Session -->
+      <div class="dashboard-grid">
+        <!-- Plan Evolution Card -->
+        <div class="card plan-evolution-card">
+          <div class="card-header">
+            <h2 class="card-title">Plan Evolution</h2>
+            <span class="regenerated-badge" *ngIf="compareData.planRegenerated">Regenerated</span>
+            <div class="delta-badge" *ngIf="data.planAttempts.length > 0 && compareData.planAttempts.length > 0"
+                 [class.positive]="calculateDelta(
+                   data.planAttempts[data.planAttempts.length - 1]?.scores?.queryAccuracy,
+                   compareData.planAttempts[compareData.planAttempts.length - 1]?.scores?.queryAccuracy
+                 ).isPositive"
+                 [class.negative]="!calculateDelta(
+                   data.planAttempts[data.planAttempts.length - 1]?.scores?.queryAccuracy,
+                   compareData.planAttempts[compareData.planAttempts.length - 1]?.scores?.queryAccuracy
+                 ).isPositive">
+              {{ formatDelta(
+                calculateDelta(
+                  data.planAttempts[data.planAttempts.length - 1]?.scores?.queryAccuracy,
+                  compareData.planAttempts[compareData.planAttempts.length - 1]?.scores?.queryAccuracy
+                ).delta,
+                calculateDelta(
+                  data.planAttempts[data.planAttempts.length - 1]?.scores?.queryAccuracy,
+                  compareData.planAttempts[compareData.planAttempts.length - 1]?.scores?.queryAccuracy
+                ).isPositive
+              ) }}
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <app-radar-chart
+              [series]="getPlanEvolutionSeries()"
+              [width]="350"
+              [height]="350"
+              [maxValue]="100"
+              [showLegend]="true">
+            </app-radar-chart>
+          </div>
+
+          <div class="progression-sparkline" *ngIf="getOverallPlanProgressionSparkline().length > 1">
+            <span class="sparkline-label">Overall Progression</span>
+            <app-sparkline
+              [data]="getOverallPlanProgressionSparkline()"
+              [width]="80"
+              [height]="24"
+              [showDelta]="true"
+              deltaLabel="improvement">
+            </app-sparkline>
+          </div>
+
+          <div class="pivot-section" *ngIf="compareData.planRegenerated && compareData.planAttempts[0]?.critique">
+            <h3 class="pivot-title">Pivot Reason (Critique)</h3>
+            <p class="critique-text">{{ compareData.planAttempts[0].critique }}</p>
+          </div>
+        </div>
+
+        <!-- Middle Column -->
+        <div class="middle-column">
+          <!-- Query Accuracy -->
+          <div class="card metric-card">
+            <h3 class="metric-title">Query Accuracy</h3>
+            <div class="circular-progress">
+              <svg viewBox="0 0 120 120" class="progress-svg">
+                <circle cx="60" cy="60" r="50" class="progress-bg"></circle>
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  class="progress-fill"
+                  [style.stroke-dasharray]="314"
+                  [style.stroke-dashoffset]="314 - (314 * ((compareData.planAttempts[compareData.planAttempts.length - 1]?.scores?.queryAccuracy ?? 0) / 100))">
+                </circle>
+              </svg>
+              <span class="progress-text">{{ ((compareData.planAttempts[compareData.planAttempts.length - 1]?.scores?.queryAccuracy ?? 0)).toFixed(0) }}%</span>
+            </div>
+          </div>
+
+          <!-- Context Recall -->
+          <div class="card metric-card">
+            <h3 class="metric-title">Context Recall</h3>
+            <div class="circular-progress">
+              <svg viewBox="0 0 120 120" class="progress-svg">
+                <circle cx="60" cy="60" r="50" class="progress-bg"></circle>
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  class="progress-fill"
+                  [style.stroke-dasharray]="314"
+                  [style.stroke-dashoffset]="314 - (314 * ((compareData.retrievalScores?.contextRecall || 0) / 100))">
+                </circle>
+              </svg>
+              <span class="progress-text">{{ (compareData.retrievalScores?.contextRecall || 0).toFixed(0) }}%</span>
+            </div>
+          </div>
+
+          <!-- Retrieval Quality -->
+          <div class="card retrieval-card">
+            <h3 class="card-title">Retrieval Quality</h3>
+            <div class="chart-container-small">
+              <app-radar-chart
+                [series]="getRetrievalQualitySeries()"
+                [width]="280"
+                [height]="280"
+                [maxValue]="100"
+                [showLegend]="false">
+              </app-radar-chart>
+            </div>
+          </div>
+
+          <!-- Source Credibility Breakdown -->
+          <div class="source-credibility-section" *ngIf="compareData.sourceDetails && compareData.sourceDetails.length > 0">
+            <app-source-credibility [sources]="compareData.sourceDetails"></app-source-credibility>
+          </div>
+
+          <!-- Source Metrics -->
+          <div class="metrics-row">
+            <div class="mini-metric">
+              <span class="mini-metric-label">Source Quality</span>
+              <span class="mini-metric-value">{{ (compareData.retrievalScores?.sourceQuality || 0).toFixed(0) }}%</span>
+            </div>
+            <div class="mini-metric">
+              <span class="mini-metric-label">Completeness</span>
+              <span class="mini-metric-value">{{ (compareData.retrievalScores?.coverageCompleteness || 0).toFixed(0) }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Final Answer Quality Card -->
+        <div class="card answer-quality-card">
+          <div class="card-header">
+            <h2 class="card-title">Final Answer Quality</h2>
+            <span class="hallucination-badge"
+                  [class.low-risk]="compareData.hallucinationRisk === 'low'"
+                  [class.medium-risk]="compareData.hallucinationRisk === 'medium'"
+                  [class.high-risk]="compareData.hallucinationRisk === 'high'">
+              Hallucination Risk: {{ compareData.hallucinationRisk }}
+            </span>
+          </div>
+
+          <div class="chart-container">
+            <app-radar-chart
+              [series]="getAnswerQualitySeries()"
+              [width]="350"
+              [height]="350"
+              [maxValue]="100"
+              [showLegend]="false">
+            </app-radar-chart>
+          </div>
+
+          <div class="answer-metrics">
+            <div class="bar-metric">
+              <div class="bar-header">
+                <span class="bar-label">Relevance</span>
+                <span class="bar-value">{{ (compareData.answerScores?.answerRelevance || 0).toFixed(0) }}%</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill" [style.width.%]="compareData.answerScores?.answerRelevance || 0"></div>
+              </div>
+            </div>
+
+            <div class="bar-metric">
+              <div class="bar-header">
+                <span class="bar-label">Accuracy</span>
+                <span class="bar-value">{{ (compareData.answerScores?.accuracy || 0).toFixed(0) }}%</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill" [style.width.%]="compareData.answerScores?.accuracy || 0"></div>
+              </div>
+            </div>
+
+            <div class="bar-metric">
+              <div class="bar-header">
+                <span class="bar-label">Faithfulness</span>
+                <span class="bar-value">{{ (compareData.answerScores?.faithfulness || 0).toFixed(0) }}%</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill" [style.width.%]="compareData.answerScores?.faithfulness || 0"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State for Compare Session -->
+    <div class="session-column session-b loading-compare" *ngIf="isCompareMode() && isLoadingCompare()">
+      <div class="session-label">Session B (Compare)</div>
+      <div class="loading-message">
+        <p>Loading comparison session...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Session Picker Modal -->
+<app-session-picker
+  *ngIf="showSessionPicker()"
+  (sessionSelected)="onSessionSelected($event)"
+  (closeModal)="closeSessionPicker()">
+</app-session-picker>
+
+<div class="empty-state" *ngIf="!inspectorData()">
+  <p>No evaluation data available for this session.</p>
+</div>

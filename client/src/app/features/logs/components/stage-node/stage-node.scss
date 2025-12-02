@@ -17,6 +17,18 @@
     box-shadow: $shadow-lg;
   }
 
+  // Plan Regeneration variant
+  &--regeneration {
+    border-left-color: #f59e0b;
+    background: linear-gradient(to right, rgba(#f59e0b, 0.05), $oatmeal);
+  }
+
+  // Plan Evaluation Warning variant
+  &--warning {
+    border-left-color: #ef4444;
+    background: linear-gradient(to right, rgba(#ef4444, 0.05), $oatmeal);
+  }
+
   &__header {
     @include flex-between;
     cursor: pointer;
@@ -118,6 +130,131 @@
   }
 }
 
+// Attempt badge styling
+.attempt-badge {
+  @include status-badge(#f59e0b, white);
+  font-weight: $font-semibold;
+  margin-left: $spacing-xs;
+}
+
+// Regeneration section styling
+.regeneration-section {
+  margin: $spacing-md 0;
+  padding: $spacing-md;
+  background: rgba(#f59e0b, 0.05);
+  border-radius: $border-radius;
+  border: 1px solid rgba(#f59e0b, 0.2);
+}
+
+.regeneration-title {
+  font-family: $font-family-heading;
+  font-size: $font-size-lg;
+  font-weight: $font-semibold;
+  color: #f59e0b;
+  margin-bottom: $spacing-md;
+}
+
+.failing-dimensions {
+  margin-bottom: $spacing-md;
+
+  h5 {
+    font-family: $font-family-heading;
+    font-size: $font-size-sm;
+    font-weight: $font-semibold;
+    color: $text-secondary;
+    margin-bottom: $spacing-sm;
+    text-transform: uppercase;
+  }
+}
+
+.dimension-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.dimension-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-xs $spacing-sm;
+  background: $oatmeal;
+  border-radius: $border-radius-sm;
+  border: 1px solid $stone-300;
+}
+
+.dimension-name {
+  font-weight: $font-medium;
+  color: $text-primary;
+}
+
+.dimension-score {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  padding: 2px 8px;
+  background: $moss;
+  color: white;
+  border-radius: $border-radius-sm;
+
+  &.score-fail {
+    background: #ef4444;
+  }
+}
+
+.previous-scores,
+.critique-section,
+.final-scores {
+  margin-top: $spacing-md;
+
+  h5 {
+    font-family: $font-family-heading;
+    font-size: $font-size-sm;
+    font-weight: $font-semibold;
+    color: $text-secondary;
+    margin-bottom: $spacing-sm;
+    text-transform: uppercase;
+  }
+}
+
+.critique-content {
+  padding: $spacing-sm;
+  background: $oatmeal;
+  border-radius: $border-radius-sm;
+  border-left: 3px solid #f59e0b;
+  font-family: $font-family;
+  line-height: $line-height;
+  color: $text-primary;
+  white-space: pre-wrap;
+}
+
+// Warning section styling
+.warning-section {
+  margin: $spacing-md 0;
+  padding: $spacing-md;
+  background: rgba(#ef4444, 0.05);
+  border-radius: $border-radius;
+  border: 1px solid rgba(#ef4444, 0.2);
+}
+
+.warning-title {
+  font-family: $font-family-heading;
+  font-size: $font-size-lg;
+  font-weight: $font-semibold;
+  color: #ef4444;
+  margin-bottom: $spacing-md;
+}
+
+.warning-message {
+  padding: $spacing-sm;
+  background: $oatmeal;
+  border-radius: $border-radius-sm;
+  border-left: 3px solid #ef4444;
+  font-family: $font-family;
+  line-height: $line-height;
+  color: $text-primary;
+  margin-bottom: $spacing-md;
+}
+
 // Responsive design
 @media (max-width: $breakpoint-md) {
   .stage-node {
@@ -140,5 +277,11 @@
     &__content {
       padding: 0 $spacing-md $spacing-md;
     }
+  }
+
+  .dimension-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-xs;
   }
 }

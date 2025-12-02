@@ -25,6 +25,9 @@ export type LogEventType =
   // Re-planning events
   | 'replan_triggered'
   | 'replan_completed'
+  // Plan regeneration events (evaluation feedback loop)
+  | 'plan_regeneration_started'
+  | 'plan_evaluation_warning'
   // Evaluation events
   | 'evaluation_started'
   | 'evaluation_completed'

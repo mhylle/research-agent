@@ -2,8 +2,10 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { EvaluationApiService } from '../../core/services/evaluation-api.service';
+import { LogsService } from '../../core/services/logs.service';
 import { EvaluationStatsComponent } from './evaluation-stats.component';
 import { EvaluationListComponent } from './evaluation-list.component';
+import { QualityTimelineComponent } from '../../shared/components/quality-timeline/quality-timeline.component';
 import {
   EvaluationStats,
   EvaluationFilters,
@@ -15,12 +17,13 @@ import {
 @Component({
   selector: 'app-evaluation-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, EvaluationStatsComponent, EvaluationListComponent],
+  imports: [CommonModule, RouterLink, EvaluationStatsComponent, EvaluationListComponent, QualityTimelineComponent],
   templateUrl: './evaluation-dashboard.component.html',
   styleUrls: ['./evaluation-dashboard.component.scss']
 })
 export class EvaluationDashboardComponent implements OnInit {
   private evaluationApi = inject(EvaluationApiService);
+  private logsService = inject(LogsService);
   private route = inject(ActivatedRoute);
 
   // State signals
@@ -57,11 +60,16 @@ export class EvaluationDashboardComponent implements OnInit {
     this.isLoadingStats() || this.isLoadingRecords() || this.isLoadingDetail()
   );
 
+  // Expose timeline data from LogsService
+  protected timelineData = this.logsService.qualityTimelineData;
+
   ngOnInit(): void {
     // Check if we have an ID parameter
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadDetail(id);
+      // Also load log details for timeline
+      this.logsService.selectSession(id);
     } else {
       this.loadStats();
       this.loadRecords();

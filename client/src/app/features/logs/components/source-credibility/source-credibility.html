@@ -1,0 +1,75 @@
+<div class="source-credibility">
+  <!-- Accordion Header -->
+  <div class="accordion-header" (click)="toggleExpanded()">
+    <div class="header-content">
+      <h3 class="header-title">Source Quality Breakdown</h3>
+      <span class="source-count">{{ sources.length }} sources</span>
+    </div>
+    <div class="header-actions">
+      <button
+        *ngIf="isExpanded"
+        class="sort-toggle"
+        (click)="toggleSort(); $event.stopPropagation()"
+        type="button">
+        Sort by: {{ sortBy === 'relevance' ? 'Relevance' : 'Quality' }}
+      </button>
+      <span class="expand-icon" [class.expanded]="isExpanded">▼</span>
+    </div>
+  </div>
+
+  <!-- Accordion Body -->
+  <div class="accordion-body" [class.expanded]="isExpanded">
+    <div class="source-list">
+      <div
+        *ngFor="let source of getSortedSources()"
+        class="source-card">
+        <!-- Source Header -->
+        <div class="source-header">
+          <div class="source-icon">🌐</div>
+          <div class="source-info">
+            <div class="source-url">{{ truncateUrl(source.url) }}</div>
+            <div class="source-metrics">
+              <span class="metric">
+                <span class="metric-label">Quality:</span>
+                <span class="metric-value" [class]="getScoreColor(source.qualityScore)">
+                  {{ formatScore(source.qualityScore) }}
+                </span>
+              </span>
+              <span class="metric-separator">·</span>
+              <span
+                class="result-type-badge"
+                [class]="getResultTypeBadgeColor(source.resultType)">
+                {{ source.resultType }}
+              </span>
+              <span class="metric-separator">·</span>
+              <span class="metric">
+                <span class="metric-label">Actionable:</span>
+                <span class="metric-value" [class]="getScoreColor(source.actionableScore)">
+                  {{ formatScore(source.actionableScore) }}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Relevance Score (Prominent) -->
+        <div class="relevance-section">
+          <span class="relevance-label">Relevance:</span>
+          <span class="relevance-score" [class]="getScoreColor(source.relevanceScore)">
+            {{ formatScore(source.relevanceScore) }}
+          </span>
+        </div>
+
+        <!-- Open Link -->
+        <a
+          [href]="source.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="open-link"
+          (click)="$event.stopPropagation()">
+          Open ↗
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

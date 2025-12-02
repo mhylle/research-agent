@@ -43,4 +43,10 @@ export class ResearchResultEntity {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  // Vector embedding for semantic search (768 dimensions for nomic-embed-text)
+  // Using 'text' type as TypeORM doesn't have native pgvector support
+  // The migration creates the actual vector(768) column
+  @Column({ type: 'text', nullable: true, select: false })
+  embedding?: string;
 }

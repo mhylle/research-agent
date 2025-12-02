@@ -187,6 +187,92 @@ describe('Multi-Provider Search System (e2e)', () => {
       }
     }, 15000); // 15 second timeout for network requests
 
+    it('should execute Brave search when API key is available', async () => {
+      if (!process.env.BRAVE_API_KEY) {
+        console.log('[Test] ⏭ Skipping Brave test (no API key)');
+        return;
+      }
+
+      const results = await braveProvider.execute({
+        query: 'artificial intelligence news 2024',
+        max_results: 3,
+      });
+
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBeGreaterThan(0);
+
+      results.forEach((result: SearchResult) => {
+        expect(result).toHaveProperty('title');
+        expect(result).toHaveProperty('url');
+        expect(result).toHaveProperty('content');
+      });
+
+      console.log(`[Test] ✓ Brave search returned ${results.length} results`);
+      console.log(`  First result: "${results[0].title}"`);
+    }, 20000);
+
+    it('should execute SerpAPI search when API key is available', async () => {
+      if (!process.env.SERPAPI_API_KEY) {
+        console.log('[Test] ⏭ Skipping SerpAPI test (no API key)');
+        return;
+      }
+
+      const results = await serpapiProvider.execute({
+        query: 'climate change research 2024',
+        max_results: 3,
+      });
+
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBeGreaterThan(0);
+
+      results.forEach((result: SearchResult) => {
+        expect(result).toHaveProperty('title');
+        expect(result).toHaveProperty('url');
+        expect(result).toHaveProperty('content');
+      });
+
+      console.log(`[Test] ✓ SerpAPI search returned ${results.length} results`);
+      console.log(`  First result: "${results[0].title}"`);
+    }, 20000);
+
+    it('should execute ALL available search providers and compare results', async () => {
+      const searchProviders = [
+        { name: 'duckduckgo_search', provider: duckduckgoProvider, requiresKey: false },
+        { name: 'brave_search', provider: braveProvider, requiresKey: true, keyEnv: 'BRAVE_API_KEY' },
+        { name: 'serpapi_search', provider: serpapiProvider, requiresKey: true, keyEnv: 'SERPAPI_API_KEY' },
+      ];
+
+      const testQuery = 'latest technology trends 2024';
+      const allResults: { provider: string; count: number; firstTitle: string }[] = [];
+
+      for (const sp of searchProviders) {
+        if (sp.requiresKey && !process.env[sp.keyEnv!]) {
+          console.log(`[Test] ⏭ Skipping ${sp.name} (no API key)`);
+          continue;
+        }
+
+        try {
+          const results = await sp.provider.execute({ query: testQuery, max_results: 3 });
+          allResults.push({
+            provider: sp.name,
+            count: results.length,
+            firstTitle: results[0]?.title || 'N/A',
+          });
+          console.log(`[Test] ✓ ${sp.name}: ${results.length} results`);
+        } catch (err) {
+          console.log(`[Test] ✗ ${sp.name} failed: ${(err as Error).message}`);
+        }
+      }
+
+      expect(allResults.length).toBeGreaterThan(0);
+      console.log('\n[Test] Multi-Provider Search Summary:');
+      allResults.forEach((r) => {
+        console.log(`  ${r.provider}: ${r.count} results - "${r.firstTitle}"`);
+      });
+    }, 60000);
+
     it('should execute search via ToolRegistry', async () => {
       const results = await toolRegistry.execute('duckduckgo_search', {
         query: 'artificial intelligence',

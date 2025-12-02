@@ -122,10 +122,17 @@ describe('BasePhaseExecutor', () => {
         1,
       );
 
-      // Should emit phase completion milestone
+      // Should emit phase completion milestone with step results
       expect(milestoneService.emitPhaseCompletion).toHaveBeenCalledWith(
         phase,
         context.logId,
+        expect.arrayContaining([
+          expect.objectContaining({
+            stepId: 'step1',
+            status: 'completed',
+            output: 'test result',
+          }),
+        ]),
       );
 
       // Should return successful result

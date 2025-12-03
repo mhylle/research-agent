@@ -7,6 +7,9 @@ import { EventCoordinatorService } from './services/event-coordinator.service';
 import { ResultExtractorService } from './services/result-extractor.service';
 import { EvaluationCoordinatorService } from './services/evaluation-coordinator.service';
 import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry';
+import { WorkingMemoryService } from './services/working-memory.service';
+import { QueryDecomposerService } from './services/query-decomposer.service';
+import { OllamaService } from '../llm/ollama.service';
 import { Plan } from './interfaces/plan.interface';
 
 describe('Orchestrator', () => {
@@ -18,6 +21,9 @@ describe('Orchestrator', () => {
   let mockResultExtractor: jest.Mocked<ResultExtractorService>;
   let mockEvaluationCoordinator: jest.Mocked<any>;
   let mockPhaseExecutorRegistry: jest.Mocked<PhaseExecutorRegistry>;
+  let mockWorkingMemory: jest.Mocked<WorkingMemoryService>;
+  let mockQueryDecomposer: jest.Mocked<QueryDecomposerService>;
+  let mockLlmService: jest.Mocked<OllamaService>;
 
   const mockPlan: Plan = {
     id: 'plan-1',
@@ -56,6 +62,7 @@ describe('Orchestrator', () => {
         .fn()
         .mockResolvedValue({ action: 'skip', reason: 'test' }),
       setPhaseResults: jest.fn(),
+      regeneratePlanWithFeedback: jest.fn().mockResolvedValue(mockPlan),
     } as unknown as jest.Mocked<PlannerService>;
 
     mockLogService = {
@@ -64,6 +71,8 @@ describe('Orchestrator', () => {
 
     mockEventEmitter = {
       emit: jest.fn(),
+      on: jest.fn(),
+      off: jest.fn(),
     } as unknown as jest.Mocked<EventEmitter2>;
 
     mockEventCoordinator = {
@@ -107,6 +116,33 @@ describe('Orchestrator', () => {
       }),
     };
 
+    mockWorkingMemory = {
+      initialize: jest.fn().mockReturnValue({}),
+      cleanup: jest.fn(),
+      setScratchPadValue: jest.fn(),
+      getScratchPadValue: jest.fn(),
+      addSubGoal: jest.fn(),
+      addGatheredInfo: jest.fn(),
+      addGap: jest.fn(),
+      updatePhase: jest.fn(),
+    } as unknown as jest.Mocked<WorkingMemoryService>;
+
+    mockQueryDecomposer = {
+      decomposeQuery: jest.fn().mockResolvedValue({
+        originalQuery: 'test query',
+        isComplex: false,
+        subQueries: [],
+        executionPlan: [],
+        reasoning: 'Simple query, no decomposition needed',
+      }),
+    } as unknown as jest.Mocked<QueryDecomposerService>;
+
+    mockLlmService = {
+      chat: jest.fn().mockResolvedValue({
+        message: { content: 'Test response' },
+      }),
+    } as unknown as jest.Mocked<OllamaService>;
+
     // Mock phase executor that returns successful results
     const mockPhaseExecutor = {
       canHandle: jest.fn().mockReturnValue(true),
@@ -144,6 +180,9 @@ describe('Orchestrator', () => {
           provide: PhaseExecutorRegistry,
           useValue: mockPhaseExecutorRegistry,
         },
+        { provide: WorkingMemoryService, useValue: mockWorkingMemory },
+        { provide: QueryDecomposerService, useValue: mockQueryDecomposer },
+        { provide: OllamaService, useValue: mockLlmService },
       ],
     }).compile();
 
@@ -151,9 +190,14 @@ describe('Orchestrator', () => {
   });
 
   describe('executeResearch', () => {
-    it('should create plan and execute all phases', async () => {
+    it('should create plan and execute all phases for simple query', async () => {
       const result = await orchestrator.executeResearch('test query');
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockQueryDecomposer.decomposeQuery).toHaveBeenCalledWith(
+        'test query',
+        expect.any(String),
+      );
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockPlannerService.createPlan).toHaveBeenCalledWith(
         'test query',
@@ -180,6 +224,102 @@ describe('Orchestrator', () => {
       expect(mockEventCoordinator.emit).toHaveBeenCalledWith(
         expect.any(String),
         'session_completed',
+        expect.any(Object),
+      );
+    });
+
+    it('should initialize and cleanup working memory', async () => {
+      await orchestrator.executeResearch('test query');
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockWorkingMemory.initialize).toHaveBeenCalledWith(
+        expect.any(String),
+        'test query',
+      );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockWorkingMemory.cleanup).toHaveBeenCalledWith(expect.any(String));
+    });
+
+    it('should store decomposition in working memory', async () => {
+      await orchestrator.executeResearch('test query');
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockWorkingMemory.setScratchPadValue).toHaveBeenCalledWith(
+        expect.any(String),
+        'decomposition',
+        expect.objectContaining({
+          originalQuery: 'test query',
+          isComplex: false,
+        }),
+      );
+    });
+
+    it('should execute decomposed query for complex queries', async () => {
+      const complexDecomposition = {
+        originalQuery: 'Compare AI and blockchain impacts',
+        isComplex: true,
+        subQueries: [
+          {
+            id: 'sq-1',
+            text: 'What are AI impacts?',
+            order: 1,
+            dependencies: [],
+            type: 'factual' as const,
+            priority: 'high' as const,
+            estimatedComplexity: 3,
+          },
+          {
+            id: 'sq-2',
+            text: 'What are blockchain impacts?',
+            order: 2,
+            dependencies: [],
+            type: 'factual' as const,
+            priority: 'high' as const,
+            estimatedComplexity: 3,
+          },
+        ],
+        executionPlan: [
+          [
+            {
+              id: 'sq-1',
+              text: 'What are AI impacts?',
+              order: 1,
+              dependencies: [],
+              type: 'factual' as const,
+              priority: 'high' as const,
+              estimatedComplexity: 3,
+            },
+            {
+              id: 'sq-2',
+              text: 'What are blockchain impacts?',
+              order: 2,
+              dependencies: [],
+              type: 'factual' as const,
+              priority: 'high' as const,
+              estimatedComplexity: 3,
+            },
+          ],
+        ],
+        reasoning: 'Complex comparison query',
+      };
+
+      mockQueryDecomposer.decomposeQuery.mockResolvedValue(complexDecomposition);
+
+      const result = await orchestrator.executeResearch('Compare AI and blockchain impacts');
+
+      expect(result).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockEventCoordinator.emit).toHaveBeenCalledWith(
+        expect.any(String),
+        'sub_query_execution_started',
+        expect.objectContaining({
+          subQueryId: 'sq-1',
+        }),
+      );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockEventCoordinator.emit).toHaveBeenCalledWith(
+        expect.any(String),
+        'final_synthesis_started',
         expect.any(Object),
       );
     });

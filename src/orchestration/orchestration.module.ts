@@ -9,6 +9,7 @@ import { ResultExtractorService } from './services/result-extractor.service';
 import { StepConfigurationService } from './services/step-configuration.service';
 import { EvaluationCoordinatorService } from './services/evaluation-coordinator.service';
 import { WorkingMemoryService } from './services/working-memory.service';
+import { QueryDecomposerService } from './services/query-decomposer.service';
 import { ExecutorsModule } from '../executors/executors.module';
 import { LoggingModule } from '../logging/logging.module';
 import { LLMModule } from '../llm/llm.module';
@@ -40,6 +41,7 @@ import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
     StepConfigurationService,
     EvaluationCoordinatorService,
     WorkingMemoryService,
+    QueryDecomposerService,
     // Phase executors
     PhaseExecutorRegistry,
     SearchPhaseExecutor,
@@ -52,6 +54,7 @@ import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
     PlannerService,
     EventCoordinatorService,
     WorkingMemoryService,
+    QueryDecomposerService,
   ],
 })
 export class OrchestrationModule {}

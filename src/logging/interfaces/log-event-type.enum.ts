@@ -71,4 +71,13 @@ export type LogEventType =
   | 'reflection_completed'
   | 'reflection_integration_started'
   | 'reflection_integration_completed'
-  | 'reflection_integration_failed';
+  | 'reflection_integration_failed'
+  // Query decomposition events
+  | 'decomposition_started'
+  | 'sub_query_identified'
+  | 'decomposition_completed'
+  // Sub-query execution events
+  | 'sub_query_execution_started'
+  | 'sub_query_execution_completed'
+  | 'final_synthesis_started'
+  | 'final_synthesis_completed';

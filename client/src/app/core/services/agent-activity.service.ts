@@ -59,6 +59,9 @@ export class AgentActivityService {
   retrievalEvaluation = signal<EvaluationResult | null>(null);
   answerEvaluation = signal<EvaluationResult | null>(null);
 
+  // Reasoning events signal
+  reasoningEvents = signal<any[]>([]);
+
   private phaseCounter = 0; // Track current phase index
 
   // Computed signals
@@ -186,6 +189,23 @@ export class AgentActivityService {
       console.log('🔍 [EVALUATION] evaluation_failed SSE event received');
       this.handleEvaluationFailed(JSON.parse(e.data));
     });
+
+    // Reasoning events
+    this.eventSource.addEventListener('reasoning_thought', (e: MessageEvent) => {
+      this.handleReasoningEvent(JSON.parse(e.data), 'thought');
+    });
+
+    this.eventSource.addEventListener('reasoning_action_planned', (e: MessageEvent) => {
+      this.handleReasoningEvent(JSON.parse(e.data), 'action_planned');
+    });
+
+    this.eventSource.addEventListener('reasoning_observation', (e: MessageEvent) => {
+      this.handleReasoningEvent(JSON.parse(e.data), 'observation');
+    });
+
+    this.eventSource.addEventListener('reasoning_conclusion', (e: MessageEvent) => {
+      this.handleReasoningEvent(JSON.parse(e.data), 'conclusion');
+    });
   }
 
   disconnect(): void {
@@ -220,6 +240,8 @@ export class AgentActivityService {
     this.planEvaluation.set(null);
     this.retrievalEvaluation.set(null);
     this.answerEvaluation.set(null);
+    // Reset reasoning events
+    this.reasoningEvents.set([]);
   }
 
   // NEW ORCHESTRATOR EVENT HANDLERS
@@ -745,5 +767,34 @@ export class AgentActivityService {
         console.log('🔍 [EVALUATION] answerEvaluation signal updated:', this.answerEvaluation());
         break;
     }
+  }
+
+  /**
+   * Handle reasoning events for transparency into agent thinking
+   */
+  private handleReasoningEvent(event: any, type: 'thought' | 'action_planned' | 'observation' | 'conclusion'): void {
+    console.log(`🧠 [REASONING] ${type} event received:`, event);
+
+    const reasoningEvent = {
+      type,
+      id: event.id || `${type}-${Date.now()}`,
+      timestamp: new Date(event.timestamp || Date.now()),
+      content: event.content,
+      action: event.action,
+      tool: event.tool,
+      parameters: event.parameters,
+      reasoning: event.reasoning,
+      actionId: event.actionId,
+      result: event.result,
+      analysis: event.analysis,
+      implications: event.implications,
+      conclusion: event.conclusion,
+      supportingThoughts: event.supportingThoughts,
+      confidence: event.confidence,
+      nextSteps: event.nextSteps,
+      context: event.context
+    };
+
+    this.reasoningEvents.update(events => [...events, reasoningEvent]);
   }
 }

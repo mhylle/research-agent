@@ -94,9 +94,7 @@ export class KnowledgeSearchProvider implements ITool {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      console.error(
-        `[KnowledgeSearchProvider] Search failed: ${errorMessage}`,
-      );
+      console.error(`[KnowledgeSearchProvider] Search failed: ${errorMessage}`);
 
       const executionTime = Date.now() - startTime;
       this.logger.logToolExecution(

@@ -48,7 +48,10 @@ export class BraveSearchProvider implements ITool {
     if (typeof args.query !== 'string' || !args.query) {
       throw new Error('brave_search: query must be a non-empty string');
     }
-    if (args.max_results !== undefined && typeof args.max_results !== 'number') {
+    if (
+      args.max_results !== undefined &&
+      typeof args.max_results !== 'number'
+    ) {
       throw new Error('brave_search: max_results must be a number');
     }
     return {

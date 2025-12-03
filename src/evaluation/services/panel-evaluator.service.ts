@@ -191,7 +191,8 @@ export class PanelEvaluatorService {
       if (jsonMatch) {
         // Strip comments, remove trailing commas, and sanitize JSON string before parsing
         const commentStripped = this.stripJsonComments(jsonMatch[0]);
-        const trailingCommasRemoved = this.removeTrailingCommas(commentStripped);
+        const trailingCommasRemoved =
+          this.removeTrailingCommas(commentStripped);
         const sanitizedJson = this.sanitizeJsonString(trailingCommasRemoved);
         const parsed = JSON.parse(sanitizedJson);
 
@@ -276,7 +277,7 @@ export class PanelEvaluatorService {
   private removeTrailingCommas(str: string): string {
     // Remove trailing commas before } or ]
     return str
-      .replace(/,(\s*})/g, '$1')  // Remove , before }
+      .replace(/,(\s*})/g, '$1') // Remove , before }
       .replace(/,(\s*\])/g, '$1'); // Remove , before ]
   }
 

@@ -4,12 +4,13 @@ import { AgentActivityService, PlannedPhase } from '../../../../core/services/ag
 import { StageProgressHeaderComponent } from '../stage-progress-header/stage-progress-header';
 import { TaskCardComponent } from '../task-card/task-card.component';
 import { EvaluationDisplayComponent } from '../evaluation-display/evaluation-display.component';
+import { ReasoningTraceComponent } from '../../../../shared/components/reasoning-trace/reasoning-trace.component';
 import { ActivityTask } from '../../../../models';
 
 @Component({
   selector: 'app-agent-activity-view',
   standalone: true,
-  imports: [CommonModule, StageProgressHeaderComponent, TaskCardComponent, EvaluationDisplayComponent],
+  imports: [CommonModule, StageProgressHeaderComponent, TaskCardComponent, EvaluationDisplayComponent, ReasoningTraceComponent],
   templateUrl: './agent-activity-view.component.html',
   styleUrls: ['./agent-activity-view.component.scss']
 })
@@ -51,6 +52,9 @@ export class AgentActivityViewComponent implements OnInit, OnDestroy {
   readonly planEvaluation = computed(() => this.activityService.planEvaluation());
   readonly retrievalEvaluation = computed(() => this.activityService.retrievalEvaluation());
   readonly answerEvaluation = computed(() => this.activityService.answerEvaluation());
+
+  // Reasoning events signal
+  readonly reasoningEvents = computed(() => this.activityService.reasoningEvents());
 
   // Local state for planned phases section
   showPlannedPhases = signal<boolean>(true);

@@ -202,8 +202,9 @@ ${activeGaps.map((g) => `- [${g.severity}] ${g.description}`).join('\n') || '- N
       gatheredInfoCount: memory.gatheredInformation.length,
       hypothesesCount: memory.activeHypotheses.length,
       gapsCount: memory.identifiedGaps.length,
-      criticalGaps: memory.identifiedGaps.filter((g) => g.severity === 'critical')
-        .length,
+      criticalGaps: memory.identifiedGaps.filter(
+        (g) => g.severity === 'critical',
+      ).length,
       thoughtChainLength: memory.thoughtChain.length,
     };
   }

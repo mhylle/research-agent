@@ -32,7 +32,10 @@ export class LogsController {
       return await this.logsService.getSessionDetails(logId);
     } catch (error) {
       // Handle invalid UUID format (PostgreSQL error code 22P02)
-      if (error instanceof QueryFailedError && (error as any).code === '22P02') {
+      if (
+        error instanceof QueryFailedError &&
+        (error as any).code === '22P02'
+      ) {
         throw new NotFoundException(`Invalid logId format: ${logId}`);
       }
       throw error;
@@ -45,7 +48,10 @@ export class LogsController {
       return await this.logService.getExecutionMetrics(logId);
     } catch (error) {
       // Handle invalid UUID format (PostgreSQL error code 22P02)
-      if (error instanceof QueryFailedError && (error as any).code === '22P02') {
+      if (
+        error instanceof QueryFailedError &&
+        (error as any).code === '22P02'
+      ) {
         throw new NotFoundException(`Invalid logId format: ${logId}`);
       }
       throw error;
@@ -58,7 +64,10 @@ export class LogsController {
       return await this.logsService.getGraphData(logId);
     } catch (error) {
       // Handle invalid UUID format (PostgreSQL error code 22P02)
-      if (error instanceof QueryFailedError && (error as any).code === '22P02') {
+      if (
+        error instanceof QueryFailedError &&
+        (error as any).code === '22P02'
+      ) {
         throw new NotFoundException(`Invalid logId format: ${logId}`);
       }
       throw error;

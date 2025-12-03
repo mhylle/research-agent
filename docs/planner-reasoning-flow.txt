@@ -1,0 +1,73 @@
+PlannerService Reasoning Trace Integration Flow
+================================================
+
+createPlan(query, logId) Entry
+    |
+    v
+[1] emitThought: "Analyzing research query..."
+    - Context: { stage: 'planning', step: 1 }
+    |
+    v
+[2] emitThought: "Planning strategy: Will use LLM..."
+    - Context: { stage: 'planning', step: 2 }
+    - Returns: planningThoughtId ◄─┐
+    |                                │
+    v                                │
+[LLM Planning Loop]                 │
+    - Call LLM with planning tools  │
+    - Execute tool calls            │
+    - Build plan phases & steps     │
+    |                                │
+    v                                │
+[3] emitObservation: "Generated plan with X phases..." 
+    - Linked to: planningThoughtId ─┘
+    - Result: Plan structure details
+    - Analysis: "Plan structure created successfully..."
+    - Implications: ['Plan phases defined', 'Steps allocated', ...]
+    |
+    v
+[Auto-recovery & Validation]
+    - Add default steps to empty phases
+    - Ensure synthesis phase exists
+    |
+    v
+[4] emitConclusion: "Research plan finalized..."
+    - Supporting Thoughts: [planningThoughtId]
+    - Confidence: 0.9 or 0.8 (based on synthesis presence)
+    - Next Steps: [phase names for execution]
+    |
+    v
+Return Plan with status='executing'
+
+
+Event Timeline
+--------------
+Time    Event Type          Content
+----    ---------------     -------
+T0      reasoning_thought   Query analysis
+T1      reasoning_thought   Planning strategy (stores ID)
+T2      planning_started    UI notification
+T3-Tn   planning_iteration  LLM iterations
+Tn+1    reasoning_observation  Plan generated (references T1)
+Tn+2    auto_recovery       Optional: empty phases fixed
+Tn+3    synthesis_phase_auto_added  Optional: synthesis added
+Tn+4    reasoning_conclusion  Plan finalized (references T1)
+
+
+Integration Points
+------------------
+Module: OrchestrationModule
+    imports: [ReasoningModule] (via forwardRef)
+    
+Service: PlannerService
+    constructor: ReasoningTraceService injected
+    method: createPlan() - 4 reasoning trace emissions
+    
+Module: ReasoningModule
+    exports: [ReasoningTraceService]
+    
+Service: ReasoningTraceService
+    methods used:
+        - emitThought(logId, content, context) → thoughtId
+        - emitObservation(logId, actionId, result, analysis, implications) → observationId
+        - emitConclusion(logId, conclusion, supportingThoughts, confidence, nextSteps) → conclusionId

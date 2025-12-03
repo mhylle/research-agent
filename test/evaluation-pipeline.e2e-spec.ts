@@ -126,7 +126,9 @@ describe('Evaluation Pipeline (e2e)', () => {
       expect(record.retrievalEvaluation.passed).toBeDefined();
       expect(record.retrievalEvaluation.scores).toBeDefined();
       // The mock evaluator returns actionableInformation score
-      expect(Object.keys(record.retrievalEvaluation.scores).length).toBeGreaterThan(0);
+      expect(
+        Object.keys(record.retrievalEvaluation.scores).length,
+      ).toBeGreaterThan(0);
 
       // Verify answer evaluation was executed and stored
       expect(record.answerEvaluation).toBeDefined();
@@ -287,7 +289,10 @@ describe('Evaluation Pipeline (e2e)', () => {
             {
               function: {
                 name: 'create_plan',
-                arguments: { query: 'quantum computing', name: 'Research Plan' },
+                arguments: {
+                  query: 'quantum computing',
+                  name: 'Research Plan',
+                },
               },
             },
           ],
@@ -361,7 +366,9 @@ describe('Evaluation Pipeline (e2e)', () => {
                   phaseId: expect.any(String),
                   toolName: 'llm',
                   type: 'llm_call',
-                  config: { prompt: 'Synthesize answer about quantum computing' },
+                  config: {
+                    prompt: 'Synthesize answer about quantum computing',
+                  },
                 },
               },
             },

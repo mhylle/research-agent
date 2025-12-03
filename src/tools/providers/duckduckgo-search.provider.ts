@@ -134,9 +134,7 @@ export class DuckDuckGoSearchProvider implements ITool {
         });
       }
 
-      console.log(
-        `[DuckDuckGoSearchProvider] Found ${results.length} results`,
-      );
+      console.log(`[DuckDuckGoSearchProvider] Found ${results.length} results`);
 
       const executionTime = Date.now() - startTime;
       this.logger.logToolExecution(

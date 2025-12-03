@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Claim } from '../interfaces/claim.interface';
 import { EntailmentResult } from '../interfaces/entailment.interface';
-import { SUScoreResult, ClaimSUScore, WordUncertainty } from '../interfaces/confidence.interface';
+import {
+  SUScoreResult,
+  ClaimSUScore,
+  WordUncertainty,
+} from '../interfaces/confidence.interface';
 
 @Injectable()
 export class SUScoreCalculatorService {
@@ -43,9 +47,10 @@ export class SUScoreCalculatorService {
     }
 
     // Calculate overall SU Score
-    const overallScore = totalImportance > 0
-      ? 1 - (totalWeightedUncertainty / totalImportance)
-      : 0.5; // Default to neutral if no importance
+    const overallScore =
+      totalImportance > 0
+        ? 1 - totalWeightedUncertainty / totalImportance
+        : 0.5; // Default to neutral if no importance
 
     this.logger.debug(`Overall SU Score: ${overallScore.toFixed(3)}`);
 
@@ -56,7 +61,10 @@ export class SUScoreCalculatorService {
     };
   }
 
-  private calculateClaimSUScore(claim: Claim, entailment: EntailmentResult): ClaimSUScore {
+  private calculateClaimSUScore(
+    claim: Claim,
+    entailment: EntailmentResult,
+  ): ClaimSUScore {
     const wordBreakdown: WordUncertainty[] = [];
     let totalImportance = 0;
     let weightedUncertainty = 0;
@@ -84,7 +92,9 @@ export class SUScoreCalculatorService {
 
     // Handle claims with no substantive words
     if (totalImportance === 0) {
-      this.logger.warn(`Claim has no substantive words: ${claim.text.substring(0, 50)}...`);
+      this.logger.warn(
+        `Claim has no substantive words: ${claim.text.substring(0, 50)}...`,
+      );
       return {
         claimId: claim.id,
         score: 0.5, // Neutral score
@@ -93,7 +103,7 @@ export class SUScoreCalculatorService {
     }
 
     // Calculate claim SU Score: higher score = more confidence (less uncertainty)
-    const score = 1 - (weightedUncertainty / totalImportance);
+    const score = 1 - weightedUncertainty / totalImportance;
 
     return {
       claimId: claim.id,

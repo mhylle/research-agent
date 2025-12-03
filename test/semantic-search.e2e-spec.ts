@@ -62,7 +62,9 @@ describe('Semantic Search (e2e)', () => {
   afterAll(async () => {
     // Cleanup test data
     if (testResultIds.length > 0 && researchResultRepository) {
-      console.log(`[Test Cleanup] Removing ${testResultIds.length} test results`);
+      console.log(
+        `[Test Cleanup] Removing ${testResultIds.length} test results`,
+      );
       await researchResultRepository
         .createQueryBuilder()
         .delete()
@@ -103,8 +105,15 @@ describe('Semantic Search (e2e)', () => {
         expect(Number.isFinite(value)).toBe(true);
       }
 
-      console.log(`[Test] Generated embedding with ${embedding.length} dimensions`);
-      console.log(`[Test] Sample values: [${embedding.slice(0, 5).map(v => v.toFixed(4)).join(', ')}...]`);
+      console.log(
+        `[Test] Generated embedding with ${embedding.length} dimensions`,
+      );
+      console.log(
+        `[Test] Sample values: [${embedding
+          .slice(0, 5)
+          .map((v) => v.toFixed(4))
+          .join(', ')}...]`,
+      );
     }, 30000);
 
     it('should generate embedding for research content', async () => {
@@ -146,7 +155,9 @@ describe('Semantic Search (e2e)', () => {
       const similarity = dotProduct / (norm1 * norm2);
 
       expect(similarity).toBeLessThan(0.8); // Different topics should have lower similarity
-      console.log(`[Test] Similarity between unrelated topics: ${similarity.toFixed(4)}`);
+      console.log(
+        `[Test] Similarity between unrelated topics: ${similarity.toFixed(4)}`,
+      );
     }, 60000);
 
     it('should produce similar embeddings for related content', async () => {
@@ -170,7 +181,9 @@ describe('Semantic Search (e2e)', () => {
       const similarity = dotProduct / (norm1 * norm2);
 
       expect(similarity).toBeGreaterThan(0.5); // Related topics should have higher similarity
-      console.log(`[Test] Similarity between related topics: ${similarity.toFixed(4)}`);
+      console.log(
+        `[Test] Similarity between related topics: ${similarity.toFixed(4)}`,
+      );
     }, 60000);
   });
 
@@ -200,7 +213,9 @@ describe('Semantic Search (e2e)', () => {
         expect(results[0]).toHaveProperty('score');
         console.log(`[Test] Semantic search found ${results.length} results`);
       } else {
-        console.log('[Test] No semantic search results (expected if no embedded data)');
+        console.log(
+          '[Test] No semantic search results (expected if no embedded data)',
+        );
       }
     }, 30000);
   });
@@ -222,7 +237,9 @@ describe('Semantic Search (e2e)', () => {
         console.log(`[Test] Hybrid search found ${results.length} results`);
         console.log(`[Test] Top result score: ${results[0].score?.toFixed(4)}`);
       } else {
-        console.log('[Test] No hybrid search results (expected if knowledge base is empty)');
+        console.log(
+          '[Test] No hybrid search results (expected if knowledge base is empty)',
+        );
       }
     }, 30000);
 
@@ -375,7 +392,9 @@ describe('Semantic Search (e2e)', () => {
       const { processed, failed } =
         await researchResultService.backfillEmbeddings();
 
-      console.log(`[Test] Backfill complete: ${processed} processed, ${failed} failed`);
+      console.log(
+        `[Test] Backfill complete: ${processed} processed, ${failed} failed`,
+      );
 
       expect(typeof processed).toBe('number');
       expect(typeof failed).toBe('number');
@@ -394,7 +413,8 @@ describe('Semantic Search (e2e)', () => {
         logId,
         planId,
         query: `Testing ${uniquePhrase} machine learning algorithms`,
-        answer: `This research about ${uniquePhrase} explores how machine learning algorithms ` +
+        answer:
+          `This research about ${uniquePhrase} explores how machine learning algorithms ` +
           'can be applied to various domains including natural language processing and computer vision.',
         sources: [
           {
@@ -422,7 +442,9 @@ describe('Semantic Search (e2e)', () => {
       );
 
       if (hybridResults.length > 0) {
-        console.log(`[Test] Hybrid search found ${hybridResults.length} results`);
+        console.log(
+          `[Test] Hybrid search found ${hybridResults.length} results`,
+        );
 
         // Our result should be highly ranked due to both full-text and semantic match
         const ourResult = hybridResults.find(
@@ -430,7 +452,9 @@ describe('Semantic Search (e2e)', () => {
         );
 
         if (ourResult) {
-          console.log(`[Test] Test result score: ${ourResult.score?.toFixed(4)}`);
+          console.log(
+            `[Test] Test result score: ${ourResult.score?.toFixed(4)}`,
+          );
           // Score should be boosted for appearing in both searches
           expect(ourResult.score).toBeGreaterThan(0);
         }

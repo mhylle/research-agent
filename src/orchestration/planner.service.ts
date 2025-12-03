@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { OllamaService } from '../llm/ollama.service';
 import { ToolExecutor } from '../executors/tool.executor';
 import { LogService } from '../logging/log.service';
+import { ReasoningTraceService } from '../reasoning/services/reasoning-trace.service';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult } from './interfaces/phase.interface';
 import { PlanStep } from './interfaces/plan-step.interface';
@@ -32,6 +33,7 @@ export class PlannerService {
     private toolExecutor: ToolExecutor,
     private logService: LogService,
     private eventEmitter: EventEmitter2,
+    private reasoningTrace: ReasoningTraceService,
   ) {}
 
   async createPlan(query: string, logId: string): Promise<Plan> {
@@ -40,8 +42,22 @@ export class PlannerService {
     this.finalizeFailureCount = 0;
     this.planCreationCount = 0;
 
+    // Emit initial thought about analyzing the query
+    await this.reasoningTrace.emitThought(
+      logId,
+      `Analyzing research query: "${query}". Identifying key concepts and information needs.`,
+      { stage: 'planning', step: 1 },
+    );
+
     const availableTools = this.toolExecutor.getAvailableTools();
     const systemPrompt = this.buildPlannerSystemPrompt(availableTools);
+
+    // Emit thought about available tools and planning strategy
+    const planningThoughtId = await this.reasoningTrace.emitThought(
+      logId,
+      `Planning strategy: Will use LLM to generate multi-phase research plan. Available tools: ${availableTools.map((t) => t.function.name).join(', ')}. Assessing query complexity to determine optimal approach.`,
+      { stage: 'planning', step: 2 },
+    );
 
     // Emit planning_started event so UI shows "Planning..." indicator
     const planningStartEntry = await this.logService.append({
@@ -111,6 +127,23 @@ export class PlannerService {
       throw new Error('Planning failed: no plan created');
     }
 
+    // Emit observation about plan generation completion
+    const totalSteps = this.currentPlan.phases.reduce(
+      (sum, p) => sum + p.steps.length,
+      0,
+    );
+    await this.reasoningTrace.emitObservation(
+      logId,
+      planningThoughtId,
+      `Generated plan with ${this.currentPlan.phases.length} phases and ${totalSteps} total steps.`,
+      `Plan structure created successfully. Now validating completeness and adding any missing components.`,
+      [
+        'Plan phases defined',
+        'Steps allocated to phases',
+        'Validation needed for completeness',
+      ],
+    );
+
     // Auto-recovery: If any phases are empty, add default steps automatically
     const emptyPhases = this.currentPlan.phases.filter(
       (p) => p.steps.length === 0,
@@ -142,6 +175,27 @@ export class PlannerService {
 
     // CRITICAL VALIDATION: Ensure plan has a synthesis/answer generation phase
     await this.ensureSynthesisPhase(this.currentPlan, logId);
+
+    // Emit final conclusion about completed plan
+    const finalTotalSteps = this.currentPlan.phases.reduce(
+      (sum, p) => sum + p.steps.length,
+      0,
+    );
+    const phaseNames = this.currentPlan.phases.map((p) => p.name);
+    const hasSynthesis = this.currentPlan.phases.some(
+      (p) =>
+        p.name.toLowerCase().includes('synth') ||
+        p.name.toLowerCase().includes('answer') ||
+        p.name.toLowerCase().includes('final'),
+    );
+
+    await this.reasoningTrace.emitConclusion(
+      logId,
+      `Research plan finalized with ${this.currentPlan.phases.length} phases and ${finalTotalSteps} steps. Plan includes ${hasSynthesis ? 'synthesis phase' : 'all required phases'} to produce comprehensive answer.`,
+      [planningThoughtId],
+      hasSynthesis ? 0.9 : 0.8,
+      phaseNames,
+    );
 
     this.currentPlan.status = 'executing';
     return this.currentPlan;
@@ -313,7 +367,10 @@ export class PlannerService {
     this.eventEmitter.emit(`log.${logId}`, planningStartEntry);
 
     // Build prompt that includes feedback
-    const feedbackPrompt = this.buildPlanningPromptWithFeedback(query, feedback);
+    const feedbackPrompt = this.buildPlanningPromptWithFeedback(
+      query,
+      feedback,
+    );
 
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },

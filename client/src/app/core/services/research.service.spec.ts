@@ -39,10 +39,11 @@ describe('ResearchService', () => {
   it('should submit query and update signals', async () => {
     const mockResult: ResearchResult = {
       logId: 'test-123',
+      planId: 'plan-123',
       query: 'test query',
       answer: 'test answer',
       sources: [],
-      metadata: { totalExecutionTime: 1000, stages: [] },
+      metadata: { totalExecutionTime: 1000, phases: [] },
       timestamp: new Date()
     };
 

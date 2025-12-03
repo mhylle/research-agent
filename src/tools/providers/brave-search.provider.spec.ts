@@ -58,9 +58,9 @@ describe('BraveSearchProvider', () => {
       'Independent search index',
     );
     expect(provider.definition.function.parameters.required).toContain('query');
-    expect(
-      provider.definition.function.parameters.properties.query.type,
-    ).toBe('string');
+    expect(provider.definition.function.parameters.properties.query.type).toBe(
+      'string',
+    );
     expect(
       provider.definition.function.parameters.properties.max_results.type,
     ).toBe('number');
@@ -241,7 +241,9 @@ describe('BraveSearchProvider', () => {
     });
 
     it('should handle API timeout error', async () => {
-      mockedAxios.get.mockRejectedValue(new Error('timeout of 10000ms exceeded'));
+      mockedAxios.get.mockRejectedValue(
+        new Error('timeout of 10000ms exceeded'),
+      );
 
       await expect(provider.execute({ query: 'test query' })).rejects.toThrow(
         'Brave search failed: timeout of 10000ms exceeded',
@@ -306,22 +308,21 @@ describe('BraveSearchProvider', () => {
         logToolExecution: jest.fn(),
       } as any;
 
-      const moduleWithEmptyKey: TestingModule =
-        await Test.createTestingModule({
-          providers: [
-            BraveSearchProvider,
-            {
-              provide: ConfigService,
-              useValue: {
-                get: jest.fn(() => ''),
-              },
+      const moduleWithEmptyKey: TestingModule = await Test.createTestingModule({
+        providers: [
+          BraveSearchProvider,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn(() => ''),
             },
-            {
-              provide: ResearchLogger,
-              useValue: mockLoggerLocal,
-            },
-          ],
-        }).compile();
+          },
+          {
+            provide: ResearchLogger,
+            useValue: mockLoggerLocal,
+          },
+        ],
+      }).compile();
 
       const providerWithEmptyKey =
         moduleWithEmptyKey.get<BraveSearchProvider>(BraveSearchProvider);

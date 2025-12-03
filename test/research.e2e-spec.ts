@@ -80,7 +80,7 @@ describe('Research Pipeline (e2e)', () => {
 
   afterAll(async () => {
     // Wait for background operations to complete before closing
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     await app.close();
   });
 
@@ -218,7 +218,9 @@ describe('Research Pipeline (e2e)', () => {
           message: {
             role: 'assistant',
             content: 'Finalizing...',
-            tool_calls: [{ function: { name: 'finalize_plan', arguments: {} } }],
+            tool_calls: [
+              { function: { name: 'finalize_plan', arguments: {} } },
+            ],
           },
         })
         // Synthesis phase - LLM generates final answer
@@ -387,7 +389,9 @@ describe('Research Pipeline (e2e)', () => {
           message: {
             role: 'assistant',
             content: 'Finalizing...',
-            tool_calls: [{ function: { name: 'finalize_plan', arguments: {} } }],
+            tool_calls: [
+              { function: { name: 'finalize_plan', arguments: {} } },
+            ],
           },
         })
         // Synthesis phase - LLM generates final answer

@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OllamaService } from '../../llm/ollama.service';
 import { EmbeddingService } from '../../knowledge/embedding.service';
 import { Claim } from '../interfaces/claim.interface';
-import { EntailmentResult, SourceEvidence } from '../interfaces/entailment.interface';
+import {
+  EntailmentResult,
+  SourceEvidence,
+} from '../interfaces/entailment.interface';
 
 interface Source {
   id: string;
@@ -30,18 +33,29 @@ export class EntailmentCheckerService {
     claim: Claim,
     sources: Source[],
   ): Promise<EntailmentResult> {
-    this.logger.debug(`Checking entailment for claim: ${claim.text.substring(0, 100)}...`);
+    this.logger.debug(
+      `Checking entailment for claim: ${claim.text.substring(0, 100)}...`,
+    );
 
     // Find relevant passages in sources using semantic similarity
-    const relevantPassages = await this.findRelevantPassages(claim.text, sources);
+    const relevantPassages = await this.findRelevantPassages(
+      claim.text,
+      sources,
+    );
 
     if (relevantPassages.length === 0) {
       this.logger.warn('No relevant passages found for claim');
-      return this.createNeutralResult(claim, 'No relevant source passages found');
+      return this.createNeutralResult(
+        claim,
+        'No relevant source passages found',
+      );
     }
 
     // Use LLM to assess entailment
-    const entailmentAssessment = await this.assessEntailment(claim.text, relevantPassages);
+    const entailmentAssessment = await this.assessEntailment(
+      claim.text,
+      relevantPassages,
+    );
 
     return entailmentAssessment;
   }
@@ -50,7 +64,8 @@ export class EntailmentCheckerService {
     claimText: string,
     sources: Source[],
   ): Promise<SourceEvidence[]> {
-    const claimEmbedding = await this.embeddingService.generateEmbedding(claimText);
+    const claimEmbedding =
+      await this.embeddingService.generateEmbedding(claimText);
     const relevantPassages: SourceEvidence[] = [];
 
     for (const source of sources) {
@@ -61,8 +76,12 @@ export class EntailmentCheckerService {
         if (chunk.length < 50) continue; // Skip very short chunks
 
         try {
-          const chunkEmbedding = await this.embeddingService.generateEmbedding(chunk);
-          const similarity = this.cosineSimilarity(claimEmbedding, chunkEmbedding);
+          const chunkEmbedding =
+            await this.embeddingService.generateEmbedding(chunk);
+          const similarity = this.cosineSimilarity(
+            claimEmbedding,
+            chunkEmbedding,
+          );
 
           if (similarity >= this.SIMILARITY_THRESHOLD) {
             relevantPassages.push({
@@ -73,14 +92,19 @@ export class EntailmentCheckerService {
             });
           }
         } catch (error) {
-          this.logger.warn(`Failed to process chunk from source ${source.id}: ${error.message}`);
+          this.logger.warn(
+            `Failed to process chunk from source ${source.id}: ${error.message}`,
+          );
         }
       }
     }
 
     // Sort by similarity and limit results
     relevantPassages.sort((a, b) => b.similarity - a.similarity);
-    return relevantPassages.slice(0, this.MAX_PASSAGES_PER_SOURCE * sources.length);
+    return relevantPassages.slice(
+      0,
+      this.MAX_PASSAGES_PER_SOURCE * sources.length,
+    );
   }
 
   private splitIntoChunks(content: string): string[] {
@@ -95,7 +119,10 @@ export class EntailmentCheckerService {
         let currentChunk = '';
 
         for (const sentence of sentences) {
-          if ((currentChunk + sentence).length > 1000 && currentChunk.length > 0) {
+          if (
+            (currentChunk + sentence).length > 1000 &&
+            currentChunk.length > 0
+          ) {
             chunks.push(currentChunk.trim());
             currentChunk = sentence;
           } else {
@@ -111,7 +138,7 @@ export class EntailmentCheckerService {
       }
     }
 
-    return chunks.filter(chunk => chunk.length > 0);
+    return chunks.filter((chunk) => chunk.length > 0);
   }
 
   private cosineSimilarity(vecA: number[], vecB: number[]): number {
@@ -142,7 +169,8 @@ export class EntailmentCheckerService {
       const response = await this.ollamaService.chat([
         {
           role: 'system',
-          content: 'You are an entailment assessment expert. Determine if a claim is entailed, neutral, or contradicted by source passages. Always respond with valid JSON only, no additional text.',
+          content:
+            'You are an entailment assessment expert. Determine if a claim is entailed, neutral, or contradicted by source passages. Always respond with valid JSON only, no additional text.',
         },
         {
           role: 'user',
@@ -153,13 +181,22 @@ export class EntailmentCheckerService {
       return this.parseEntailmentResponse(response.message.content, passages);
     } catch (error) {
       this.logger.error(`Failed to assess entailment: ${error.message}`);
-      return this.createNeutralResult({ text: claimText } as Claim, 'Entailment assessment failed');
+      return this.createNeutralResult(
+        { text: claimText } as Claim,
+        'Entailment assessment failed',
+      );
     }
   }
 
-  private buildEntailmentPrompt(claimText: string, passages: SourceEvidence[]): string {
+  private buildEntailmentPrompt(
+    claimText: string,
+    passages: SourceEvidence[],
+  ): string {
     const passageTexts = passages
-      .map((p, idx) => `[Passage ${idx + 1} from ${p.sourceUrl}]\n${p.relevantText}`)
+      .map(
+        (p, idx) =>
+          `[Passage ${idx + 1} from ${p.sourceUrl}]\n${p.relevantText}`,
+      )
       .join('\n\n');
 
     return `Assess whether the following claim is entailed, neutral, or contradicted by the source passages.
@@ -227,13 +264,18 @@ Respond with ONLY JSON in this exact format:
         reasoning: result.reasoning || 'No reasoning provided',
       };
     } catch (error) {
-      this.logger.error(`Failed to parse entailment response: ${error.message}`);
+      this.logger.error(
+        `Failed to parse entailment response: ${error.message}`,
+      );
       this.logger.debug(`Response content: ${responseContent}`);
       throw error;
     }
   }
 
-  private createNeutralResult(claim: Claim, reasoning: string): EntailmentResult {
+  private createNeutralResult(
+    claim: Claim,
+    reasoning: string,
+  ): EntailmentResult {
     return {
       claim,
       verdict: 'neutral',

@@ -4,7 +4,10 @@ import { EntailmentCheckerService } from './entailment-checker.service';
 import { SUScoreCalculatorService } from './suscore-calculator.service';
 import { ConfidenceAggregatorService } from './confidence-aggregator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
-import { ConfidenceResult, ConfidenceMethodology } from '../interfaces/confidence.interface';
+import {
+  ConfidenceResult,
+  ConfidenceMethodology,
+} from '../interfaces/confidence.interface';
 import { Claim } from '../interfaces/claim.interface';
 import { EntailmentResult } from '../interfaces/entailment.interface';
 
@@ -42,7 +45,9 @@ export class ConfidenceScoringService {
     customWeights?: Partial<ConfidenceMethodology>,
   ): Promise<ConfidenceResult> {
     const startTime = Date.now();
-    this.logger.log(`Starting confidence scoring pipeline for answer (${answerText.length} chars) with ${sources.length} sources`);
+    this.logger.log(
+      `Starting confidence scoring pipeline for answer (${answerText.length} chars) with ${sources.length} sources`,
+    );
 
     if (logId) {
       this.researchLogger.nodeStart(
@@ -60,12 +65,18 @@ export class ConfidenceScoringService {
 
       if (claims.length === 0) {
         this.logger.warn('No claims extracted from answer');
-        return this.createLowConfidenceResult('No claims could be extracted from the answer');
+        return this.createLowConfidenceResult(
+          'No claims could be extracted from the answer',
+        );
       }
 
       // Step 2: Check entailment for each claim
       this.logger.debug('Step 2: Checking entailment...');
-      const entailmentResults = await this.checkEntailmentWithLogging(claims, sources, logId);
+      const entailmentResults = await this.checkEntailmentWithLogging(
+        claims,
+        sources,
+        logId,
+      );
 
       // Step 3: Calculate SU Scores
       this.logger.debug('Step 3: Calculating SU Scores...');
@@ -103,7 +114,9 @@ export class ConfidenceScoringService {
       return confidenceResult;
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      this.logger.error(`Confidence scoring failed after ${executionTime}ms: ${error.message}`);
+      this.logger.error(
+        `Confidence scoring failed after ${executionTime}ms: ${error.message}`,
+      );
 
       if (logId) {
         this.researchLogger.nodeError('confidence-scoring', logId, error);
@@ -120,7 +133,12 @@ export class ConfidenceScoringService {
     const startTime = Date.now();
 
     if (logId) {
-      this.researchLogger.nodeStart('extract-claims', logId, 'tool', 'confidence-scoring');
+      this.researchLogger.nodeStart(
+        'extract-claims',
+        logId,
+        'tool',
+        'confidence-scoring',
+      );
     }
 
     try {
@@ -151,14 +169,22 @@ export class ConfidenceScoringService {
     const startTime = Date.now();
 
     if (logId) {
-      this.researchLogger.nodeStart('check-entailment', logId, 'tool', 'confidence-scoring');
+      this.researchLogger.nodeStart(
+        'check-entailment',
+        logId,
+        'tool',
+        'confidence-scoring',
+      );
     }
 
     try {
       const results: EntailmentResult[] = [];
 
       for (const claim of claims) {
-        const result = await this.entailmentChecker.checkEntailment(claim, sources);
+        const result = await this.entailmentChecker.checkEntailment(
+          claim,
+          sources,
+        );
         result.claim = claim; // Ensure claim is set
         results.push(result);
 
@@ -179,9 +205,10 @@ export class ConfidenceScoringService {
           claimCount: results.length,
           executionTime,
           verdicts: {
-            entailed: results.filter(r => r.verdict === 'entailed').length,
-            neutral: results.filter(r => r.verdict === 'neutral').length,
-            contradicted: results.filter(r => r.verdict === 'contradicted').length,
+            entailed: results.filter((r) => r.verdict === 'entailed').length,
+            neutral: results.filter((r) => r.verdict === 'neutral').length,
+            contradicted: results.filter((r) => r.verdict === 'contradicted')
+              .length,
           },
         });
       }
@@ -203,11 +230,19 @@ export class ConfidenceScoringService {
     const startTime = Date.now();
 
     if (logId) {
-      this.researchLogger.nodeStart('calculate-su-scores', logId, 'tool', 'confidence-scoring');
+      this.researchLogger.nodeStart(
+        'calculate-su-scores',
+        logId,
+        'tool',
+        'confidence-scoring',
+      );
     }
 
     try {
-      const suScoreResult = this.suScoreCalculator.calculateSUScore(claims, entailmentResults);
+      const suScoreResult = this.suScoreCalculator.calculateSUScore(
+        claims,
+        entailmentResults,
+      );
       const executionTime = Date.now() - startTime;
 
       if (logId) {
@@ -238,7 +273,12 @@ export class ConfidenceScoringService {
     const startTime = Date.now();
 
     if (logId) {
-      this.researchLogger.nodeStart('aggregate-confidence', logId, 'tool', 'confidence-scoring');
+      this.researchLogger.nodeStart(
+        'aggregate-confidence',
+        logId,
+        'tool',
+        'confidence-scoring',
+      );
     }
 
     try {

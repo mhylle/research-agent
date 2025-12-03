@@ -100,7 +100,9 @@ export class KnowledgeSearchService {
       [query, maxResults],
     );
 
-    this.logger.debug(`Found ${results.length} prior research results (phrase)`);
+    this.logger.debug(
+      `Found ${results.length} prior research results (phrase)`,
+    );
 
     return results.map((result: any) => this.mapToSearchResult(result));
   }
@@ -206,11 +208,7 @@ export class KnowledgeSearchService {
     ]);
 
     // Merge and re-rank results
-    const merged = this.mergeResults(
-      semanticResults,
-      fullTextResults,
-      weights,
-    );
+    const merged = this.mergeResults(semanticResults, fullTextResults, weights);
 
     this.logger.debug(
       `Hybrid search found ${merged.length} results (semantic: ${semanticResults.length}, fullText: ${fullTextResults.length})`,
@@ -228,7 +226,9 @@ export class KnowledgeSearchService {
     queryEmbedding: number[],
     maxResults: number = 5,
   ): Promise<KnowledgeSearchResult[]> {
-    this.logger.debug(`Semantic search with ${queryEmbedding.length}-dim vector`);
+    this.logger.debug(
+      `Semantic search with ${queryEmbedding.length}-dim vector`,
+    );
 
     // Convert embedding array to pgvector format
     const embeddingStr = `[${queryEmbedding.join(',')}]`;
@@ -264,11 +264,14 @@ export class KnowledgeSearchService {
     fullTextResults: KnowledgeSearchResult[],
     weights: HybridSearchWeights,
   ): KnowledgeSearchResult[] {
-    const resultMap = new Map<string, {
-      result: KnowledgeSearchResult;
-      semanticScore: number;
-      fullTextScore: number;
-    }>();
+    const resultMap = new Map<
+      string,
+      {
+        result: KnowledgeSearchResult;
+        semanticScore: number;
+        fullTextScore: number;
+      }
+    >();
 
     // Add semantic results
     for (const result of semanticResults) {

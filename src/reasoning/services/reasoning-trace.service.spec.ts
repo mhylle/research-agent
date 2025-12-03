@@ -257,10 +257,7 @@ describe('ReasoningTraceService', () => {
       const conclusion = 'Research phase is complete';
       const supportingThoughts = ['thought-1', 'thought-2', 'thought-3'];
       const confidence = 0.95;
-      const nextSteps = [
-        'Begin synthesis phase',
-        'Generate final report',
-      ];
+      const nextSteps = ['Begin synthesis phase', 'Generate final report'];
 
       const conclusionId = await service.emitConclusion(
         logId,

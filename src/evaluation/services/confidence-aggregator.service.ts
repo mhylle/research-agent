@@ -40,7 +40,9 @@ export class ConfidenceAggregatorService {
     // Calculate confidence for each claim
     const claimConfidences: ClaimConfidence[] = claims.map((claim, index) => {
       const entailment = entailmentResults[index];
-      const suScore = suScoreResult.claimScores.find(s => s.claimId === claim.id);
+      const suScore = suScoreResult.claimScores.find(
+        (s) => s.claimId === claim.id,
+      );
 
       return this.calculateClaimConfidence(
         claim,
@@ -62,7 +64,9 @@ export class ConfidenceAggregatorService {
       totalSourceCount,
     );
 
-    this.logger.debug(`Overall confidence: ${overallConfidence.toFixed(3)} (${level})`);
+    this.logger.debug(
+      `Overall confidence: ${overallConfidence.toFixed(3)} (${level})`,
+    );
 
     return {
       overallConfidence,
@@ -110,18 +114,20 @@ export class ConfidenceAggregatorService {
     switch (entailment.verdict) {
       case 'entailed':
         // High confidence for entailed claims
-        return 0.7 + (entailment.score * 0.3);
+        return 0.7 + entailment.score * 0.3;
       case 'contradicted':
         // Low confidence for contradicted claims
-        return 0.1 + ((1 - entailment.score) * 0.2);
+        return 0.1 + (1 - entailment.score) * 0.2;
       case 'neutral':
       default:
         // Medium confidence for neutral claims
-        return 0.4 + (entailment.score * 0.2);
+        return 0.4 + entailment.score * 0.2;
     }
   }
 
-  private calculateOverallConfidence(claimConfidences: ClaimConfidence[]): number {
+  private calculateOverallConfidence(
+    claimConfidences: ClaimConfidence[],
+  ): number {
     if (claimConfidences.length === 0) {
       return 0.5; // Neutral confidence if no claims
     }
@@ -129,7 +135,7 @@ export class ConfidenceAggregatorService {
     // Use weighted average, giving more weight to lower confidences
     // This is conservative - overall confidence is pulled down by low-confidence claims
     const sortedConfidences = [...claimConfidences]
-      .map(c => c.confidence)
+      .map((c) => c.confidence)
       .sort((a, b) => a - b);
 
     let weightedSum = 0;
@@ -176,7 +182,9 @@ export class ConfidenceAggregatorService {
     }
 
     // Low-confidence claim recommendations
-    const lowConfidenceClaims = claimConfidences.filter(c => c.confidence < 0.5);
+    const lowConfidenceClaims = claimConfidences.filter(
+      (c) => c.confidence < 0.5,
+    );
     if (lowConfidenceClaims.length > 0) {
       recommendations.push(
         `${lowConfidenceClaims.length} claim(s) have low confidence (<50%). Review and verify these claims.`,
@@ -184,7 +192,9 @@ export class ConfidenceAggregatorService {
     }
 
     // Contradicted claims
-    const contradictedClaims = claimConfidences.filter(c => c.entailmentScore < 0.3);
+    const contradictedClaims = claimConfidences.filter(
+      (c) => c.entailmentScore < 0.3,
+    );
     if (contradictedClaims.length > 0) {
       recommendations.push(
         `${contradictedClaims.length} claim(s) may be contradicted by sources. Review for accuracy.`,
@@ -192,7 +202,9 @@ export class ConfidenceAggregatorService {
     }
 
     // Unsupported claims
-    const unsupportedClaims = claimConfidences.filter(c => c.supportingSources === 0);
+    const unsupportedClaims = claimConfidences.filter(
+      (c) => c.supportingSources === 0,
+    );
     if (unsupportedClaims.length > 0) {
       recommendations.push(
         `${unsupportedClaims.length} claim(s) lack supporting sources. Consider adding citations or removing unsupported claims.`,
@@ -200,7 +212,7 @@ export class ConfidenceAggregatorService {
     }
 
     // SU Score recommendations
-    const lowSUClaims = claimConfidences.filter(c => c.suScore < 0.5);
+    const lowSUClaims = claimConfidences.filter((c) => c.suScore < 0.5);
     if (lowSUClaims.length > 0) {
       recommendations.push(
         `${lowSUClaims.length} claim(s) have high substantive-word uncertainty. Verify key terms and facts.`,

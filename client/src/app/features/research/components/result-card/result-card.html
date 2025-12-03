@@ -8,6 +8,13 @@
     {{ result.answer }}
   </div>
 
+  <!-- Confidence Display -->
+  @if (result.confidence) {
+    <div class="result-card__confidence">
+      <app-confidence-display [result]="result.confidence" />
+    </div>
+  }
+
   <div class="result-card__meta">
     <span class="result-card__execution-time">
       Execution time: {{ formatExecutionTime(result.metadata.totalExecutionTime) }}

@@ -109,7 +109,9 @@ describe('WorkingMemoryService', () => {
       const memory = service.get(logId);
       expect(memory?.subGoals).toHaveLength(1);
       expect(memory?.subGoals[0].id).toBe(goalId);
-      expect(memory?.subGoals[0].description).toBe('Research quantum mechanics');
+      expect(memory?.subGoals[0].description).toBe(
+        'Research quantum mechanics',
+      );
     });
 
     it('should throw error for non-existent logId', () => {
@@ -426,7 +428,9 @@ describe('WorkingMemoryService', () => {
       expect(context).toContain('Answer the query: "What is AI?"');
       expect(context).toContain('[completed] Research AI history');
       expect(context).toContain('AI was first coined in 1956');
-      expect(context).toContain('AI will transform industries (confidence: 85%)');
+      expect(context).toContain(
+        'AI will transform industries (confidence: 85%)',
+      );
       expect(context).toContain('[important] Need more recent statistics');
     });
 

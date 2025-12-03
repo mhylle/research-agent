@@ -8,6 +8,7 @@ import { EventCoordinatorService } from './services/event-coordinator.service';
 import { ResultExtractorService } from './services/result-extractor.service';
 import { EvaluationCoordinatorService } from './services/evaluation-coordinator.service';
 import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry';
+import { WorkingMemoryService } from './services/working-memory.service';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
 import { LogEventType } from '../logging/interfaces/log-event-type.enum';
@@ -37,6 +38,7 @@ export class Orchestrator {
     private resultExtractor: ResultExtractorService,
     private evaluationCoordinator: EvaluationCoordinatorService,
     private phaseExecutorRegistry: PhaseExecutorRegistry,
+    private workingMemory: WorkingMemoryService,
   ) {}
 
   async executeResearch(
@@ -47,278 +49,420 @@ export class Orchestrator {
     const startTime = Date.now();
     const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
 
-    // 1. PLANNING PHASE WITH EVALUATION FEEDBACK LOOP
-    await this.eventCoordinator.emit(logId, 'session_started', { query });
+    // Initialize working memory for this research session
+    const memory = this.workingMemory.initialize(logId, query);
 
-    const MAX_PLAN_ATTEMPTS = 3;
-    let plan = await this.plannerService.createPlan(query, logId);
-    let planAttempt = 1;
+    try {
+      // 1. PLANNING PHASE WITH EVALUATION FEEDBACK LOOP
+      await this.eventCoordinator.emit(logId, 'session_started', { query });
 
-    console.log(
-      `[Orchestrator] Plan created with ${plan.phases.length} phases, evaluating...`,
-    );
+      // Add initial sub-goals based on query analysis
+      // Extract key aspects from the query (simple keyword-based analysis)
+      const queryLower = query.toLowerCase();
+      const aspects: Array<{ description: string; priority: number }> = [];
 
-    // PLAN EVALUATION WITH FEEDBACK LOOP
-    while (planAttempt <= MAX_PLAN_ATTEMPTS) {
-      const searchQueries = this.resultExtractor.extractSearchQueries(plan);
-      const evaluationResult = await this.evaluationCoordinator.evaluatePlan(
-        logId,
-        plan,
-        searchQueries,
-      );
-
-      if (evaluationResult.passed || evaluationResult.evaluationSkipped) {
-        console.log(
-          `[Orchestrator] Plan evaluation passed on attempt ${planAttempt}`,
-        );
-        break;
-      }
-
-      // Plan failed evaluation - extract feedback and regenerate
-      console.log(
-        `[Orchestrator] Plan evaluation FAILED on attempt ${planAttempt}/${MAX_PLAN_ATTEMPTS}`,
-      );
-
-      if (planAttempt >= MAX_PLAN_ATTEMPTS) {
-        console.log(
-          `[Orchestrator] Max plan attempts (${MAX_PLAN_ATTEMPTS}) reached - proceeding with current plan`,
-        );
-        // Log warning that we're proceeding with a failing plan
-        await this.eventCoordinator.emit(logId, 'plan_evaluation_warning', {
-          message: `Plan failed evaluation after ${MAX_PLAN_ATTEMPTS} attempts - proceeding anyway`,
-          finalScores: evaluationResult.scores,
-          passed: false,
+      // Identify aspects based on query content
+      if (
+        queryLower.includes('compare') ||
+        queryLower.includes('difference') ||
+        queryLower.includes('vs')
+      ) {
+        aspects.push({
+          description: 'Compare multiple entities or concepts',
+          priority: 1.0,
         });
-        break;
+      }
+      if (
+        queryLower.includes('how') ||
+        queryLower.includes('explain') ||
+        queryLower.includes('what is')
+      ) {
+        aspects.push({
+          description: 'Provide detailed explanation',
+          priority: 1.0,
+        });
+      }
+      if (
+        queryLower.includes('when') ||
+        queryLower.includes('date') ||
+        queryLower.includes('year')
+      ) {
+        aspects.push({
+          description: 'Identify temporal information',
+          priority: 0.7,
+        });
+      }
+      if (queryLower.includes('why') || queryLower.includes('reason')) {
+        aspects.push({
+          description: 'Determine causality or reasoning',
+          priority: 1.0,
+        });
+      }
+      if (queryLower.includes('where') || queryLower.includes('location')) {
+        aspects.push({
+          description: 'Identify location or place',
+          priority: 0.7,
+        });
       }
 
-      // Extract feedback from evaluation result
-      const lastAttempt =
-        evaluationResult.attempts[evaluationResult.attempts.length - 1];
-      const feedback = this.extractEvaluationFeedback(
-        evaluationResult,
-        lastAttempt,
-        planAttempt,
-      );
-
-      console.log(
-        `[Orchestrator] Regenerating plan with feedback: ${feedback.critique.substring(0, 100)}...`,
-      );
-
-      // Emit plan regeneration event
-      await this.eventCoordinator.emit(logId, 'plan_regeneration_started', {
-        attemptNumber: planAttempt + 1,
-        previousScores: evaluationResult.scores,
-        failingDimensions: feedback.failingDimensions,
-        critique: feedback.critique,
-      });
-
-      // Regenerate plan with feedback
-      plan = await this.plannerService.regeneratePlanWithFeedback(
-        query,
-        logId,
-        feedback,
-      );
-
-      planAttempt++;
-      console.log(
-        `[Orchestrator] Plan regenerated (attempt ${planAttempt}), re-evaluating...`,
-      );
-    }
-
-    console.log(
-      `[Orchestrator] Plan finalized after ${planAttempt} attempt(s), entering execution loop...`,
-    );
-
-    // Log the FULL plan with all phases and steps
-    await this.eventCoordinator.emit(logId, 'plan_created', {
-      planId: plan.id,
-      query: plan.query,
-      status: plan.status,
-      totalPhases: plan.phases.length,
-      createdAt: plan.createdAt,
-      // Full plan structure with all details
-      phases: plan.phases.map((phase) => ({
-        id: phase.id,
-        name: phase.name,
-        description: phase.description,
-        status: phase.status,
-        order: phase.order,
-        replanCheckpoint: phase.replanCheckpoint,
-        totalSteps: phase.steps.length,
-        steps: phase.steps.map((step) => ({
-          id: step.id,
-          toolName: step.toolName,
-          type: step.type,
-          config: step.config,
-          dependencies: step.dependencies,
-          status: step.status,
-          order: step.order,
-        })),
-      })),
-    });
-
-    let finalOutput = '';
-    const sources: Array<{ url: string; title: string; relevance: string }> =
-      [];
-    const allStepResults: StepResult[] = [];
-    let retrievalEvaluationComplete = false;
-
-    console.log(
-      `[Orchestrator] Starting execution loop for ${plan.phases.length} phases`,
-    );
-
-    // 2. EXECUTION LOOP
-    for (const phase of plan.phases) {
-      console.log(
-        `[Orchestrator] Processing phase: ${phase.name} (status: ${phase.status})`,
-      );
-      if (phase.status === 'skipped') continue;
-
-      const phaseStartTime = Date.now();
-
-      // Get appropriate executor for this phase
-      const executor = this.phaseExecutorRegistry.getExecutor(phase);
-      const phaseResult = await executor.execute(phase, {
-        logId,
-        plan,
-        allPreviousResults: allStepResults,
-      });
-
-      phaseMetrics.push({
-        phase: phase.name,
-        executionTime: Date.now() - phaseStartTime,
-      });
-
-      // Accumulate step results across all phases
-      allStepResults.push(...phaseResult.stepResults);
-
-      // Store phase results for potential re-planning
-      this.plannerService.setPhaseResults(phase.id, phaseResult);
-
-      // Extract sources and final output
-      const { sources: phaseSources, output: phaseOutput } =
-        this.resultExtractor.extractAllResults(phaseResult);
-      sources.push(...phaseSources);
-      if (phaseOutput) {
-        finalOutput = phaseOutput;
+      // Add default aspect if no specific patterns found
+      if (aspects.length === 0) {
+        aspects.push({
+          description: 'Find comprehensive answer to query',
+          priority: 1.0,
+        });
       }
 
-      // RETRIEVAL EVALUATION - after retrieval phases (search/fetch)
-      if (!retrievalEvaluationComplete && this.isRetrievalPhase(phase)) {
-        const hasRetrievedContent = allStepResults.some(
-          (r) => Array.isArray(r.output) && r.output.length > 0,
+      // Add sub-goals to working memory
+      for (const aspect of aspects) {
+        this.workingMemory.addSubGoal(logId, {
+          description: aspect.description,
+          status: 'pending',
+          priority: aspect.priority,
+          dependencies: [],
+        });
+      }
+
+      const MAX_PLAN_ATTEMPTS = 3;
+      let plan = await this.plannerService.createPlan(query, logId);
+      let planAttempt = 1;
+
+      console.log(
+        `[Orchestrator] Plan created with ${plan.phases.length} phases, evaluating...`,
+      );
+
+      // PLAN EVALUATION WITH FEEDBACK LOOP
+      while (planAttempt <= MAX_PLAN_ATTEMPTS) {
+        const searchQueries = this.resultExtractor.extractSearchQueries(plan);
+        const evaluationResult = await this.evaluationCoordinator.evaluatePlan(
+          logId,
+          plan,
+          searchQueries,
         );
 
-        if (hasRetrievedContent) {
-          try {
-            await this.evaluationCoordinator.evaluateRetrieval(
-              logId,
-              plan.query,
-              allStepResults,
-            );
-            retrievalEvaluationComplete = true;
-          } catch (error) {
-            console.error('[Orchestrator] Retrieval evaluation failed:', error);
-            // Don't throw - evaluation failure shouldn't break research execution
+        if (evaluationResult.passed || evaluationResult.evaluationSkipped) {
+          console.log(
+            `[Orchestrator] Plan evaluation passed on attempt ${planAttempt}`,
+          );
+          break;
+        }
+
+        // Plan failed evaluation - extract feedback and regenerate
+        console.log(
+          `[Orchestrator] Plan evaluation FAILED on attempt ${planAttempt}/${MAX_PLAN_ATTEMPTS}`,
+        );
+
+        if (planAttempt >= MAX_PLAN_ATTEMPTS) {
+          console.log(
+            `[Orchestrator] Max plan attempts (${MAX_PLAN_ATTEMPTS}) reached - proceeding with current plan`,
+          );
+          // Log warning that we're proceeding with a failing plan
+          await this.eventCoordinator.emit(logId, 'plan_evaluation_warning', {
+            message: `Plan failed evaluation after ${MAX_PLAN_ATTEMPTS} attempts - proceeding anyway`,
+            finalScores: evaluationResult.scores,
+            passed: false,
+          });
+          break;
+        }
+
+        // Extract feedback from evaluation result
+        const lastAttempt =
+          evaluationResult.attempts[evaluationResult.attempts.length - 1];
+        const feedback = this.extractEvaluationFeedback(
+          evaluationResult,
+          lastAttempt,
+          planAttempt,
+        );
+
+        console.log(
+          `[Orchestrator] Regenerating plan with feedback: ${feedback.critique.substring(0, 100)}...`,
+        );
+
+        // Emit plan regeneration event
+        await this.eventCoordinator.emit(logId, 'plan_regeneration_started', {
+          attemptNumber: planAttempt + 1,
+          previousScores: evaluationResult.scores,
+          failingDimensions: feedback.failingDimensions,
+          critique: feedback.critique,
+        });
+
+        // Regenerate plan with feedback
+        plan = await this.plannerService.regeneratePlanWithFeedback(
+          query,
+          logId,
+          feedback,
+        );
+
+        planAttempt++;
+        console.log(
+          `[Orchestrator] Plan regenerated (attempt ${planAttempt}), re-evaluating...`,
+        );
+      }
+
+      console.log(
+        `[Orchestrator] Plan finalized after ${planAttempt} attempt(s), entering execution loop...`,
+      );
+
+      // Log the FULL plan with all phases and steps
+      await this.eventCoordinator.emit(logId, 'plan_created', {
+        planId: plan.id,
+        query: plan.query,
+        status: plan.status,
+        totalPhases: plan.phases.length,
+        createdAt: plan.createdAt,
+        // Full plan structure with all details
+        phases: plan.phases.map((phase) => ({
+          id: phase.id,
+          name: phase.name,
+          description: phase.description,
+          status: phase.status,
+          order: phase.order,
+          replanCheckpoint: phase.replanCheckpoint,
+          totalSteps: phase.steps.length,
+          steps: phase.steps.map((step) => ({
+            id: step.id,
+            toolName: step.toolName,
+            type: step.type,
+            config: step.config,
+            dependencies: step.dependencies,
+            status: step.status,
+            order: step.order,
+          })),
+        })),
+      });
+
+      let finalOutput = '';
+      const sources: Array<{ url: string; title: string; relevance: string }> =
+        [];
+      const allStepResults: StepResult[] = [];
+      let retrievalEvaluationComplete = false;
+
+      console.log(
+        `[Orchestrator] Starting execution loop for ${plan.phases.length} phases`,
+      );
+
+      // 2. EXECUTION LOOP
+      for (const phase of plan.phases) {
+        console.log(
+          `[Orchestrator] Processing phase: ${phase.name} (status: ${phase.status})`,
+        );
+        if (phase.status === 'skipped') continue;
+
+        // Update working memory with current phase
+        this.workingMemory.updatePhase(logId, phase.name, phase.order);
+
+        const phaseStartTime = Date.now();
+
+        // Get appropriate executor for this phase
+        const executor = this.phaseExecutorRegistry.getExecutor(phase);
+        const phaseResult = await executor.execute(phase, {
+          logId,
+          plan,
+          allPreviousResults: allStepResults,
+        });
+
+        phaseMetrics.push({
+          phase: phase.name,
+          executionTime: Date.now() - phaseStartTime,
+        });
+
+        // Accumulate step results across all phases
+        allStepResults.push(...phaseResult.stepResults);
+
+        // Store phase results for potential re-planning
+        this.plannerService.setPhaseResults(phase.id, phaseResult);
+
+        // Extract sources and final output
+        const { sources: phaseSources, output: phaseOutput } =
+          this.resultExtractor.extractAllResults(phaseResult);
+        sources.push(...phaseSources);
+        if (phaseOutput) {
+          finalOutput = phaseOutput;
+        }
+
+        // Add gathered information to working memory
+        for (const source of phaseSources) {
+          this.workingMemory.addGatheredInfo(logId, {
+            content: source.title || source.url,
+            source: source.url,
+            relevance: 0.8,
+          });
+        }
+
+        // Track step results as gathered information
+        for (const stepResult of phaseResult.stepResults) {
+          if (
+            stepResult.status === 'completed' &&
+            stepResult.output &&
+            typeof stepResult.output === 'string'
+          ) {
+            // Only add non-empty string outputs
+            if (stepResult.output.trim().length > 0) {
+              this.workingMemory.addGatheredInfo(logId, {
+                content:
+                  stepResult.output.substring(0, 200) +
+                  (stepResult.output.length > 200 ? '...' : ''),
+                source: `Phase: ${phase.name}, Step: ${stepResult.stepId}`,
+                relevance: 0.9,
+              });
+            }
           }
         }
-      }
 
-      // 3. RE-PLAN CHECKPOINT
-      if (phase.replanCheckpoint && phaseResult.status === 'completed') {
-        const stepsBeforeReplan = phase.steps.length;
-        const { modified } = await this.plannerService.replan(
-          plan,
-          phase,
-          phaseResult,
-          logId,
-        );
-        if (modified) {
-          // Check if steps were added to the current phase during replanning
-          const stepsAfterReplan = phase.steps.length;
-          if (stepsAfterReplan > stepsBeforeReplan) {
-            // Re-execute the phase with the new steps using phase executor
-            const replanExecutor =
-              this.phaseExecutorRegistry.getExecutor(phase);
-            const replanResult = await replanExecutor.execute(phase, {
-              logId,
-              plan,
-              allPreviousResults: allStepResults,
-            });
+        // RETRIEVAL EVALUATION - after retrieval phases (search/fetch)
+        if (!retrievalEvaluationComplete && this.isRetrievalPhase(phase)) {
+          const hasRetrievedContent = allStepResults.some(
+            (r) => Array.isArray(r.output) && r.output.length > 0,
+          );
 
-            // Merge results
-            phaseResult.stepResults.push(...replanResult.stepResults);
-            phaseResult.status = replanResult.status;
-            if (replanResult.error) {
-              phaseResult.error = replanResult.error;
+          if (hasRetrievedContent) {
+            try {
+              await this.evaluationCoordinator.evaluateRetrieval(
+                logId,
+                plan.query,
+                allStepResults,
+              );
+              retrievalEvaluationComplete = true;
+            } catch (error) {
+              console.error(
+                '[Orchestrator] Retrieval evaluation failed:',
+                error,
+              );
+              // Don't throw - evaluation failure shouldn't break research execution
             }
+          }
+        }
 
-            if (replanResult.status !== 'failed') {
-              // Update phase results for re-planning
-              this.plannerService.setPhaseResults(phase.id, phaseResult);
+        // 3. RE-PLAN CHECKPOINT
+        if (phase.replanCheckpoint && phaseResult.status === 'completed') {
+          const stepsBeforeReplan = phase.steps.length;
+          const { modified } = await this.plannerService.replan(
+            plan,
+            phase,
+            phaseResult,
+            logId,
+          );
+          if (modified) {
+            // Check if steps were added to the current phase during replanning
+            const stepsAfterReplan = phase.steps.length;
+            if (stepsAfterReplan > stepsBeforeReplan) {
+              // Re-execute the phase with the new steps using phase executor
+              const replanExecutor =
+                this.phaseExecutorRegistry.getExecutor(phase);
+              const replanResult = await replanExecutor.execute(phase, {
+                logId,
+                plan,
+                allPreviousResults: allStepResults,
+              });
 
-              // Re-extract result data
-              const { sources: phaseSources, output: phaseOutput } =
-                this.resultExtractor.extractAllResults(phaseResult);
-              sources.push(...phaseSources);
-              if (phaseOutput) {
-                finalOutput = phaseOutput;
+              // Merge results
+              phaseResult.stepResults.push(...replanResult.stepResults);
+              phaseResult.status = replanResult.status;
+              if (replanResult.error) {
+                phaseResult.error = replanResult.error;
+              }
+
+              if (replanResult.status !== 'failed') {
+                // Update phase results for re-planning
+                this.plannerService.setPhaseResults(phase.id, phaseResult);
+
+                // Re-extract result data
+                const { sources: phaseSources, output: phaseOutput } =
+                  this.resultExtractor.extractAllResults(phaseResult);
+                sources.push(...phaseSources);
+                if (phaseOutput) {
+                  finalOutput = phaseOutput;
+                }
               }
             }
           }
         }
-      }
 
-      // 4. FAILURE HANDLING
-      if (phaseResult.status === 'failed') {
-        const recovery = await this.handleFailure(
-          plan,
-          phase,
-          phaseResult,
-          logId,
-        );
-        if (recovery.action === 'abort') {
-          await this.eventCoordinator.emit(logId, 'session_failed', {
-            reason: recovery.reason,
-          });
-          throw new Error(`Research failed: ${recovery.reason}`);
+        // 4. FAILURE HANDLING
+        if (phaseResult.status === 'failed') {
+          // Track failure as a gap in working memory
+          const failedStep = phaseResult.stepResults.find(
+            (r) => r.status === 'failed',
+          );
+          if (failedStep) {
+            this.workingMemory.addGap(logId, {
+              description: `Failed to execute step ${failedStep.stepId} in phase ${phase.name}`,
+              severity: 'critical',
+              suggestedAction:
+                failedStep.error?.message ||
+                'Review error details and retry or adjust plan',
+            });
+          }
+
+          const recovery = await this.handleFailure(
+            plan,
+            phase,
+            phaseResult,
+            logId,
+          );
+          if (recovery.action === 'abort') {
+            await this.eventCoordinator.emit(logId, 'session_failed', {
+              reason: recovery.reason,
+            });
+            throw new Error(`Research failed: ${recovery.reason}`);
+          }
+        }
+
+        // Check for missing information gaps after retrieval phases
+        if (this.isRetrievalPhase(phase)) {
+          const hasResults = phaseResult.stepResults.some(
+            (r) =>
+              r.status === 'completed' &&
+              r.output &&
+              (Array.isArray(r.output) ? r.output.length > 0 : true),
+          );
+          if (!hasResults) {
+            this.workingMemory.addGap(logId, {
+              description: `No results retrieved in phase: ${phase.name}`,
+              severity: 'important',
+              suggestedAction:
+                'Try alternative search queries or different data sources',
+            });
+          }
         }
       }
-    }
 
-    // 5. ANSWER EVALUATION
-    try {
-      await this.evaluationCoordinator.evaluateAnswer(
-        logId,
-        plan.query,
-        finalOutput,
-        sources,
-      );
-    } catch (error) {
-      console.error('[Orchestrator] Answer evaluation failed:', error);
-      // Don't throw - evaluation failure shouldn't break research execution
-    }
+      // 5. ANSWER EVALUATION
+      try {
+        await this.evaluationCoordinator.evaluateAnswer(
+          logId,
+          plan.query,
+          finalOutput,
+          sources,
+        );
+      } catch (error) {
+        console.error('[Orchestrator] Answer evaluation failed:', error);
+        // Don't throw - evaluation failure shouldn't break research execution
+      }
 
-    // 6. COMPLETION
-    const totalExecutionTime = Date.now() - startTime;
+      // 6. COMPLETION
+      const totalExecutionTime = Date.now() - startTime;
 
-    await this.eventCoordinator.emit(logId, 'session_completed', {
-      planId: plan.id,
-      totalExecutionTime,
-      phaseCount: plan.phases.length,
-    });
-
-    return {
-      logId,
-      planId: plan.id,
-      answer: finalOutput,
-      sources,
-      metadata: {
+      await this.eventCoordinator.emit(logId, 'session_completed', {
+        planId: plan.id,
         totalExecutionTime,
-        phases: phaseMetrics,
-      },
-    };
+        phaseCount: plan.phases.length,
+      });
+
+      return {
+        logId,
+        planId: plan.id,
+        answer: finalOutput,
+        sources,
+        metadata: {
+          totalExecutionTime,
+          phases: phaseMetrics,
+        },
+      };
+    } finally {
+      // Cleanup working memory after completion or error
+      this.workingMemory.cleanup(logId);
+    }
   }
 
   private async handleFailure(
@@ -418,17 +562,19 @@ export class Orchestrator {
         };
       }>;
     },
-    lastAttempt: {
-      evaluatorResults: Array<{
-        role: string;
-        critique: string;
-        explanation?: string;
-      }>;
-      iterationDecision?: {
-        specificIssues: Array<{ issue: string; fix: string }>;
-        feedbackToPlanner: string;
-      };
-    } | undefined,
+    lastAttempt:
+      | {
+          evaluatorResults: Array<{
+            role: string;
+            critique: string;
+            explanation?: string;
+          }>;
+          iterationDecision?: {
+            specificIssues: Array<{ issue: string; fix: string }>;
+            feedbackToPlanner: string;
+          };
+        }
+      | undefined,
     attemptNumber: number,
   ): {
     critique: string;

@@ -120,6 +120,17 @@
         <app-evaluation-display [evaluation]="answerEvaluation()" />
       }
 
+      <!-- Reasoning Trace Section -->
+      @if (reasoningEvents().length > 0) {
+        <section class="reasoning-section" aria-labelledby="reasoning-heading">
+          <h3 id="reasoning-heading" class="section-heading">
+            🧠 Agent Reasoning Trace
+            <span class="task-count">({{ reasoningEvents().length }} events)</span>
+          </h3>
+          <app-reasoning-trace [reasoningEvents]="reasoningEvents()" />
+        </section>
+      }
+
       <!-- Tasks Container (scrollable) -->
       <div
         #tasksContainer

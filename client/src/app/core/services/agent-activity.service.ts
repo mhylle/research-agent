@@ -775,24 +775,27 @@ export class AgentActivityService {
   private handleReasoningEvent(event: any, type: 'thought' | 'action_planned' | 'observation' | 'conclusion'): void {
     console.log(`🧠 [REASONING] ${type} event received:`, event);
 
+    // Extract data from SSE event structure (data is nested in event.data)
+    const data = event.data || event;
+
     const reasoningEvent = {
       type,
-      id: event.id || `${type}-${Date.now()}`,
+      id: data.thoughtId || data.actionId || data.observationId || data.conclusionId || event.id || `${type}-${Date.now()}`,
       timestamp: new Date(event.timestamp || Date.now()),
-      content: event.content,
-      action: event.action,
-      tool: event.tool,
-      parameters: event.parameters,
-      reasoning: event.reasoning,
-      actionId: event.actionId,
-      result: event.result,
-      analysis: event.analysis,
-      implications: event.implications,
-      conclusion: event.conclusion,
-      supportingThoughts: event.supportingThoughts,
-      confidence: event.confidence,
-      nextSteps: event.nextSteps,
-      context: event.context
+      content: data.content,
+      action: data.action,
+      tool: data.tool,
+      parameters: data.parameters,
+      reasoning: data.reasoning,
+      actionId: data.actionId,
+      result: data.result,
+      analysis: data.analysis,
+      implications: data.implications,
+      conclusion: data.conclusion,
+      supportingThoughts: data.supportingThoughts,
+      confidence: data.confidence,
+      nextSteps: data.nextSteps,
+      context: data.context
     };
 
     this.reasoningEvents.update(events => [...events, reasoningEvent]);

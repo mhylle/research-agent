@@ -1,0 +1,9 @@
+{
+  "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+  "query": "What concerts are in Copenhagen next weekend?",
+  "timestamp": "2025-12-01T18:08:26.254Z",
+  "totalDuration": 665505,
+  "stageCount": 2,
+  "toolCallCount": 3,
+  "status": "completed"
+}

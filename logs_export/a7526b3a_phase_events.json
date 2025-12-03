@@ -1,0 +1,114 @@
+[
+  {
+    "id": "48b52248-bfcd-4491-a611-387ac55ef100",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:09:03.824Z",
+    "eventType": "phase_added",
+    "planId": "5fd9c58b-29ab-49ed-935b-186f11ea86f7",
+    "phaseId": "ab0545cd-c213-4955-9062-e72b7804805a",
+    "stepId": null,
+    "data": {
+      "name": "Initial Search",
+      "replanCheckpoint": false,
+      "description": "Search for concerts in Copenhagen next weekend using specific dates"
+    }
+  },
+  {
+    "id": "ca263e18-84a6-4acb-bf2c-aecf01ff0e9f",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:09:03.833Z",
+    "eventType": "phase_added",
+    "planId": "5fd9c58b-29ab-49ed-935b-186f11ea86f7",
+    "phaseId": "41888b7e-c48e-463c-8da5-4eae481f22e3",
+    "stepId": null,
+    "data": {
+      "name": "Synthesis",
+      "replanCheckpoint": false,
+      "description": "Compile search results into a comprehensive answer"
+    }
+  },
+  {
+    "id": "a6685a9a-e13f-43a4-9b39-5602e5b07231",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:17.487Z",
+    "eventType": "phase_added",
+    "planId": "5cbd22ea-dfd4-472c-a68b-2c9eb38f5c2f",
+    "phaseId": "f11de8d6-38f3-4afd-9bbc-1d695727b92e",
+    "stepId": null,
+    "data": {
+      "name": "Initial_Search",
+      "replanCheckpoint": false,
+      "description": "Search for concerts in Copenhagen with specific dates"
+    }
+  },
+  {
+    "id": "71052d61-6b05-4599-bb17-0e417a0c44e1",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:17.494Z",
+    "eventType": "phase_added",
+    "planId": "5cbd22ea-dfd4-472c-a68b-2c9eb38f5c2f",
+    "phaseId": "6ca33e29-60ab-4286-96ae-30ae273ca63c",
+    "stepId": null,
+    "data": {
+      "name": "Synthesis",
+      "replanCheckpoint": false,
+      "description": "Generate final answer with concert details"
+    }
+  },
+  {
+    "id": "c02e092b-14b8-48bc-874c-32d7cbceae24",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:46.643Z",
+    "eventType": "phase_started",
+    "planId": null,
+    "phaseId": "f11de8d6-38f3-4afd-9bbc-1d695727b92e",
+    "stepId": null,
+    "data": {
+      "phaseId": "f11de8d6-38f3-4afd-9bbc-1d695727b92e",
+      "phaseName": "Initial_Search",
+      "stepCount": 2
+    }
+  },
+  {
+    "id": "eae32e6f-cb25-4c91-a554-487b55496052",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:48.549Z",
+    "eventType": "phase_completed",
+    "planId": null,
+    "phaseId": "f11de8d6-38f3-4afd-9bbc-1d695727b92e",
+    "stepId": null,
+    "data": {
+      "phaseId": "f11de8d6-38f3-4afd-9bbc-1d695727b92e",
+      "phaseName": "Initial_Search",
+      "stepsCompleted": 2
+    }
+  },
+  {
+    "id": "4947d5f9-b4a8-40a8-a370-36cb1566d610",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:18:31.135Z",
+    "eventType": "phase_started",
+    "planId": null,
+    "phaseId": "6ca33e29-60ab-4286-96ae-30ae273ca63c",
+    "stepId": null,
+    "data": {
+      "phaseId": "6ca33e29-60ab-4286-96ae-30ae273ca63c",
+      "phaseName": "Synthesis",
+      "stepCount": 1
+    }
+  },
+  {
+    "id": "c12a175e-80fa-4566-b388-ed14b3d78818",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:18:56.487Z",
+    "eventType": "phase_completed",
+    "planId": null,
+    "phaseId": "6ca33e29-60ab-4286-96ae-30ae273ca63c",
+    "stepId": null,
+    "data": {
+      "phaseId": "6ca33e29-60ab-4286-96ae-30ae273ca63c",
+      "phaseName": "Synthesis",
+      "stepsCompleted": 1
+    }
+  }
+]

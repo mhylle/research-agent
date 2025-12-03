@@ -364,6 +364,45 @@ export class ResearchStreamController {
           error: String(data.error ?? ''),
         };
 
+      // Reasoning trace events
+      case 'reasoning_thought':
+        return {
+          title: 'Thought',
+          content: String(data.content ?? ''),
+          context: data.context,
+          thoughtId: String(data.thoughtId ?? ''),
+        };
+
+      case 'reasoning_action_planned':
+        return {
+          title: 'Action Planned',
+          action: String(data.action ?? ''),
+          tool: String(data.tool ?? ''),
+          parameters: data.parameters,
+          reasoning: String(data.reasoning ?? ''),
+          actionId: String(data.actionId ?? ''),
+        };
+
+      case 'reasoning_observation':
+        return {
+          title: 'Observation',
+          result: String(data.result ?? ''),
+          analysis: String(data.analysis ?? ''),
+          implications: data.implications as string[],
+          actionId: String(data.actionId ?? ''),
+          observationId: String(data.observationId ?? ''),
+        };
+
+      case 'reasoning_conclusion':
+        return {
+          title: 'Conclusion',
+          conclusion: String(data.conclusion ?? ''),
+          supportingThoughts: data.supportingThoughts as string[],
+          confidence: data.confidence as number,
+          nextSteps: data.nextSteps as string[],
+          conclusionId: String(data.conclusionId ?? ''),
+        };
+
       default:
         return { title: entry.eventType };
     }

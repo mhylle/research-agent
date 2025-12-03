@@ -10,6 +10,7 @@ import { EvaluationCoordinatorService } from './services/evaluation-coordinator.
 import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry';
 import { WorkingMemoryService } from './services/working-memory.service';
 import { QueryDecomposerService } from './services/query-decomposer.service';
+import { CoverageAnalyzerService } from './services/coverage-analyzer.service';
 import { OllamaService } from '../llm/ollama.service';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
@@ -20,6 +21,7 @@ import {
 } from './interfaces/recovery.interface';
 import { ConfidenceResult } from '../evaluation/interfaces/confidence.interface';
 import { DecompositionResult, SubQuery } from './interfaces';
+import { CoverageResult } from './interfaces/coverage-result.interface';
 
 export interface ResearchResult {
   logId: string;
@@ -31,6 +33,8 @@ export interface ResearchResult {
     phases: Array<{ phase: string; executionTime: number }>;
     decomposition?: DecompositionResult;
     subQueryResults?: Map<string, SubQueryResult>;
+    retrievalCycles?: number;
+    finalCoverage?: number;
   };
   confidence?: ConfidenceResult;
 }
@@ -54,6 +58,7 @@ export class Orchestrator {
     private phaseExecutorRegistry: PhaseExecutorRegistry,
     private workingMemory: WorkingMemoryService,
     private queryDecomposer: QueryDecomposerService,
+    private coverageAnalyzer: CoverageAnalyzerService,
     private llmService: OllamaService,
   ) {}
 
@@ -979,5 +984,253 @@ Write a thorough, professional response that fully answers the original question
       scores: evaluationResult.scores,
       attemptNumber,
     };
+  }
+
+  /**
+   * Execute research with iterative retrieval loop based on coverage analysis.
+   * Continues retrieving information until coverage threshold is met or max cycles reached.
+   */
+  async executeWithIterativeRetrieval(
+    query: string,
+    logId: string,
+    maxRetrievalCycles: number = 2,
+  ): Promise<ResearchResult> {
+    let currentSources: Array<{ url: string; title: string; relevance: string }> = [];
+    let currentAnswer = '';
+    let cycle = 0;
+    const startTime = Date.now();
+    const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
+
+    // Initialize working memory
+    this.workingMemory.initialize(logId, query);
+
+    try {
+      await this.eventCoordinator.emit(logId, 'session_started', { query, iterativeMode: true });
+
+      while (cycle < maxRetrievalCycles) {
+        cycle++;
+        const cycleStartTime = Date.now();
+
+        await this.eventCoordinator.emit(logId, 'retrieval_cycle_started', {
+          cycle,
+          maxCycles: maxRetrievalCycles,
+          currentSourceCount: currentSources.length,
+        });
+
+        // Retrieval phase
+        const newSources = await this.executeRetrievalPhase(
+          query,
+          currentAnswer,
+          cycle,
+          logId,
+        );
+        currentSources = this.deduplicateSources([...currentSources, ...newSources]);
+
+        // Synthesis phase - generate/update answer
+        currentAnswer = await this.executeSynthesisForRetrieval(
+          query,
+          currentSources,
+          logId,
+        );
+
+        phaseMetrics.push({
+          phase: `retrieval-cycle-${cycle}`,
+          executionTime: Date.now() - cycleStartTime,
+        });
+
+        // Coverage analysis
+        const coverage = await this.coverageAnalyzer.analyzeCoverage(
+          query,
+          currentAnswer,
+          currentSources.map(s => ({ url: s.url, title: s.title, relevance: s.relevance })),
+          undefined, // subQueries
+          logId,
+        );
+
+        // Store coverage in working memory
+        this.workingMemory.setScratchPadValue(logId, `coverage_cycle_${cycle}`, coverage);
+
+        await this.eventCoordinator.emit(logId, 'coverage_checked', {
+          cycle,
+          overallCoverage: coverage.overallCoverage,
+          isComplete: coverage.isComplete,
+          aspectsCoveredCount: coverage.aspectsCovered.length,
+          aspectsMissingCount: coverage.aspectsMissing.length,
+          suggestedRetrievalsCount: coverage.suggestedRetrievals.length,
+        });
+
+        // Check termination conditions
+        if (coverage.isComplete) {
+          console.log(`[Orchestrator] Cycle ${cycle}: Coverage threshold met (${coverage.overallCoverage.toFixed(2)}), terminating`);
+          await this.eventCoordinator.emit(logId, 'retrieval_cycle_completed', {
+            cycle,
+            terminationReason: 'coverage_threshold_met',
+            finalCoverage: coverage.overallCoverage,
+          });
+          break;
+        }
+
+        if (coverage.suggestedRetrievals.length === 0) {
+          console.log(`[Orchestrator] Cycle ${cycle}: No additional retrieval suggestions, terminating`);
+          await this.eventCoordinator.emit(logId, 'retrieval_cycle_completed', {
+            cycle,
+            terminationReason: 'no_more_suggestions',
+            finalCoverage: coverage.overallCoverage,
+          });
+          break;
+        }
+
+        if (cycle >= maxRetrievalCycles) {
+          console.log(`[Orchestrator] Cycle ${cycle}: Max cycles reached, terminating`);
+          await this.eventCoordinator.emit(logId, 'retrieval_cycle_completed', {
+            cycle,
+            terminationReason: 'max_cycles_reached',
+            finalCoverage: coverage.overallCoverage,
+          });
+          break;
+        }
+
+        console.log(`[Orchestrator] Cycle ${cycle}: Coverage ${coverage.overallCoverage.toFixed(2)}, continuing with ${coverage.suggestedRetrievals.length} additional retrievals`);
+      }
+
+      const totalExecutionTime = Date.now() - startTime;
+      const finalCoverage = this.workingMemory.getScratchPadValue<CoverageResult>(logId, `coverage_cycle_${cycle}`);
+
+      await this.eventCoordinator.emit(logId, 'session_completed', {
+        totalExecutionTime,
+        retrievalCycles: cycle,
+        finalCoverage: finalCoverage?.overallCoverage,
+        sourceCount: currentSources.length,
+      });
+
+      return {
+        logId,
+        planId: `iterative-${logId}`,
+        answer: currentAnswer,
+        sources: currentSources,
+        metadata: {
+          totalExecutionTime,
+          phases: phaseMetrics,
+          retrievalCycles: cycle,
+          finalCoverage: finalCoverage?.overallCoverage,
+        },
+      };
+    } finally {
+      this.workingMemory.cleanup(logId);
+    }
+  }
+
+  /**
+   * Execute a single retrieval phase.
+   * First cycle uses normal search, subsequent cycles use gap-filling searches.
+   */
+  private async executeRetrievalPhase(
+    query: string,
+    previousAnswer: string,
+    cycle: number,
+    logId: string,
+  ): Promise<Array<{ url: string; title: string; relevance: string }>> {
+    if (cycle === 1) {
+      // First cycle: normal search based on query
+      const plan = await this.plannerService.createPlan(query, logId);
+      const searchPhase = plan.phases.find(p => this.isRetrievalPhase(p));
+
+      if (!searchPhase) {
+        console.log('[Orchestrator] No search phase in plan, returning empty sources');
+        return [];
+      }
+
+      const executor = this.phaseExecutorRegistry.getExecutor(searchPhase);
+      const phaseResult = await executor.execute(searchPhase, {
+        logId,
+        plan,
+        allPreviousResults: [],
+      });
+
+      const { sources } = this.resultExtractor.extractAllResults(phaseResult);
+      return sources;
+    }
+
+    // Subsequent cycles: targeted gap-filling searches
+    const coverage = this.workingMemory.getScratchPadValue<CoverageResult>(
+      logId,
+      `coverage_cycle_${cycle - 1}`,
+    );
+
+    if (!coverage || coverage.suggestedRetrievals.length === 0) {
+      return [];
+    }
+
+    console.log(`[Orchestrator] Cycle ${cycle}: Executing ${coverage.suggestedRetrievals.length} gap-filling searches`);
+
+    // Execute suggested retrieval queries
+    const allSources: Array<{ url: string; title: string; relevance: string }> = [];
+
+    for (const suggestion of coverage.suggestedRetrievals) {
+      try {
+        const plan = await this.plannerService.createPlan(suggestion.searchQuery, logId);
+        const searchPhase = plan.phases.find(p => this.isRetrievalPhase(p));
+
+        if (!searchPhase) continue;
+
+        const executor = this.phaseExecutorRegistry.getExecutor(searchPhase);
+        const phaseResult = await executor.execute(searchPhase, {
+          logId,
+          plan,
+          allPreviousResults: [],
+        });
+
+        const { sources } = this.resultExtractor.extractAllResults(phaseResult);
+        allSources.push(...sources);
+      } catch (error) {
+        console.error(`[Orchestrator] Gap-filling search failed for "${suggestion.searchQuery}":`, error);
+      }
+    }
+
+    return allSources;
+  }
+
+  /**
+   * Execute synthesis phase to generate/update answer based on current sources.
+   */
+  private async executeSynthesisForRetrieval(
+    query: string,
+    sources: Array<{ url: string; title: string; relevance: string }>,
+    logId: string,
+  ): Promise<string> {
+    if (sources.length === 0) {
+      return 'Unable to find relevant information for the query.';
+    }
+
+    const sourceContext = sources
+      .map((s, i) => `[${i + 1}] ${s.title} (${s.url})`)
+      .join('\n');
+
+    const prompt = `Based on the following sources, provide a comprehensive answer to the query.
+
+QUERY: "${query}"
+
+SOURCES:
+${sourceContext}
+
+Provide a well-structured, comprehensive answer that synthesizes information from the available sources. Include relevant citations where appropriate.`;
+
+    try {
+      const response = await this.llmService.chat([
+        {
+          role: 'system',
+          content: 'You are a research assistant that provides accurate, well-cited answers based on given sources.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ]);
+
+      return response.message.content.trim();
+    } catch (error) {
+      console.error('[Orchestrator] Synthesis failed:', error);
+      return `Error synthesizing answer: ${error.message}`;
+    }
   }
 }

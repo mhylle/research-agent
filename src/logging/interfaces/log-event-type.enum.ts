@@ -83,4 +83,8 @@ export type LogEventType =
   | 'final_synthesis_completed'
   // Coverage analysis events
   | 'coverage_analysis_started'
-  | 'coverage_analysis_completed';
+  | 'coverage_analysis_completed'
+  // Iterative retrieval events
+  | 'retrieval_cycle_started'
+  | 'coverage_checked'
+  | 'retrieval_cycle_completed';

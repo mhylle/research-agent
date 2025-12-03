@@ -119,7 +119,7 @@ export class AgentActivityViewComponent implements OnInit, OnDestroy {
    * TrackBy function for *ngFor optimization
    */
   trackByTaskId(index: number, task: ActivityTask): string {
-    return task.id;
+    return `${index}-${task.id}`;
   }
 
   /**

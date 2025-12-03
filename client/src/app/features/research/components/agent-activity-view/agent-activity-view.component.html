@@ -76,7 +76,7 @@
 
           @if (showPlannedPhases()) {
             <div id="planned-phases-list" class="planned-phases-list">
-              @for (phase of plannedPhases(); track phase.id) {
+              @for (phase of plannedPhases(); track $index + '-' + phase.id) {
                 <div class="planned-phase">
                   <div class="planned-phase__header">
                     <span class="planned-phase__order">{{ phase.order + 1 }}</span>
@@ -89,7 +89,7 @@
                     }
                   </div>
                   <div class="planned-phase__steps">
-                    @for (step of phase.steps; track step.id) {
+                    @for (step of phase.steps; track $index + '-' + step.id) {
                       <div class="planned-step">
                         <span class="planned-step__tool">{{ step.toolName }}</span>
                         <span class="planned-step__status" [attr.data-status]="step.status">

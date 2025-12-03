@@ -114,7 +114,7 @@ export class ResearchHistoryComponent implements OnInit {
   }
 
   trackByLogId(index: number, item: HistoryItem): string {
-    return item.logId;
+    return `${index}-${item.logId}`;
   }
 
   private convertSessionToHistoryItem(session: LogSession): HistoryItem {

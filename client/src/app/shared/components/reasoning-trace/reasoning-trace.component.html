@@ -2,7 +2,7 @@
   <h3 class="reasoning-trace__title">Agent Reasoning</h3>
 
   <div class="reasoning-trace__timeline">
-    @for (event of reasoningEvents(); track event.id) {
+    @for (event of reasoningEvents(); track $index + '-' + event.id) {
       <div class="reasoning-trace__event"
            [class]="'reasoning-trace__event--' + event.type">
 
@@ -36,7 +36,7 @@
 
           @if (event.type === 'observation' && event.implications && event.implications.length > 0) {
             <div class="reasoning-trace__implications">
-              @for (impl of event.implications; track impl) {
+              @for (impl of event.implications; track $index + '-' + impl) {
                 <span class="reasoning-trace__tag">{{ impl }}</span>
               }
             </div>

@@ -11,6 +11,7 @@ import { WorkingMemoryService } from './services/working-memory.service';
 import { QueryDecomposerService } from './services/query-decomposer.service';
 import { CoverageAnalyzerService } from './services/coverage-analyzer.service';
 import { OllamaService } from '../llm/ollama.service';
+import { ReflectionService } from '../reflection/services/reflection.service';
 import { Plan } from './interfaces/plan.interface';
 
 describe('Orchestrator', () => {
@@ -26,6 +27,7 @@ describe('Orchestrator', () => {
   let mockQueryDecomposer: jest.Mocked<QueryDecomposerService>;
   let mockCoverageAnalyzer: jest.Mocked<CoverageAnalyzerService>;
   let mockLlmService: jest.Mocked<OllamaService>;
+  let mockReflectionService: jest.Mocked<ReflectionService>;
 
   const mockPlan: Plan = {
     id: 'plan-1',
@@ -164,6 +166,34 @@ describe('Orchestrator', () => {
       }),
     } as unknown as jest.Mocked<OllamaService>;
 
+    mockReflectionService = {
+      reflect: jest.fn().mockResolvedValue({
+        iterationCount: 2,
+        improvements: [0.1, 0.05],
+        identifiedGaps: [],
+        finalAnswer: 'Refined answer through reflection',
+        finalConfidence: 0.9,
+        reflectionTrace: [
+          {
+            iteration: 1,
+            critique: 'Initial critique',
+            gapsFound: [],
+            confidenceBefore: 0,
+            confidenceAfter: 0.85,
+            improvement: 0.1,
+          },
+          {
+            iteration: 2,
+            critique: 'Second iteration critique',
+            gapsFound: [],
+            confidenceBefore: 0.85,
+            confidenceAfter: 0.9,
+            improvement: 0.05,
+          },
+        ],
+      }),
+    } as unknown as jest.Mocked<ReflectionService>;
+
     // Mock phase executor that returns successful results
     const mockPhaseExecutor = {
       canHandle: jest.fn().mockReturnValue(true),
@@ -205,6 +235,7 @@ describe('Orchestrator', () => {
         { provide: QueryDecomposerService, useValue: mockQueryDecomposer },
         { provide: CoverageAnalyzerService, useValue: mockCoverageAnalyzer },
         { provide: OllamaService, useValue: mockLlmService },
+        { provide: ReflectionService, useValue: mockReflectionService },
       ],
     }).compile();
 
@@ -613,6 +644,158 @@ describe('Orchestrator', () => {
         'log-123',
         'coverage_cycle_1',
       );
+    });
+  });
+
+  describe('orchestrateAgenticResearch', () => {
+    it('should execute full agentic pipeline for simple query', async () => {
+      const result = await orchestrator.orchestrateAgenticResearch('test query');
+
+      expect(result).toBeDefined();
+      expect(result.answer).toBe('Refined answer through reflection');
+      expect(result.metadata.usedAgenticPipeline).toBe(true);
+      expect(result.metadata.reflectionIterations).toBe(2);
+      expect(result.metadata.totalImprovement).toBeCloseTo(0.15, 5);
+      expect(result.reflection).toBeDefined();
+      expect(result.reflection?.iterationCount).toBe(2);
+      expect(result.reflection?.finalConfidence).toBe(0.9);
+      expect(result.reflection?.improvements).toEqual([0.1, 0.05]);
+
+      // Should use query decomposer
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockQueryDecomposer.decomposeQuery).toHaveBeenCalledWith(
+        'test query',
+        expect.any(String),
+      );
+
+      // Should call reflection service
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockReflectionService.reflect).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({
+          maxIterations: 2,
+          minImprovementThreshold: 0.05,
+          qualityTargetThreshold: 0.85,
+          timeoutPerIteration: 60000,
+        }),
+      );
+
+      // Should emit agentic session events
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockEventCoordinator.emit).toHaveBeenCalledWith(
+        expect.any(String),
+        'session_started',
+        expect.objectContaining({
+          query: 'test query',
+          agenticMode: true,
+        }),
+      );
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockEventCoordinator.emit).toHaveBeenCalledWith(
+        expect.any(String),
+        'session_completed',
+        expect.objectContaining({
+          agenticMode: true,
+          decomposed: false,
+          reflectionIterations: 2,
+          finalConfidence: 0.9,
+        }),
+      );
+    });
+
+    it('should execute full agentic pipeline for complex query', async () => {
+      // Configure decomposer to return complex query
+      mockQueryDecomposer.decomposeQuery.mockResolvedValueOnce({
+        originalQuery: 'complex test query',
+        isComplex: true,
+        subQueries: [
+          {
+            id: 'sq1',
+            text: 'sub-query 1',
+            type: 'factual',
+            dependencies: [],
+            priority: 1,
+          },
+          {
+            id: 'sq2',
+            text: 'sub-query 2',
+            type: 'analytical',
+            dependencies: ['sq1'],
+            priority: 2,
+          },
+        ],
+        executionPlan: [
+          [
+            {
+              id: 'sq1',
+              text: 'sub-query 1',
+              type: 'factual',
+              dependencies: [],
+              priority: 1,
+            },
+          ],
+          [
+            {
+              id: 'sq2',
+              text: 'sub-query 2',
+              type: 'analytical',
+              dependencies: ['sq1'],
+              priority: 2,
+            },
+          ],
+        ],
+        reasoning: 'Complex query requires decomposition',
+      });
+
+      const result = await orchestrator.orchestrateAgenticResearch('complex test query');
+
+      expect(result).toBeDefined();
+      expect(result.metadata.usedAgenticPipeline).toBe(true);
+      expect(result.metadata.decomposition).toBeDefined();
+      expect(result.metadata.decomposition?.isComplex).toBe(true);
+
+      // Should emit sub-query events
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockEventCoordinator.emit).toHaveBeenCalledWith(
+        expect.any(String),
+        'sub_query_execution_started',
+        expect.objectContaining({
+          subQueryId: 'sq1',
+          useIterativeRetrieval: true,
+        }),
+      );
+
+      // Should call reflection service
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockReflectionService.reflect).toHaveBeenCalled();
+    });
+
+    it('should include reflection results in agentic response', async () => {
+      const result = await orchestrator.orchestrateAgenticResearch('test query');
+
+      expect(result.reflection).toBeDefined();
+      expect(result.reflection?.iterationCount).toBe(2);
+      expect(result.reflection?.finalConfidence).toBe(0.9);
+      expect(result.reflection?.improvements).toEqual([0.1, 0.05]);
+      expect(result.metadata.reflectionIterations).toBe(2);
+      expect(result.metadata.totalImprovement).toBeCloseTo(0.15, 5);
+    });
+
+    it('should handle reflection errors gracefully', async () => {
+      // Make reflection service throw an error
+      mockReflectionService.reflect.mockRejectedValueOnce(
+        new Error('Reflection failed'),
+      );
+
+      await expect(
+        orchestrator.orchestrateAgenticResearch('test query'),
+      ).rejects.toThrow('Reflection failed');
+
+      // Should still clean up working memory
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockWorkingMemory.cleanup).toHaveBeenCalled();
     });
   });
 });

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   Orchestrator,
   ResearchResult,
+  AgenticResearchResult,
 } from '../orchestration/orchestrator.service';
 import { ResearchResultService } from './research-result.service';
 
@@ -50,5 +51,36 @@ export class ResearchService {
         `Background research failed for logId ${logId}: ${error}`,
       );
     });
+  }
+
+  /**
+   * Execute agentic research with full reflection and refinement pipeline.
+   */
+  async executeAgenticResearch(
+    query: string,
+    logId?: string,
+  ): Promise<AgenticResearchResult> {
+    const result = await this.orchestrator.orchestrateAgenticResearch(
+      query,
+      logId,
+    );
+
+    // Persist the research result to database
+    try {
+      await this.resultService.save({
+        logId: result.logId,
+        planId: result.planId,
+        query,
+        answer: result.answer,
+        sources: result.sources,
+        metadata: result.metadata,
+        confidence: result.confidence,
+      });
+      this.logger.log(`Agentic research result saved for logId: ${result.logId}`);
+    } catch (error) {
+      this.logger.error(`Failed to save agentic research result: ${error}`);
+    }
+
+    return result;
   }
 }

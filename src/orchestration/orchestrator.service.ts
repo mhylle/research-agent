@@ -12,6 +12,8 @@ import { WorkingMemoryService } from './services/working-memory.service';
 import { QueryDecomposerService } from './services/query-decomposer.service';
 import { CoverageAnalyzerService } from './services/coverage-analyzer.service';
 import { OllamaService } from '../llm/ollama.service';
+import { ReflectionService } from '../reflection/services/reflection.service';
+import { ReflectionConfig, ReflectionResult } from '../reflection/interfaces';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
 import { LogEventType } from '../logging/interfaces/log-event-type.enum';
@@ -46,6 +48,19 @@ export interface SubQueryResult {
   confidence?: number;
 }
 
+export interface AgenticResearchResult extends ResearchResult {
+  metadata: ResearchResult['metadata'] & {
+    reflectionIterations?: number;
+    totalImprovement?: number;
+    usedAgenticPipeline: boolean;
+  };
+  reflection?: {
+    iterationCount: number;
+    finalConfidence: number;
+    improvements: number[];
+  };
+}
+
 @Injectable()
 export class Orchestrator {
   constructor(
@@ -60,6 +75,7 @@ export class Orchestrator {
     private queryDecomposer: QueryDecomposerService,
     private coverageAnalyzer: CoverageAnalyzerService,
     private llmService: OllamaService,
+    private reflectionService: ReflectionService,
   ) {}
 
   /**
@@ -1232,5 +1248,269 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
       console.error('[Orchestrator] Synthesis failed:', error);
       return `Error synthesizing answer: ${error.message}`;
     }
+  }
+
+  /**
+   * Execute full agentic research pipeline with reflection and refinement.
+   * Combines query decomposition, iterative retrieval, and reflection for highest quality results.
+   */
+  async orchestrateAgenticResearch(
+    query: string,
+    logId?: string,
+  ): Promise<AgenticResearchResult> {
+    logId = logId || randomUUID();
+    const startTime = Date.now();
+
+    // Initialize working memory
+    this.workingMemory.initialize(logId, query);
+
+    try {
+      // Emit session start with agentic flag
+      await this.eventCoordinator.emit(logId, 'session_started', {
+        query,
+        agenticMode: true,
+      });
+
+      // Phase 1: Query Decomposition
+      const decomposition = await this.queryDecomposer.decomposeQuery(
+        query,
+        logId,
+      );
+      this.workingMemory.setScratchPadValue(
+        logId,
+        'decomposition',
+        decomposition,
+      );
+
+      let researchResult: ResearchResult;
+
+      if (decomposition.isComplex) {
+        // Complex query: decomposed sub-queries with iterative retrieval
+        console.log(
+          `[Orchestrator] Agentic: Complex query with ${decomposition.subQueries.length} sub-queries`,
+        );
+        researchResult =
+          await this.executeDecomposedQueryWithIterativeRetrieval(
+            decomposition,
+            logId,
+            startTime,
+          );
+      } else {
+        // Simple query: direct iterative retrieval
+        console.log(
+          '[Orchestrator] Agentic: Simple query with iterative retrieval',
+        );
+        researchResult = await this.executeSimpleQueryWithIterativeRetrieval(
+          query,
+          logId,
+          startTime,
+        );
+      }
+
+      // Phase 2: Reflection and Refinement
+      console.log('[Orchestrator] Agentic: Starting reflection phase');
+      const reflectionConfig: ReflectionConfig = {
+        maxIterations: 2,
+        minImprovementThreshold: 0.05,
+        qualityTargetThreshold: 0.85,
+        timeoutPerIteration: 60000,
+      };
+
+      const reflectionResult = await this.reflectionService.reflect(
+        logId,
+        researchResult.answer,
+        reflectionConfig,
+      );
+
+      // Update answer with refined version
+      const finalAnswer = reflectionResult.finalAnswer || researchResult.answer;
+
+      const totalExecutionTime = Date.now() - startTime;
+
+      await this.eventCoordinator.emit(logId, 'session_completed', {
+        totalExecutionTime,
+        agenticMode: true,
+        decomposed: decomposition.isComplex,
+        reflectionIterations: reflectionResult.iterationCount,
+        finalConfidence: reflectionResult.finalConfidence,
+      });
+
+      return {
+        ...researchResult,
+        answer: finalAnswer,
+        metadata: {
+          ...researchResult.metadata,
+          totalExecutionTime,
+          reflectionIterations: reflectionResult.iterationCount,
+          totalImprovement: reflectionResult.improvements.reduce(
+            (a, b) => a + b,
+            0,
+          ),
+          usedAgenticPipeline: true,
+        },
+        reflection: {
+          iterationCount: reflectionResult.iterationCount,
+          finalConfidence: reflectionResult.finalConfidence,
+          improvements: reflectionResult.improvements,
+        },
+      };
+    } finally {
+      this.workingMemory.cleanup(logId);
+    }
+  }
+
+  /**
+   * Execute a decomposed query with iterative retrieval for each sub-query.
+   */
+  private async executeDecomposedQueryWithIterativeRetrieval(
+    decomposition: DecompositionResult,
+    logId: string,
+    startTime: number,
+  ): Promise<ResearchResult> {
+    const subQueryResults = new Map<string, SubQueryResult>();
+    const allSources: Array<{ url: string; title: string; relevance: string }> =
+      [];
+    const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
+
+    console.log(
+      `[Orchestrator] Executing ${decomposition.executionPlan.length} phases with iterative retrieval`,
+    );
+
+    // Execute each phase of sub-queries with iterative retrieval
+    for (
+      let phaseIndex = 0;
+      phaseIndex < decomposition.executionPlan.length;
+      phaseIndex++
+    ) {
+      const phase = decomposition.executionPlan[phaseIndex];
+      const phaseStartTime = Date.now();
+
+      console.log(
+        `[Orchestrator] Phase ${phaseIndex + 1}: ${phase.length} sub-queries`,
+      );
+
+      // Execute sub-queries in parallel with reduced retrieval cycles
+      await Promise.all(
+        phase.map(async (subQuery) => {
+          const subLogId = `${logId}-${subQuery.id}`;
+
+          await this.eventCoordinator.emit(
+            logId,
+            'sub_query_execution_started',
+            {
+              subQueryId: subQuery.id,
+              subQueryText: subQuery.text,
+              useIterativeRetrieval: true,
+            },
+          );
+
+          try {
+            // Use iterative retrieval with max 1 additional cycle for sub-queries
+            const result = await this.executeWithIterativeRetrieval(
+              subQuery.text,
+              subLogId,
+              1, // Max 1 additional cycle for sub-queries
+            );
+
+            const subResult: SubQueryResult = {
+              subQueryId: subQuery.id,
+              answer: result.answer,
+              sources: result.sources,
+              confidence: result.metadata.finalCoverage,
+            };
+
+            subQueryResults.set(subQuery.id, subResult);
+            allSources.push(...result.sources);
+
+            await this.eventCoordinator.emit(
+              logId,
+              'sub_query_execution_completed',
+              {
+                subQueryId: subQuery.id,
+                success: true,
+                sourceCount: result.sources.length,
+              },
+            );
+          } catch (error) {
+            console.error(
+              `[Orchestrator] Sub-query ${subQuery.id} failed:`,
+              error,
+            );
+
+            // Return partial result on failure
+            subQueryResults.set(subQuery.id, {
+              subQueryId: subQuery.id,
+              answer: `Failed: ${error.message}`,
+              sources: [],
+            });
+
+            await this.eventCoordinator.emit(
+              logId,
+              'sub_query_execution_completed',
+              {
+                subQueryId: subQuery.id,
+                success: false,
+                error: error.message,
+              },
+            );
+          }
+        }),
+      );
+
+      phaseMetrics.push({
+        phase: `sub-query-phase-${phaseIndex + 1}`,
+        executionTime: Date.now() - phaseStartTime,
+      });
+    }
+
+    // Synthesize final answer
+    const synthesisStartTime = Date.now();
+    const finalAnswer = await this.synthesizeFinalAnswer(
+      decomposition.originalQuery,
+      decomposition.subQueries,
+      subQueryResults,
+      logId,
+    );
+
+    phaseMetrics.push({
+      phase: 'final-synthesis',
+      executionTime: Date.now() - synthesisStartTime,
+    });
+
+    const uniqueSources = this.deduplicateSources(allSources);
+
+    return {
+      logId,
+      planId: `agentic-decomposed-${logId}`,
+      answer: finalAnswer,
+      sources: uniqueSources,
+      metadata: {
+        totalExecutionTime: Date.now() - startTime,
+        phases: phaseMetrics,
+        decomposition,
+        subQueryResults,
+      },
+    };
+  }
+
+  /**
+   * Execute a simple query with iterative retrieval.
+   */
+  private async executeSimpleQueryWithIterativeRetrieval(
+    query: string,
+    logId: string,
+    startTime: number,
+  ): Promise<ResearchResult> {
+    // Use iterative retrieval for simple queries too (max 2 cycles)
+    const result = await this.executeWithIterativeRetrieval(query, logId, 2);
+
+    return {
+      ...result,
+      planId: `agentic-simple-${logId}`,
+      metadata: {
+        ...result.metadata,
+        totalExecutionTime: Date.now() - startTime,
+      },
+    };
   }
 }

@@ -51,4 +51,12 @@ export type LogEventType =
   // Confidence scoring events
   | 'confidence_scoring_started'
   | 'confidence_scoring_completed'
-  | 'confidence_scoring_failed';
+  | 'confidence_scoring_failed'
+  // Self-critique events
+  | 'self_critique_started'
+  | 'self_critique_completed'
+  | 'self_critique_failed'
+  // Gap detection events
+  | 'gap_detection_started'
+  | 'gap_detected'
+  | 'gap_detection_completed';

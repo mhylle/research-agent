@@ -83,7 +83,7 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
 
         // Extract sources from previous results
         const sources = this.extractSources(context.allPreviousResults);
-
+        this.logger.debug(`Extracted ${sources.length} sources for confidence scoring`);
         if (sources.length === 0) {
           this.logger.warn('No sources found in previous results, skipping confidence scoring');
           return result;
@@ -175,8 +175,22 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
 
       const output = stepResult.output;
 
-      // Handle tavily_search results
-      if (output.results && Array.isArray(output.results)) {
+      // Handle tavily_search results - output is directly an array
+      if (Array.isArray(output)) {
+        for (const result of output) {
+          if (result.url && result.content) {
+            sources.push({
+              id: `source-${sources.length}`,
+              url: result.url,
+              content: result.content,
+              title: result.title,
+              relevance: result.score,
+            });
+          }
+        }
+      }
+      // Handle cases where results is a property (e.g., wrapped response)
+      else if (output.results && Array.isArray(output.results)) {
         for (const result of output.results) {
           if (result.url && result.content) {
             sources.push({

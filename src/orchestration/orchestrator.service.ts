@@ -16,6 +16,7 @@ import {
   FailureContext,
   RecoveryDecision,
 } from './interfaces/recovery.interface';
+import { ConfidenceResult } from '../evaluation/interfaces/confidence.interface';
 
 export interface ResearchResult {
   logId: string;
@@ -26,6 +27,7 @@ export interface ResearchResult {
     totalExecutionTime: number;
     phases: Array<{ phase: string; executionTime: number }>;
   };
+  confidence?: ConfidenceResult;
 }
 
 @Injectable()
@@ -236,10 +238,19 @@ export class Orchestrator {
         [];
       const allStepResults: StepResult[] = [];
       let retrievalEvaluationComplete = false;
+      let confidence: ConfidenceResult | undefined;
 
       console.log(
         `[Orchestrator] Starting execution loop for ${plan.phases.length} phases`,
       );
+
+      // Set up listener for confidence scoring completion
+      const confidenceListener = (entry: any) => {
+        if (entry.logId === logId && entry.eventType === 'confidence_scoring_completed') {
+          confidence = entry.data.confidence;
+        }
+      };
+      this.eventEmitter.on(`log.${logId}`, confidenceListener);
 
       // 2. EXECUTION LOOP
       for (const phase of plan.phases) {
@@ -427,6 +438,9 @@ export class Orchestrator {
         }
       }
 
+      // Remove confidence listener
+      this.eventEmitter.off(`log.${logId}`, confidenceListener);
+
       // 5. ANSWER EVALUATION
       try {
         await this.evaluationCoordinator.evaluateAnswer(
@@ -458,6 +472,7 @@ export class Orchestrator {
           totalExecutionTime,
           phases: phaseMetrics,
         },
+        confidence,
       };
     } finally {
       // Cleanup working memory after completion or error

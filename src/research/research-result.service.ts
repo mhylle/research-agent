@@ -8,6 +8,7 @@ import {
   ResearchMetadata,
 } from './entities/research-result.entity';
 import { EmbeddingService } from '../knowledge/embedding.service';
+import { ConfidenceResult } from '../evaluation/interfaces/confidence.interface';
 
 export interface SaveResearchResultDto {
   logId: string;
@@ -16,6 +17,7 @@ export interface SaveResearchResultDto {
   answer: string;
   sources: ResearchSource[];
   metadata: ResearchMetadata;
+  confidence?: ConfidenceResult;
 }
 
 @Injectable()
@@ -56,6 +58,7 @@ export class ResearchResultService {
       answer: dto.answer,
       sources: dto.sources,
       metadata: dto.metadata,
+      confidence: dto.confidence,
     });
 
     // Save entity first

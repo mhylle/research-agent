@@ -29,6 +29,7 @@ export class ResearchService {
         answer: result.answer,
         sources: result.sources,
         metadata: result.metadata,
+        confidence: result.confidence,
       });
       this.logger.log(`Research result saved for logId: ${result.logId}`);
     } catch (error) {

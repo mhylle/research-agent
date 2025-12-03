@@ -5,6 +5,7 @@ import {
   Index,
   CreateDateColumn,
 } from 'typeorm';
+import type { ConfidenceResult } from '../../evaluation/interfaces/confidence.interface';
 
 export interface ResearchSource {
   url: string;
@@ -40,6 +41,9 @@ export class ResearchResultEntity {
 
   @Column('simple-json')
   metadata: ResearchMetadata;
+
+  @Column('simple-json', { nullable: true })
+  confidence?: ConfidenceResult;
 
   @CreateDateColumn()
   createdAt: Date;

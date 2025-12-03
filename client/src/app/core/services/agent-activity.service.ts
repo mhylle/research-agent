@@ -62,6 +62,9 @@ export class AgentActivityService {
   // Reasoning events signal
   reasoningEvents = signal<any[]>([]);
 
+  // Confidence result signal
+  confidenceResult = signal<any | null>(null);
+
   private phaseCounter = 0; // Track current phase index
 
   // Computed signals
@@ -206,6 +209,19 @@ export class AgentActivityService {
     this.eventSource.addEventListener('reasoning_conclusion', (e: MessageEvent) => {
       this.handleReasoningEvent(JSON.parse(e.data), 'conclusion');
     });
+
+    // Confidence scoring events
+    this.eventSource.addEventListener('confidence_scoring_started', (e: MessageEvent) => {
+      this.handleConfidenceScoringStarted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('confidence_scoring_completed', (e: MessageEvent) => {
+      this.handleConfidenceScoringCompleted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('confidence_scoring_failed', (e: MessageEvent) => {
+      this.handleConfidenceScoringFailed(JSON.parse(e.data));
+    });
   }
 
   disconnect(): void {
@@ -242,6 +258,8 @@ export class AgentActivityService {
     this.answerEvaluation.set(null);
     // Reset reasoning events
     this.reasoningEvents.set([]);
+    // Reset confidence
+    this.confidenceResult.set(null);
   }
 
   // NEW ORCHESTRATOR EVENT HANDLERS
@@ -799,5 +817,67 @@ export class AgentActivityService {
     };
 
     this.reasoningEvents.update(events => [...events, reasoningEvent]);
+  }
+
+  /**
+   * Handle confidence scoring events for answer confidence
+   */
+  private handleConfidenceScoringStarted(event: any): void {
+    console.log('Confidence scoring started:', event);
+    // Create an activity task to show progress
+    const task: ActivityTask = {
+      id: 'confidence-scoring',
+      nodeId: 'confidence',
+      stage: (this.currentStage() || 1) as 1 | 2 | 3,
+      type: 'milestone',
+      description: '📊 Scoring answer confidence...',
+      progress: 0,
+      status: 'running',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+    this.activeTasks.update(tasks => [...tasks, task]);
+  }
+
+  private handleConfidenceScoringCompleted(event: any): void {
+    console.log('Confidence scoring completed:', event);
+    const { confidence } = event;
+    this.confidenceResult.set(confidence);
+
+    // Move task to completed
+    this.activeTasks.update(tasks => tasks.filter(t => t.id !== 'confidence-scoring'));
+    const completedTask: ActivityTask = {
+      id: 'confidence-scoring',
+      nodeId: 'confidence',
+      stage: (this.currentStage() || 1) as 1 | 2 | 3,
+      type: 'milestone',
+      description: `📊 Confidence: ${((confidence?.overallConfidence || 0) * 100).toFixed(0)}% (${confidence?.level || 'unknown'})`,
+      progress: 100,
+      status: 'completed',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+    this.completedTasks.update(tasks => [...tasks, completedTask]);
+  }
+
+  private handleConfidenceScoringFailed(event: any): void {
+    console.log('Confidence scoring failed:', event);
+    // Move task to failed
+    this.activeTasks.update(tasks => tasks.filter(t => t.id !== 'confidence-scoring'));
+    const failedTask: ActivityTask = {
+      id: 'confidence-scoring',
+      nodeId: 'confidence',
+      stage: (this.currentStage() || 1) as 1 | 2 | 3,
+      type: 'milestone',
+      description: `📊 Confidence scoring failed: ${event.error || 'Unknown error'}`,
+      progress: 0,
+      status: 'error',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+    this.completedTasks.update(tasks => [...tasks, failedTask]);
   }
 }

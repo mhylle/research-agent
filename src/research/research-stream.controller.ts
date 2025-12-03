@@ -403,6 +403,29 @@ export class ResearchStreamController {
           conclusionId: String(data.conclusionId ?? ''),
         };
 
+      case 'confidence_scoring_started':
+        return {
+          title: 'Scoring Answer Confidence',
+          description: 'Evaluating answer trustworthiness...',
+          status: 'running',
+        };
+
+      case 'confidence_scoring_completed':
+        return {
+          title: 'Confidence Assessment Complete',
+          description: `Confidence: ${((data.confidence?.overallConfidence || 0) * 100).toFixed(0)}% (${data.confidence?.level || 'unknown'})`,
+          status: 'completed',
+          confidence: data.confidence,
+        };
+
+      case 'confidence_scoring_failed':
+        return {
+          title: 'Confidence Assessment Failed',
+          description: String(data.error || 'Unknown error'),
+          status: 'error',
+          error: String(data.error || ''),
+        };
+
       default:
         return { title: entry.eventType };
     }

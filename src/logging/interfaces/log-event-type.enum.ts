@@ -47,4 +47,8 @@ export type LogEventType =
   | 'reasoning_thought'
   | 'reasoning_action_planned'
   | 'reasoning_observation'
-  | 'reasoning_conclusion';
+  | 'reasoning_conclusion'
+  // Confidence scoring events
+  | 'confidence_scoring_started'
+  | 'confidence_scoring_completed'
+  | 'confidence_scoring_failed';

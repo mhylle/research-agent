@@ -37,29 +37,41 @@ export class PlannerService {
   ) {}
 
   async createPlan(query: string, logId: string): Promise<Plan> {
+    console.log(`[PlannerService] createPlan: Starting - ${JSON.stringify({ query, logId })}`);
+
     this.currentPlan = null;
     this.phaseResults.clear();
     this.finalizeFailureCount = 0;
     this.planCreationCount = 0;
 
     // Emit initial thought about analyzing the query
+    console.log(`[PlannerService] createPlan: Before emitThought #1`);
     await this.reasoningTrace.emitThought(
       logId,
       `Analyzing research query: "${query}". Identifying key concepts and information needs.`,
       { stage: 'planning', step: 1 },
     );
+    console.log(`[PlannerService] createPlan: After emitThought #1`);
 
+    console.log(`[PlannerService] createPlan: Getting available tools`);
     const availableTools = this.toolExecutor.getAvailableTools();
+    console.log(`[PlannerService] createPlan: Got ${availableTools.length} available tools`);
+
+    console.log(`[PlannerService] createPlan: Building planner system prompt`);
     const systemPrompt = this.buildPlannerSystemPrompt(availableTools);
+    console.log(`[PlannerService] createPlan: System prompt built (length: ${systemPrompt.length})`);
 
     // Emit thought about available tools and planning strategy
+    console.log(`[PlannerService] createPlan: Before emitThought #2`);
     const planningThoughtId = await this.reasoningTrace.emitThought(
       logId,
       `Planning strategy: Will use LLM to generate multi-phase research plan. Available tools: ${availableTools.map((t) => t.function.name).join(', ')}. Assessing query complexity to determine optimal approach.`,
       { stage: 'planning', step: 2 },
     );
+    console.log(`[PlannerService] createPlan: After emitThought #2 - thoughtId: ${planningThoughtId}`);
 
     // Emit planning_started event so UI shows "Planning..." indicator
+    console.log(`[PlannerService] createPlan: Before logService.append (planning_started)`);
     const planningStartEntry = await this.logService.append({
       logId,
       eventType: 'planning_started',
@@ -70,21 +82,30 @@ export class PlannerService {
         message: 'LLM is generating research plan...',
       },
     });
-    this.eventEmitter.emit(`log.${logId}`, planningStartEntry);
+    console.log(`[PlannerService] createPlan: After logService.append - entry: ${JSON.stringify({ id: planningStartEntry.id, eventType: planningStartEntry.eventType })}`);
 
+    console.log(`[PlannerService] createPlan: Before eventEmitter.emit`);
+    this.eventEmitter.emit(`log.${logId}`, planningStartEntry);
+    console.log(`[PlannerService] createPlan: After eventEmitter.emit`);
+
+    console.log(`[PlannerService] createPlan: Building chat messages`);
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: this.buildPlanningPrompt(query) },
     ];
+    console.log(`[PlannerService] createPlan: Chat messages built - ${messages.length} messages`);
 
     let planningComplete = false;
     const maxIterations = 20;
     let iteration = 0;
 
+    console.log(`[PlannerService] createPlan: Entering planning loop (max ${maxIterations} iterations)`);
     while (!planningComplete && iteration < maxIterations) {
       iteration++;
+      console.log(`[PlannerService] createPlan: === Iteration ${iteration}/${maxIterations} ===`);
 
       // Log each planning iteration
+      console.log(`[PlannerService] createPlan: Before logService.append (planning_iteration)`);
       const iterationEntry = await this.logService.append({
         logId,
         eventType: 'planning_iteration',
@@ -95,43 +116,64 @@ export class PlannerService {
           message: `Planning iteration ${iteration}/${maxIterations}`,
         },
       });
-      this.eventEmitter.emit(`log.${logId}`, iterationEntry);
+      console.log(`[PlannerService] createPlan: After logService.append (planning_iteration)`);
 
+      console.log(`[PlannerService] createPlan: Emitting iteration entry`);
+      this.eventEmitter.emit(`log.${logId}`, iterationEntry);
+      console.log(`[PlannerService] createPlan: Iteration entry emitted`);
+
+      console.log(`[PlannerService] createPlan: Before llmService.chat (iteration ${iteration})`);
       const response = await this.llmService.chat(messages, planningTools);
+      console.log(`[PlannerService] createPlan: After llmService.chat - response: ${JSON.stringify({ hasMessage: !!response.message, hasToolCalls: !!response.message?.tool_calls?.length })}`);
 
       if (response.message.tool_calls?.length > 0) {
+        console.log(`[PlannerService] createPlan: Processing ${response.message.tool_calls.length} tool calls`);
         for (const toolCall of response.message.tool_calls) {
+          console.log(`[PlannerService] createPlan: Before executePlanningTool - tool: ${toolCall.function.name}`);
           const result = await this.executePlanningTool(toolCall, logId);
+          console.log(`[PlannerService] createPlan: After executePlanningTool - result: ${JSON.stringify({ hasError: !!result.error })}`);
 
           if (toolCall.function.name === 'finalize_plan') {
             // Only mark as complete if finalize_plan succeeded (no error)
             if (!result.error) {
+              console.log(`[PlannerService] createPlan: finalize_plan succeeded - marking planning complete`);
               planningComplete = true;
+            } else {
+              console.log(`[PlannerService] createPlan: finalize_plan failed - error: ${result.error}`);
             }
           }
 
+          console.log(`[PlannerService] createPlan: Pushing messages to chat history`);
           messages.push(response.message);
           messages.push({ role: 'tool', content: JSON.stringify(result) });
+          console.log(`[PlannerService] createPlan: Messages pushed - total messages: ${messages.length}`);
         }
       } else {
+        console.log(`[PlannerService] createPlan: No tool calls - prompting to continue`);
         messages.push(response.message);
         messages.push({
           role: 'user',
           content:
             'Continue building the plan or call finalize_plan when complete.',
         });
+        console.log(`[PlannerService] createPlan: Continue messages pushed - total messages: ${messages.length}`);
       }
     }
+    console.log(`[PlannerService] createPlan: Exited planning loop - planningComplete: ${planningComplete}, iterations: ${iteration}`);
 
     if (!this.currentPlan) {
       throw new Error('Planning failed: no plan created');
     }
 
     // Emit observation about plan generation completion
+    console.log(`[PlannerService] createPlan: Calculating plan stats`);
     const totalSteps = this.currentPlan.phases.reduce(
       (sum, p) => sum + p.steps.length,
       0,
     );
+    console.log(`[PlannerService] createPlan: Plan stats - phases: ${this.currentPlan.phases.length}, totalSteps: ${totalSteps}`);
+
+    console.log(`[PlannerService] createPlan: Before emitObservation`);
     await this.reasoningTrace.emitObservation(
       logId,
       planningThoughtId,
@@ -143,6 +185,7 @@ export class PlannerService {
         'Validation needed for completeness',
       ],
     );
+    console.log(`[PlannerService] createPlan: After emitObservation`);
 
     // Auto-recovery: If any phases are empty, add default steps automatically
     const emptyPhases = this.currentPlan.phases.filter(
@@ -174,9 +217,17 @@ export class PlannerService {
     }
 
     // CRITICAL VALIDATION: Ensure plan has a synthesis/answer generation phase
-    await this.ensureSynthesisPhase(this.currentPlan, logId);
+    console.log(`[PlannerService] createPlan: Before ensureSynthesisPhase`);
+    try {
+      await this.ensureSynthesisPhase(this.currentPlan, logId);
+      console.log(`[PlannerService] createPlan: After ensureSynthesisPhase - success`);
+    } catch (error) {
+      console.error(`[PlannerService] createPlan: ensureSynthesisPhase FAILED - ${error.message}`, error.stack);
+      throw error;
+    }
 
     // Emit final conclusion about completed plan
+    console.log(`[PlannerService] createPlan: Before final conclusion`);
     const finalTotalSteps = this.currentPlan.phases.reduce(
       (sum, p) => sum + p.steps.length,
       0,
@@ -516,7 +567,10 @@ Your plan MUST directly address this query, not some other topic.`;
    * This is CRITICAL - every research plan MUST produce a final answer.
    */
   private async ensureSynthesisPhase(plan: Plan, logId: string): Promise<void> {
+    console.log(`[PlannerService] ensureSynthesisPhase: Starting - planId: ${plan.id}, phaseCount: ${plan.phases.length}`);
+
     // Check if plan already has a synthesis phase
+    console.log(`[PlannerService] ensureSynthesisPhase: Checking for existing synthesis phase`);
     const hasSynthesis = plan.phases.some((phase) => {
       const phaseName = (phase.name || '').toLowerCase();
       const hasNameMatch =
@@ -536,19 +590,21 @@ Your plan MUST directly address this query, not some other topic.`;
         );
       });
 
+      console.log(`[PlannerService] ensureSynthesisPhase: Checking phase "${phase.name}" - hasNameMatch: ${hasNameMatch}, hasSynthesisStep: ${hasSynthesisStep}`);
       return hasNameMatch || hasSynthesisStep;
     });
 
     if (hasSynthesis) {
-      console.log('[PlannerService] Plan already has synthesis phase');
+      console.log('[PlannerService] ensureSynthesisPhase: Plan already has synthesis phase - exiting');
       return; // Plan already has synthesis
     }
 
     // No synthesis phase found - automatically add one
     console.log(
-      '[PlannerService] No synthesis phase found - adding default synthesis phase',
+      '[PlannerService] ensureSynthesisPhase: No synthesis phase found - adding default synthesis phase',
     );
 
+    console.log(`[PlannerService] ensureSynthesisPhase: Creating synthesis phase object`);
     const synthesisPhase: Phase = {
       id: randomUUID(),
       planId: plan.id,
@@ -560,8 +616,10 @@ Your plan MUST directly address this query, not some other topic.`;
       replanCheckpoint: false,
       order: plan.phases.length,
     };
+    console.log(`[PlannerService] ensureSynthesisPhase: Synthesis phase created - id: ${synthesisPhase.id}`);
 
     // Add synthesis step to the phase
+    console.log(`[PlannerService] ensureSynthesisPhase: Creating synthesis step`);
     const synthesisStep: PlanStep = {
       id: randomUUID(),
       phaseId: synthesisPhase.id,
@@ -576,11 +634,16 @@ Your plan MUST directly address this query, not some other topic.`;
       status: 'pending',
       order: 0,
     };
+    console.log(`[PlannerService] ensureSynthesisPhase: Synthesis step created - id: ${synthesisStep.id}`);
 
+    console.log(`[PlannerService] ensureSynthesisPhase: Adding step to phase`);
     synthesisPhase.steps.push(synthesisStep);
+    console.log(`[PlannerService] ensureSynthesisPhase: Adding phase to plan`);
     plan.phases.push(synthesisPhase);
+    console.log(`[PlannerService] ensureSynthesisPhase: Phase added - total phases: ${plan.phases.length}`);
 
     // Log this critical auto-recovery
+    console.log(`[PlannerService] ensureSynthesisPhase: Before logService.append (synthesis_phase_auto_added)`);
     await this.logService.append({
       logId,
       eventType: 'synthesis_phase_auto_added',
@@ -595,6 +658,8 @@ Your plan MUST directly address this query, not some other topic.`;
           'CRITICAL: Automatically added synthesis phase to ensure research produces a final answer',
       },
     });
+    console.log(`[PlannerService] ensureSynthesisPhase: After logService.append - synthesis phase logged`);
+    console.log(`[PlannerService] ensureSynthesisPhase: Completed successfully`);
   }
 
   private autoAddDefaultSteps(phase: Phase, logId: string): void {

@@ -5,6 +5,7 @@ import { OllamaService } from '../llm/ollama.service';
 import { ToolExecutor } from '../executors/tool.executor';
 import { LogService } from '../logging/log.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ReasoningTraceService } from '../reasoning/services/reasoning-trace.service';
 
 describe('PlannerService', () => {
   let service: PlannerService;
@@ -12,6 +13,7 @@ describe('PlannerService', () => {
   let mockToolExecutor: any;
   let mockLogService: any;
   let mockEventEmitter: any;
+  let mockReasoningTrace: any;
 
   beforeEach(async () => {
     mockOllamaService = {
@@ -41,6 +43,13 @@ describe('PlannerService', () => {
       emit: jest.fn(),
     };
 
+    mockReasoningTrace = {
+      emitThought: jest.fn().mockResolvedValue('thought-id'),
+      emitObservation: jest.fn().mockResolvedValue('observation-id'),
+      emitConclusion: jest.fn().mockResolvedValue('conclusion-id'),
+      emitActionPlan: jest.fn().mockResolvedValue('action-id'),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PlannerService,
@@ -48,6 +57,7 @@ describe('PlannerService', () => {
         { provide: ToolExecutor, useValue: mockToolExecutor },
         { provide: LogService, useValue: mockLogService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
+        { provide: ReasoningTraceService, useValue: mockReasoningTrace },
       ],
     }).compile();
 

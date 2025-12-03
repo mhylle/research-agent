@@ -14,6 +14,7 @@ import { LoggingModule } from '../logging/logging.module';
 import { LLMModule } from '../llm/llm.module';
 import { EvaluationModule } from '../evaluation/evaluation.module';
 import { ReasoningModule } from '../reasoning/reasoning.module';
+import { ReflectionModule } from '../reflection/reflection.module';
 import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry';
 import { SearchPhaseExecutor } from './phase-executors/search-phase-executor';
 import { FetchPhaseExecutor } from './phase-executors/fetch-phase-executor';
@@ -28,6 +29,7 @@ import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
     LLMModule,
     EvaluationModule,
     forwardRef(() => ReasoningModule),
+    forwardRef(() => ReflectionModule),
   ],
   providers: [
     Orchestrator,

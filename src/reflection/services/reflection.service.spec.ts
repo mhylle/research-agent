@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ReflectionService } from './reflection.service';
 import { GapDetectorService } from './gap-detector.service';
 import { SelfCritiqueEngineService } from './self-critique-engine.service';
+import { RefinementEngineService } from './refinement-engine.service';
 import { ConfidenceScoringService } from '../../evaluation/services/confidence-scoring.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
@@ -14,6 +15,7 @@ describe('ReflectionService', () => {
   let service: ReflectionService;
   let mockGapDetector: jest.Mocked<GapDetectorService>;
   let mockSelfCritiqueEngine: jest.Mocked<SelfCritiqueEngineService>;
+  let mockRefinementEngine: jest.Mocked<RefinementEngineService>;
   let mockConfidenceScoring: jest.Mocked<ConfidenceScoringService>;
   let mockEventCoordinator: jest.Mocked<EventCoordinatorService>;
   let mockLogger: jest.Mocked<ResearchLogger>;
@@ -75,6 +77,16 @@ describe('ReflectionService', () => {
       generateCritique: jest.fn(),
     } as unknown as jest.Mocked<SelfCritiqueEngineService>;
 
+    mockRefinementEngine = {
+      refineAnswer: jest.fn().mockResolvedValue({
+        finalAnswer: 'Refined answer',
+        refinementHistory: [],
+        totalImprovement: 0,
+        gapsResolved: 0,
+        gapsRemaining: 0,
+      }),
+    } as unknown as jest.Mocked<RefinementEngineService>;
+
     mockConfidenceScoring = {
       scoreConfidence: jest.fn(),
     } as unknown as jest.Mocked<ConfidenceScoringService>;
@@ -124,6 +136,7 @@ describe('ReflectionService', () => {
         ReflectionService,
         { provide: GapDetectorService, useValue: mockGapDetector },
         { provide: SelfCritiqueEngineService, useValue: mockSelfCritiqueEngine },
+        { provide: RefinementEngineService, useValue: mockRefinementEngine },
         { provide: ConfidenceScoringService, useValue: mockConfidenceScoring },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
         { provide: ResearchLogger, useValue: mockLogger },

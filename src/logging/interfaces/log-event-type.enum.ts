@@ -59,4 +59,16 @@ export type LogEventType =
   // Gap detection events
   | 'gap_detection_started'
   | 'gap_detected'
-  | 'gap_detection_completed';
+  | 'gap_detection_completed'
+  // Refinement events
+  | 'refinement_started'
+  | 'refinement_pass'
+  | 'refinement_completed'
+  | 'refinement_failed'
+  // Reflection events
+  | 'reflection_started'
+  | 'reflection_iteration'
+  | 'reflection_completed'
+  | 'reflection_integration_started'
+  | 'reflection_integration_completed'
+  | 'reflection_integration_failed';

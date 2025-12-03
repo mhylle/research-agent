@@ -9,6 +9,8 @@ import { MilestoneService } from '../services/milestone.service';
 import { ExecutorRegistry } from '../../executors/executor-registry.service';
 import { StepConfigurationService } from '../services/step-configuration.service';
 import { ConfidenceResult } from '../../evaluation/interfaces/confidence.interface';
+import { ReflectionService } from '../../reflection/services/reflection.service';
+import { ReflectionConfig } from '../../reflection/interfaces';
 
 interface Source {
   id: string;
@@ -33,6 +35,7 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
     executorRegistry: ExecutorRegistry,
     stepConfiguration: StepConfigurationService,
     private readonly confidenceScoringService: ConfidenceScoringService,
+    private readonly reflectionService: ReflectionService,
   ) {
     super(eventCoordinator, milestoneService, executorRegistry, stepConfiguration);
   }
@@ -50,7 +53,26 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
   }
 
   /**
-   * Override execute to add confidence scoring after synthesis
+   * Get reflection configuration from environment variables
+   */
+  private getReflectionConfig(): ReflectionConfig {
+    return {
+      maxIterations: parseInt(process.env.REFLECTION_MAX_ITERATIONS || '3', 10),
+      minImprovementThreshold: parseFloat(process.env.REFLECTION_MIN_IMPROVEMENT || '0.05'),
+      qualityTargetThreshold: parseFloat(process.env.REFLECTION_QUALITY_TARGET || '0.9'),
+      timeoutPerIteration: parseInt(process.env.REFLECTION_TIMEOUT_PER_ITERATION || '30000', 10),
+    };
+  }
+
+  /**
+   * Check if reflection is enabled via environment variables
+   */
+  private isReflectionEnabled(): boolean {
+    return process.env.REFLECTION_ENABLED !== 'false'; // enabled by default
+  }
+
+  /**
+   * Override execute to add confidence scoring and reflection after synthesis
    */
   async execute(
     phase: Phase,
@@ -59,82 +81,143 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
     // Execute the synthesis phase normally
     const result = await super.execute(phase, context);
 
-    // Only attempt confidence scoring if synthesis succeeded
+    // Only attempt post-synthesis processing if synthesis succeeded
     if (result.status === 'completed') {
       try {
-        // Emit confidence scoring started event
-        await this.eventCoordinator.emit(
-          context.logId,
-          'confidence_scoring_started',
-          {
-            phaseName: phase.name,
-            phaseId: phase.id,
-          },
-          phase.id,
-        );
-
-        // Extract answer text from synthesis step results
+        // Extract answer text and sources for post-processing
         const answerText = this.extractAnswerText(result.stepResults);
-
-        if (!answerText) {
-          this.logger.warn('No answer text found in synthesis results, skipping confidence scoring');
-          return result;
-        }
-
-        // Extract sources from previous results
         const sources = this.extractSources(context.allPreviousResults);
-        this.logger.debug(`Extracted ${sources.length} sources for confidence scoring`);
-        if (sources.length === 0) {
-          this.logger.warn('No sources found in previous results, skipping confidence scoring');
+
+        if (!answerText || sources.length === 0) {
+          if (!answerText) {
+            this.logger.warn('No answer text found in synthesis results, skipping post-synthesis processing');
+          }
+          if (sources.length === 0) {
+            this.logger.warn('No sources found in previous results, skipping post-synthesis processing');
+          }
           return result;
         }
 
-        // Perform confidence scoring
-        const confidenceResult = await this.confidenceScoringService.scoreConfidence(
+        // Run confidence scoring
+        const confidenceResult = await this.runConfidenceScoring(
           answerText,
           sources,
-          context.logId,
+          phase,
+          context,
         );
 
-        // Emit confidence scoring completed event
-        await this.eventCoordinator.emit(
-          context.logId,
-          'confidence_scoring_completed',
-          {
-            phaseName: phase.name,
-            phaseId: phase.id,
-            confidence: confidenceResult,
-          },
-          phase.id,
-        );
-
-        // Attach confidence result to phase result (if PhaseResult interface supports metadata)
-        // Since PhaseResult doesn't have a metadata field, we'll log it instead
-        this.logger.log(
-          `Confidence scoring completed: ${confidenceResult.overallConfidence.toFixed(3)} (${confidenceResult.level})`,
-        );
+        // Run reflection if enabled
+        if (this.isReflectionEnabled()) {
+          await this.runReflection(answerText, sources, context, result, confidenceResult);
+        }
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        this.logger.error(`Confidence scoring failed: ${errorMessage}`);
-
-        // Emit confidence scoring failed event
-        await this.eventCoordinator.emit(
-          context.logId,
-          'confidence_scoring_failed',
-          {
-            phaseName: phase.name,
-            phaseId: phase.id,
-            error: errorMessage,
-          },
-          phase.id,
-        );
-
-        // Don't fail the synthesis phase due to confidence scoring failure
-        // Just log the error and continue
+        this.logger.error(`Post-synthesis processing failed: ${errorMessage}`);
+        // Don't fail the synthesis phase due to post-processing errors
       }
     }
 
     return result;
+  }
+
+  /**
+   * Run confidence scoring and emit events
+   */
+  private async runConfidenceScoring(
+    answerText: string,
+    sources: Source[],
+    phase: Phase,
+    context: PhaseExecutionContext,
+  ): Promise<ConfidenceResult> {
+    // Emit confidence scoring started event
+    await this.eventCoordinator.emit(
+      context.logId,
+      'confidence_scoring_started',
+      {
+        phaseName: phase.name,
+        phaseId: phase.id,
+      },
+      phase.id,
+    );
+
+    this.logger.debug(`Extracted ${sources.length} sources for confidence scoring`);
+
+    // Perform confidence scoring
+    const confidenceResult = await this.confidenceScoringService.scoreConfidence(
+      answerText,
+      sources,
+      context.logId,
+    );
+
+    // Emit confidence scoring completed event
+    await this.eventCoordinator.emit(
+      context.logId,
+      'confidence_scoring_completed',
+      {
+        phaseName: phase.name,
+        phaseId: phase.id,
+        confidence: confidenceResult,
+      },
+      phase.id,
+    );
+
+    this.logger.log(
+      `Confidence scoring completed: ${confidenceResult.overallConfidence.toFixed(3)} (${confidenceResult.level})`,
+    );
+
+    return confidenceResult;
+  }
+
+  /**
+   * Run reflection on synthesized answer
+   */
+  private async runReflection(
+    answerText: string,
+    sources: Source[],
+    context: PhaseExecutionContext,
+    result: PhaseResult,
+    confidenceResult: ConfidenceResult,
+  ): Promise<void> {
+    const reflectionConfig = this.getReflectionConfig();
+
+    await this.eventCoordinator.emit(
+      context.logId,
+      'reflection_integration_started',
+      { initialConfidence: confidenceResult.overallConfidence },
+    );
+
+    try {
+      const reflectionResult = await this.reflectionService.reflect(
+        context.logId,
+        answerText,
+        reflectionConfig,
+      );
+
+      await this.eventCoordinator.emit(
+        context.logId,
+        'reflection_integration_completed',
+        {
+          iterationCount: reflectionResult.iterationCount,
+          initialConfidence: confidenceResult.overallConfidence,
+          finalConfidence: reflectionResult.finalConfidence,
+          improvement: reflectionResult.finalConfidence - confidenceResult.overallConfidence,
+          gapsResolved: reflectionResult.identifiedGaps.length,
+        },
+      );
+
+      this.logger.log(
+        `Reflection completed: ${reflectionResult.iterationCount} iterations, ` +
+        `confidence: ${confidenceResult.overallConfidence.toFixed(3)} → ${reflectionResult.finalConfidence.toFixed(3)}`,
+      );
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Reflection failed: ${errorMessage}`);
+      await this.eventCoordinator.emit(
+        context.logId,
+        'reflection_integration_failed',
+        { error: errorMessage },
+      );
+    }
   }
 
   /**

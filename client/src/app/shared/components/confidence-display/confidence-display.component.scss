@@ -1,0 +1,326 @@
+// =============================================================================
+// Confidence Display Component - Digital Hygge Style
+// Answer confidence visualization with claim-level breakdown
+// =============================================================================
+
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.confidence-display {
+  background: $oatmeal;
+  border-radius: $border-radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-sm;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $spacing-lg;
+    gap: $spacing-md;
+  }
+
+  &__title {
+    margin: 0;
+    font-family: $font-family-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-bold;
+    color: $charcoal;
+  }
+
+  &__overall {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: $spacing-xs;
+    padding: $spacing-md;
+    border-radius: $border-radius;
+    min-width: 160px;
+    box-shadow: $shadow-md;
+    transition: all $transition-fast;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-lg;
+    }
+
+    &--high {
+      background: linear-gradient(135deg, $moss-bg 0%, #d9f99d 100%);
+      border: 2px solid $moss;
+    }
+
+    &--medium {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #d97706;
+    }
+
+    &--low {
+      background: linear-gradient(135deg, $clay-bg 0%, #fed7aa 100%);
+      border: 2px solid $clay;
+    }
+
+    &--very_low {
+      background: linear-gradient(135deg, $error-bg 0%, #fecaca 100%);
+      border: 2px solid $error;
+    }
+  }
+
+  &__score {
+    font-family: $font-family-heading;
+    font-size: $font-size-3xl;
+    font-weight: $font-bold;
+    line-height: 1;
+    color: $charcoal;
+  }
+
+  &__level {
+    font-size: $font-size-sm;
+    font-weight: $font-medium;
+    color: $charcoal-light;
+  }
+
+  &__recommendations {
+    background: $clay-bg;
+    border: 1px solid $clay;
+    border-radius: $border-radius;
+    padding: $spacing-md;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__recommendations-title {
+    margin: 0 0 $spacing-sm 0;
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-semibold;
+    color: $clay;
+  }
+
+  &__recommendation {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    padding: $spacing-sm 0;
+    font-size: $font-size-sm;
+    color: $charcoal-light;
+    line-height: $line-height;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid rgba(234, 88, 12, 0.2);
+    }
+
+    .warning-icon {
+      flex-shrink: 0;
+      font-size: $font-size-lg;
+    }
+  }
+
+  &__claims {
+    margin-bottom: $spacing-lg;
+  }
+
+  &__claims-title {
+    margin: 0 0 $spacing-md 0;
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-semibold;
+    color: $charcoal;
+  }
+
+  &__claim {
+    background: $stone;
+    border-radius: $border-radius;
+    padding: $spacing-md;
+    margin-bottom: $spacing-md;
+    border-left: 4px solid;
+    transition: all $transition-fast;
+
+    &:hover {
+      box-shadow: $shadow-md;
+      transform: translateX(4px);
+    }
+
+    &--high {
+      border-left-color: $moss;
+    }
+
+    &--medium {
+      border-left-color: #d97706;
+    }
+
+    &--low {
+      border-left-color: $clay;
+    }
+
+    &--very_low {
+      border-left-color: $error;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__claim-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__claim-bar {
+    flex: 1;
+    height: 8px;
+    background: $stone-300;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+    position: relative;
+  }
+
+  &__claim-fill {
+    height: 100%;
+    background: linear-gradient(90deg, $moss-light 0%, $moss 100%);
+    border-radius: $border-radius-full;
+    transition: width $transition-base;
+
+    .confidence-display__claim--medium & {
+      background: linear-gradient(90deg, #fbbf24 0%, #d97706 100%);
+    }
+
+    .confidence-display__claim--low & {
+      background: linear-gradient(90deg, $clay-light 0%, $clay 100%);
+    }
+
+    .confidence-display__claim--very_low & {
+      background: linear-gradient(90deg, #f87171 0%, $error 100%);
+    }
+  }
+
+  &__claim-score {
+    font-family: $font-family-mono;
+    font-size: $font-size-sm;
+    font-weight: $font-bold;
+    color: $charcoal-light;
+    min-width: 3rem;
+    text-align: right;
+  }
+
+  &__claim-text {
+    font-size: $font-size-sm;
+    line-height: $line-height;
+    color: $charcoal;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__claim-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+    align-items: center;
+
+    .meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-xs;
+      font-size: $font-size-xs;
+      font-family: $font-family-mono;
+      color: $slate;
+      padding: $spacing-xs $spacing-sm;
+      background: $oatmeal;
+      border-radius: $border-radius-sm;
+      cursor: help;
+      transition: all $transition-fast;
+
+      &:hover {
+        background: $stone-300;
+        color: $charcoal-light;
+      }
+    }
+  }
+
+  &__no-source {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: $font-size-xs;
+    font-weight: $font-medium;
+    color: $clay;
+    padding: $spacing-xs $spacing-sm;
+    background: $clay-bg;
+    border-radius: $border-radius-sm;
+    cursor: help;
+  }
+
+  &__toggle {
+    width: 100%;
+    padding: $spacing-md;
+    background: $stone;
+    border: 1px solid $stone-300;
+    border-radius: $border-radius;
+    font-family: $font-family;
+    font-size: $font-size-sm;
+    font-weight: $font-medium;
+    color: $charcoal-light;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $stone-300;
+      border-color: $moss;
+      color: $charcoal;
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(77, 124, 15, 0.2);
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: $breakpoint-md) {
+  .confidence-display {
+    padding: $spacing-md;
+
+    &__header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    &__overall {
+      align-items: center;
+      min-width: unset;
+    }
+
+    &__score {
+      font-size: $font-size-2xl;
+    }
+
+    &__claim-meta {
+      gap: $spacing-sm;
+
+      .meta-item {
+        font-size: 0.7rem;
+        padding: $spacing-xs;
+      }
+    }
+  }
+}
+
+// Animation for claim bars
+@keyframes fillBar {
+  from {
+    width: 0;
+  }
+  to {
+    width: var(--target-width);
+  }
+}
+
+.confidence-display__claim-fill {
+  animation: fillBar $transition-slow ease-out;
+}

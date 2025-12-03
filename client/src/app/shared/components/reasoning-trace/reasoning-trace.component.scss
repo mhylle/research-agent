@@ -1,0 +1,296 @@
+// =============================================================================
+// Reasoning Trace Component - Digital Hygge Style
+// Timeline visualization of agent reasoning process
+// =============================================================================
+
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.reasoning-trace {
+  background: $oatmeal;
+  border-radius: $border-radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-sm;
+
+  &__title {
+    margin: 0 0 $spacing-md 0;
+    font-family: $font-family-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-bold;
+    color: $charcoal;
+  }
+
+  &__timeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+
+    // Connecting line between events
+    &::before {
+      content: '';
+      position: absolute;
+      left: 1.5rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, $stone-300 0%, $stone-300 100%);
+      z-index: 0;
+    }
+  }
+
+  &__event {
+    position: relative;
+    display: flex;
+    gap: $spacing-md;
+    z-index: 1;
+
+    // Event type specific styling
+    &--thought {
+      .reasoning-trace__icon {
+        background: linear-gradient(135deg, #ecfccb 0%, #d9f99d 100%);
+        border-color: $moss-light;
+      }
+    }
+
+    &--action_planned {
+      .reasoning-trace__icon {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border-color: #3b82f6;
+      }
+    }
+
+    &--observation {
+      .reasoning-trace__icon {
+        background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+        border-color: #ec4899;
+      }
+    }
+
+    &--conclusion {
+      .reasoning-trace__icon {
+        background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+        border-color: $clay-light;
+      }
+    }
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    width: 3rem;
+    height: 3rem;
+    border-radius: $border-radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $font-size-xl;
+    border: 2px solid;
+    box-shadow: $shadow-sm;
+    transition: transform $transition-fast;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+
+    .icon {
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    }
+  }
+
+  &__content {
+    flex: 1;
+    background: $stone;
+    border-radius: $border-radius;
+    padding: $spacing-md;
+    box-shadow: $shadow-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+      box-shadow: $shadow-md;
+      transform: translateY(-2px);
+    }
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__type {
+    font-family: $font-family-heading;
+    font-size: $font-size-sm;
+    font-weight: $font-semibold;
+    color: $charcoal;
+    text-transform: capitalize;
+  }
+
+  &__time {
+    font-family: $font-family-mono;
+    font-size: $font-size-xs;
+    color: $slate;
+  }
+
+  &__text {
+    font-size: $font-size-sm;
+    line-height: $line-height;
+    color: $charcoal-light;
+    margin-bottom: $spacing-sm;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    margin-top: $spacing-sm;
+    padding-top: $spacing-sm;
+    border-top: 1px solid $stone-300;
+  }
+
+  &__tool {
+    font-size: $font-size-xs;
+    font-weight: $font-medium;
+    color: $moss;
+    font-family: $font-family-mono;
+  }
+
+  &__reasoning {
+    font-size: $font-size-xs;
+    color: $slate;
+    font-style: italic;
+  }
+
+  &__implications {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    margin-top: $spacing-sm;
+  }
+
+  &__tag {
+    display: inline-block;
+    padding: $spacing-xs $spacing-sm;
+    background: $moss-bg;
+    color: $moss;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-xs;
+    font-weight: $font-medium;
+  }
+
+  &__confidence {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    margin-top: $spacing-sm;
+    padding: $spacing-sm;
+    background: $oatmeal;
+    border-radius: $border-radius-sm;
+  }
+
+  &__confidence-label {
+    font-size: $font-size-sm;
+    font-weight: $font-medium;
+    color: $slate;
+  }
+
+  &__confidence-value {
+    font-size: $font-size-sm;
+    font-weight: $font-bold;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-sm;
+
+    &.confidence--high {
+      background: $moss-bg;
+      color: $moss;
+    }
+
+    &.confidence--medium {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    &.confidence--low {
+      background: $clay-bg;
+      color: $clay;
+    }
+
+    &.confidence--very-low {
+      background: $error-bg;
+      color: $error;
+    }
+  }
+
+  &__next-steps {
+    margin-top: $spacing-sm;
+    padding: $spacing-sm;
+    background: $oatmeal;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-xs;
+    color: $slate;
+  }
+
+  &__next-label {
+    font-weight: $font-semibold;
+    color: $charcoal-light;
+    margin-right: $spacing-xs;
+  }
+
+  &__context {
+    margin-top: $spacing-sm;
+    font-size: $font-size-xs;
+    font-family: $font-family-mono;
+    color: $slate-light;
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-2xl;
+    color: $slate;
+    text-align: center;
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: $spacing-md;
+      filter: grayscale(50%);
+      opacity: 0.5;
+    }
+
+    p {
+      margin: 0;
+      font-size: $font-size-sm;
+      color: $slate-light;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: $breakpoint-md) {
+  .reasoning-trace {
+    padding: $spacing-md;
+
+    &__timeline::before {
+      left: 1rem;
+    }
+
+    &__icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      font-size: $font-size-lg;
+    }
+
+    &__content {
+      padding: $spacing-sm;
+    }
+
+    &__event {
+      gap: $spacing-sm;
+    }
+  }
+}

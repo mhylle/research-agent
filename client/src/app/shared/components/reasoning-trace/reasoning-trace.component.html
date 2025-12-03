@@ -1,0 +1,75 @@
+<div class="reasoning-trace">
+  <h3 class="reasoning-trace__title">Agent Reasoning</h3>
+
+  <div class="reasoning-trace__timeline">
+    @for (event of reasoningEvents(); track event.id) {
+      <div class="reasoning-trace__event"
+           [class]="'reasoning-trace__event--' + event.type">
+
+        <div class="reasoning-trace__icon">
+          @switch (event.type) {
+            @case ('thought') { <span class="icon">🤔</span> }
+            @case ('action_planned') { <span class="icon">⚡</span> }
+            @case ('observation') { <span class="icon">👁️</span> }
+            @case ('conclusion') { <span class="icon">💡</span> }
+          }
+        </div>
+
+        <div class="reasoning-trace__content">
+          <div class="reasoning-trace__header">
+            <span class="reasoning-trace__type">{{ getTypeLabel(event.type) }}</span>
+            <span class="reasoning-trace__time">{{ event.timestamp | date:'HH:mm:ss' }}</span>
+          </div>
+
+          <div class="reasoning-trace__text">
+            {{ getEventText(event) }}
+          </div>
+
+          @if (event.type === 'action_planned' && event.tool) {
+            <div class="reasoning-trace__meta">
+              <span class="reasoning-trace__tool">Tool: {{ event.tool }}</span>
+              @if (event.reasoning) {
+                <span class="reasoning-trace__reasoning">{{ event.reasoning }}</span>
+              }
+            </div>
+          }
+
+          @if (event.type === 'observation' && event.implications && event.implications.length > 0) {
+            <div class="reasoning-trace__implications">
+              @for (impl of event.implications; track impl) {
+                <span class="reasoning-trace__tag">{{ impl }}</span>
+              }
+            </div>
+          }
+
+          @if (event.type === 'conclusion' && event.confidence !== undefined) {
+            <div class="reasoning-trace__confidence">
+              <span class="reasoning-trace__confidence-label">Confidence:</span>
+              <span class="reasoning-trace__confidence-value"
+                    [class]="getConfidenceClass(event.confidence)">
+                {{ (event.confidence * 100).toFixed(0) }}%
+              </span>
+            </div>
+            @if (event.nextSteps && event.nextSteps.length > 0) {
+              <div class="reasoning-trace__next-steps">
+                <span class="reasoning-trace__next-label">Next:</span>
+                {{ event.nextSteps.join(', ') }}
+              </div>
+            }
+          }
+
+          @if (event.context) {
+            <div class="reasoning-trace__context">
+              Stage: {{ event.context.stage }} • Step {{ event.context.step }}
+            </div>
+          }
+        </div>
+      </div>
+    } @empty {
+      <div class="reasoning-trace__empty">
+        <span class="empty-icon">🧠</span>
+        <p>No reasoning events yet</p>
+      </div>
+    }
+  </div>
+</div>

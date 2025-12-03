@@ -1,0 +1,71 @@
+<div class="confidence-display">
+  <div class="confidence-display__header">
+    <h3 class="confidence-display__title">Answer Confidence</h3>
+    <div class="confidence-display__overall"
+         [class]="'confidence-display__overall--' + result().level">
+      <span class="confidence-display__score">
+        {{ (result().overallConfidence * 100).toFixed(0) }}%
+      </span>
+      <span class="confidence-display__level">{{ getLevelLabel(result().level) }}</span>
+    </div>
+  </div>
+
+  @if (result().recommendations.length > 0) {
+    <div class="confidence-display__recommendations">
+      <h4 class="confidence-display__recommendations-title">Recommendations</h4>
+      @for (rec of result().recommendations; track rec) {
+        <div class="confidence-display__recommendation">
+          <span class="warning-icon">⚠️</span>
+          <span>{{ rec }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  @if (showDetails()) {
+    <div class="confidence-display__claims">
+      <h4 class="confidence-display__claims-title">
+        Claim-level Confidence ({{ result().claimConfidences.length }} claims)
+      </h4>
+      @for (claim of result().claimConfidences; track claim.claimId) {
+        <div class="confidence-display__claim"
+             [class]="'confidence-display__claim--' + claim.level">
+          <div class="confidence-display__claim-header">
+            <div class="confidence-display__claim-bar">
+              <div class="confidence-display__claim-fill"
+                   [style.width.%]="claim.confidence * 100">
+              </div>
+            </div>
+            <span class="confidence-display__claim-score">
+              {{ (claim.confidence * 100).toFixed(0) }}%
+            </span>
+          </div>
+          <div class="confidence-display__claim-text">
+            {{ claim.claimText }}
+          </div>
+          <div class="confidence-display__claim-meta">
+            <span class="meta-item" title="Entailment Score">
+              📚 {{ (claim.entailmentScore * 100).toFixed(0) }}%
+            </span>
+            <span class="meta-item" title="SU Score">
+              🎯 {{ (claim.suScore * 100).toFixed(0) }}%
+            </span>
+            <span class="meta-item" title="Supporting Sources">
+              📎 {{ claim.supportingSources }}
+            </span>
+            @if (claim.supportingSources === 0) {
+              <span class="confidence-display__no-source" title="No supporting sources found">
+                ⚠️ Unsupported
+              </span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <button class="confidence-display__toggle"
+          (click)="toggleDetails()">
+    {{ showDetails() ? 'Hide Details' : 'Show Details' }}
+  </button>
+</div>

@@ -1,5 +1,5 @@
 // src/orchestration/orchestration.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { Orchestrator } from './orchestrator.service';
 import { PlannerService } from './planner.service';
@@ -8,10 +8,12 @@ import { MilestoneService } from './services/milestone.service';
 import { ResultExtractorService } from './services/result-extractor.service';
 import { StepConfigurationService } from './services/step-configuration.service';
 import { EvaluationCoordinatorService } from './services/evaluation-coordinator.service';
+import { WorkingMemoryService } from './services/working-memory.service';
 import { ExecutorsModule } from '../executors/executors.module';
 import { LoggingModule } from '../logging/logging.module';
 import { LLMModule } from '../llm/llm.module';
 import { EvaluationModule } from '../evaluation/evaluation.module';
+import { ReasoningModule } from '../reasoning/reasoning.module';
 import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry';
 import { SearchPhaseExecutor } from './phase-executors/search-phase-executor';
 import { FetchPhaseExecutor } from './phase-executors/fetch-phase-executor';
@@ -25,6 +27,7 @@ import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
     LoggingModule,
     LLMModule,
     EvaluationModule,
+    forwardRef(() => ReasoningModule),
   ],
   providers: [
     Orchestrator,
@@ -34,6 +37,7 @@ import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
     ResultExtractorService,
     StepConfigurationService,
     EvaluationCoordinatorService,
+    WorkingMemoryService,
     // Phase executors
     PhaseExecutorRegistry,
     SearchPhaseExecutor,
@@ -41,6 +45,11 @@ import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
     SynthesisPhaseExecutor,
     GenericPhaseExecutor,
   ],
-  exports: [Orchestrator, PlannerService],
+  exports: [
+    Orchestrator,
+    PlannerService,
+    EventCoordinatorService,
+    WorkingMemoryService,
+  ],
 })
 export class OrchestrationModule {}

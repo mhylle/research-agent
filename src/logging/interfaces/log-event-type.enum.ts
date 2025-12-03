@@ -42,4 +42,9 @@ export type LogEventType =
   // Session events
   | 'session_started'
   | 'session_completed'
-  | 'session_failed';
+  | 'session_failed'
+  // Reasoning events
+  | 'reasoning_thought'
+  | 'reasoning_action_planned'
+  | 'reasoning_observation'
+  | 'reasoning_conclusion';

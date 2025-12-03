@@ -80,4 +80,7 @@ export type LogEventType =
   | 'sub_query_execution_started'
   | 'sub_query_execution_completed'
   | 'final_synthesis_started'
-  | 'final_synthesis_completed';
+  | 'final_synthesis_completed'
+  // Coverage analysis events
+  | 'coverage_analysis_started'
+  | 'coverage_analysis_completed';

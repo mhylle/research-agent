@@ -10,6 +10,7 @@ import { StepConfigurationService } from './services/step-configuration.service'
 import { EvaluationCoordinatorService } from './services/evaluation-coordinator.service';
 import { WorkingMemoryService } from './services/working-memory.service';
 import { QueryDecomposerService } from './services/query-decomposer.service';
+import { CoverageAnalyzerService } from './services/coverage-analyzer.service';
 import { ExecutorsModule } from '../executors/executors.module';
 import { LoggingModule } from '../logging/logging.module';
 import { LLMModule } from '../llm/llm.module';
@@ -42,6 +43,7 @@ import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
     EvaluationCoordinatorService,
     WorkingMemoryService,
     QueryDecomposerService,
+    CoverageAnalyzerService,
     // Phase executors
     PhaseExecutorRegistry,
     SearchPhaseExecutor,
@@ -55,6 +57,7 @@ import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
     EventCoordinatorService,
     WorkingMemoryService,
     QueryDecomposerService,
+    CoverageAnalyzerService,
   ],
 })
 export class OrchestrationModule {}

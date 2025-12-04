@@ -16,6 +16,15 @@ export interface ResearchSource {
 export interface ResearchMetadata {
   totalExecutionTime: number;
   phases: Array<{ phase: string; executionTime: number }>;
+  // Optional fields for different research types
+  decomposition?: any;
+  subQueryResults?: any;
+  retrievalCycles?: number;
+  finalCoverage?: number;
+  reflectionIterations?: number;
+  totalImprovement?: number;
+  usedAgenticPipeline?: boolean;
+  [key: string]: any; // Allow additional metadata fields
 }
 
 @Entity('research_results')

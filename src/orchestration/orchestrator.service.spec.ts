@@ -12,6 +12,7 @@ import { QueryDecomposerService } from './services/query-decomposer.service';
 import { CoverageAnalyzerService } from './services/coverage-analyzer.service';
 import { OllamaService } from '../llm/ollama.service';
 import { ReflectionService } from '../reflection/services/reflection.service';
+import { ResearchResultService } from '../research/research-result.service';
 import { Plan } from './interfaces/plan.interface';
 
 describe('Orchestrator', () => {
@@ -28,6 +29,7 @@ describe('Orchestrator', () => {
   let mockCoverageAnalyzer: jest.Mocked<CoverageAnalyzerService>;
   let mockLlmService: jest.Mocked<OllamaService>;
   let mockReflectionService: jest.Mocked<ReflectionService>;
+  let mockResultService: jest.Mocked<ResearchResultService>;
 
   const mockPlan: Plan = {
     id: 'plan-1',
@@ -194,6 +196,24 @@ describe('Orchestrator', () => {
       }),
     } as unknown as jest.Mocked<ReflectionService>;
 
+    mockResultService = {
+      save: jest.fn().mockResolvedValue({
+        id: 'result-1',
+        logId: 'test-log-id',
+        planId: 'plan-1',
+        query: 'test query',
+        answer: 'test answer',
+        sources: [],
+        metadata: {},
+        createdAt: new Date(),
+      }),
+      findByLogId: jest.fn(),
+      findById: jest.fn(),
+      getByLogId: jest.fn(),
+      findAll: jest.fn(),
+      backfillEmbeddings: jest.fn(),
+    } as unknown as jest.Mocked<ResearchResultService>;
+
     // Mock phase executor that returns successful results
     const mockPhaseExecutor = {
       canHandle: jest.fn().mockReturnValue(true),
@@ -236,6 +256,7 @@ describe('Orchestrator', () => {
         { provide: CoverageAnalyzerService, useValue: mockCoverageAnalyzer },
         { provide: OllamaService, useValue: mockLlmService },
         { provide: ReflectionService, useValue: mockReflectionService },
+        { provide: ResearchResultService, useValue: mockResultService },
       ],
     }).compile();
 

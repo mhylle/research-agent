@@ -13,6 +13,7 @@ import { QueryDecomposerService } from './services/query-decomposer.service';
 import { CoverageAnalyzerService } from './services/coverage-analyzer.service';
 import { OllamaService } from '../llm/ollama.service';
 import { ReflectionService } from '../reflection/services/reflection.service';
+import { ResearchResultService } from '../research/research-result.service';
 import { ReflectionConfig, ReflectionResult } from '../reflection/interfaces';
 import { Plan } from './interfaces/plan.interface';
 import { Phase, PhaseResult, StepResult } from './interfaces/phase.interface';
@@ -76,6 +77,7 @@ export class Orchestrator {
     private coverageAnalyzer: CoverageAnalyzerService,
     private llmService: OllamaService,
     private reflectionService: ReflectionService,
+    private resultService: ResearchResultService,
   ) {}
 
   /**
@@ -238,6 +240,28 @@ export class Orchestrator {
     // Completion
     const totalExecutionTime = Date.now() - startTime;
 
+    // Persist result to database BEFORE emitting session_completed
+    console.log(`[Orchestrator] Persisting research result for logId: ${logId}`);
+    try {
+      await this.resultService.save({
+        logId,
+        planId: plan.id,
+        query,
+        answer: finalOutput,
+        sources,
+        metadata: {
+          totalExecutionTime,
+          phases: phaseMetrics,
+        },
+        confidence,
+      });
+      console.log(`[Orchestrator] Research result persisted successfully for logId: ${logId}`);
+    } catch (error) {
+      console.error(`[Orchestrator] Failed to persist research result for logId: ${logId}`, error);
+      // Don't throw - still emit completion but log the error
+    }
+
+    // NOW emit session_completed
     await this.eventCoordinator.emit(logId, 'session_completed', {
       planId: plan.id,
       totalExecutionTime,
@@ -321,14 +345,36 @@ export class Orchestrator {
     // Completion
     const totalExecutionTime = Date.now() - startTime;
 
+    // Deduplicate sources
+    const uniqueSources = this.deduplicateSources(allSources);
+
+    // Persist result to database BEFORE emitting session_completed
+    console.log(`[Orchestrator] Persisting decomposed research result for logId: ${logId}`);
+    try {
+      await this.resultService.save({
+        logId,
+        planId: `decomposed-${logId}`,
+        query: decomposition.originalQuery,
+        answer: finalAnswer,
+        sources: uniqueSources,
+        metadata: {
+          totalExecutionTime,
+          phases: phaseMetrics,
+          subQueryResults,
+        },
+      });
+      console.log(`[Orchestrator] Decomposed research result persisted successfully for logId: ${logId}`);
+    } catch (error) {
+      console.error(`[Orchestrator] Failed to persist decomposed research result for logId: ${logId}`, error);
+      // Don't throw - still emit completion but log the error
+    }
+
+    // NOW emit session_completed
     await this.eventCoordinator.emit(logId, 'session_completed', {
       totalExecutionTime,
       subQueryCount: decomposition.subQueries.length,
       isDecomposed: true,
     });
-
-    // Deduplicate sources
-    const uniqueSources = this.deduplicateSources(allSources);
 
     return {
       logId,
@@ -1112,6 +1158,29 @@ Write a thorough, professional response that fully answers the original question
       const totalExecutionTime = Date.now() - startTime;
       const finalCoverage = this.workingMemory.getScratchPadValue<CoverageResult>(logId, `coverage_cycle_${cycle}`);
 
+      // Persist result to database BEFORE emitting session_completed
+      console.log(`[Orchestrator] Persisting iterative research result for logId: ${logId}`);
+      try {
+        await this.resultService.save({
+          logId,
+          planId: `iterative-${logId}`,
+          query,
+          answer: currentAnswer,
+          sources: currentSources,
+          metadata: {
+            totalExecutionTime,
+            phases: phaseMetrics,
+            retrievalCycles: cycle,
+            finalCoverage: finalCoverage?.overallCoverage,
+          },
+        });
+        console.log(`[Orchestrator] Iterative research result persisted successfully for logId: ${logId}`);
+      } catch (error) {
+        console.error(`[Orchestrator] Failed to persist iterative research result for logId: ${logId}`, error);
+        // Don't throw - still emit completion but log the error
+      }
+
+      // NOW emit session_completed
       await this.eventCoordinator.emit(logId, 'session_completed', {
         totalExecutionTime,
         retrievalCycles: cycle,
@@ -1327,15 +1396,7 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
 
       const totalExecutionTime = Date.now() - startTime;
 
-      await this.eventCoordinator.emit(logId, 'session_completed', {
-        totalExecutionTime,
-        agenticMode: true,
-        decomposed: decomposition.isComplex,
-        reflectionIterations: reflectionResult.iterationCount,
-        finalConfidence: reflectionResult.finalConfidence,
-      });
-
-      return {
+      const agenticResult: AgenticResearchResult = {
         ...researchResult,
         answer: finalAnswer,
         metadata: {
@@ -1354,6 +1415,35 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
           improvements: reflectionResult.improvements,
         },
       };
+
+      // Persist result to database BEFORE emitting session_completed
+      console.log(`[Orchestrator] Persisting agentic research result for logId: ${logId}`);
+      try {
+        await this.resultService.save({
+          logId,
+          planId: researchResult.planId,
+          query,
+          answer: finalAnswer,
+          sources: researchResult.sources,
+          metadata: agenticResult.metadata,
+          confidence: researchResult.confidence,
+        });
+        console.log(`[Orchestrator] Agentic research result persisted successfully for logId: ${logId}`);
+      } catch (error) {
+        console.error(`[Orchestrator] Failed to persist agentic research result for logId: ${logId}`, error);
+        // Don't throw - still emit completion but log the error
+      }
+
+      // NOW emit session_completed
+      await this.eventCoordinator.emit(logId, 'session_completed', {
+        totalExecutionTime,
+        agenticMode: true,
+        decomposed: decomposition.isComplex,
+        reflectionIterations: reflectionResult.iterationCount,
+        finalConfidence: reflectionResult.finalConfidence,
+      });
+
+      return agenticResult;
     } finally {
       this.workingMemory.cleanup(logId);
     }

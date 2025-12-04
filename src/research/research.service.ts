@@ -19,25 +19,9 @@ export class ResearchService {
     query: string,
     logId?: string,
   ): Promise<ResearchResult> {
+    // Persistence is now handled by Orchestrator before session_completed event
+    // to fix race condition where client fetches before save completes
     const result = await this.orchestrator.executeResearch(query, logId);
-
-    // Persist the research result to database
-    try {
-      await this.resultService.save({
-        logId: result.logId,
-        planId: result.planId,
-        query,
-        answer: result.answer,
-        sources: result.sources,
-        metadata: result.metadata,
-        confidence: result.confidence,
-      });
-      this.logger.log(`Research result saved for logId: ${result.logId}`);
-    } catch (error) {
-      this.logger.error(`Failed to save research result: ${error}`);
-      // Don't fail the entire request if saving fails
-    }
-
     return result;
   }
 
@@ -60,27 +44,12 @@ export class ResearchService {
     query: string,
     logId?: string,
   ): Promise<AgenticResearchResult> {
+    // Persistence is now handled by Orchestrator before session_completed event
+    // to fix race condition where client fetches before save completes
     const result = await this.orchestrator.orchestrateAgenticResearch(
       query,
       logId,
     );
-
-    // Persist the research result to database
-    try {
-      await this.resultService.save({
-        logId: result.logId,
-        planId: result.planId,
-        query,
-        answer: result.answer,
-        sources: result.sources,
-        metadata: result.metadata,
-        confidence: result.confidence,
-      });
-      this.logger.log(`Agentic research result saved for logId: ${result.logId}`);
-    } catch (error) {
-      this.logger.error(`Failed to save agentic research result: ${error}`);
-    }
-
     return result;
   }
 }

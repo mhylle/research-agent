@@ -231,6 +231,16 @@ export class AgentActivityService {
       this.isConnected.set(false);
     }
     this.currentLogId = null;
+    // Reset state to ensure clean slate when navigating away
+    this.resetState();
+  }
+
+  /**
+   * Public method to reset all state signals to initial values.
+   * Call this when navigating away from active research or starting new research.
+   */
+  public clearState(): void {
+    this.resetState();
   }
 
   private resetState(): void {

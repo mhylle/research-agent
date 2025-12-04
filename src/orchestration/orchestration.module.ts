@@ -1,6 +1,7 @@
 // src/orchestration/orchestration.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { Orchestrator } from './orchestrator.service';
 import { PlannerService } from './planner.service';
 import { EventCoordinatorService } from './services/event-coordinator.service';
@@ -17,6 +18,9 @@ import { LLMModule } from '../llm/llm.module';
 import { EvaluationModule } from '../evaluation/evaluation.module';
 import { ReasoningModule } from '../reasoning/reasoning.module';
 import { ReflectionModule } from '../reflection/reflection.module';
+import { KnowledgeModule } from '../knowledge/knowledge.module';
+import { ResearchResultEntity } from '../research/entities/research-result.entity';
+import { ResearchResultService } from '../research/research-result.service';
 import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry';
 import { SearchPhaseExecutor } from './phase-executors/search-phase-executor';
 import { FetchPhaseExecutor } from './phase-executors/fetch-phase-executor';
@@ -26,10 +30,12 @@ import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
 @Module({
   imports: [
     EventEmitterModule.forRoot(),
+    TypeOrmModule.forFeature([ResearchResultEntity]),
     ExecutorsModule,
     LoggingModule,
     LLMModule,
     EvaluationModule,
+    KnowledgeModule,
     forwardRef(() => ReasoningModule),
     forwardRef(() => ReflectionModule),
   ],
@@ -44,6 +50,7 @@ import { GenericPhaseExecutor } from './phase-executors/generic-phase-executor';
     WorkingMemoryService,
     QueryDecomposerService,
     CoverageAnalyzerService,
+    ResearchResultService,
     // Phase executors
     PhaseExecutorRegistry,
     SearchPhaseExecutor,

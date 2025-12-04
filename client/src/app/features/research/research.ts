@@ -85,6 +85,18 @@ export class ResearchComponent {
   }
 
   /**
+   * Handle back to history navigation
+   * Resets activity state and clears current log
+   */
+  onBackToHistory(): void {
+    this.currentLogId.set(null);
+    this.activityService.clearState();
+    // Reset loading state and current result in ResearchService
+    this.researchService.isLoading.set(false);
+    this.researchService.currentResult.set(null);
+  }
+
+  /**
    * Handle retry event from AgentActivityView
    * @param taskId - The ID of the task to retry
    */

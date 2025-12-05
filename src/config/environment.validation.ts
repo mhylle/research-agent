@@ -1,10 +1,22 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsNumber, IsString, validateSync } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsString,
+  IsOptional,
+  validateSync,
+  ValidateIf,
+} from 'class-validator';
 
 enum Environment {
   Development = 'development',
   Production = 'production',
   Test = 'test',
+}
+
+enum LLMProvider {
+  Ollama = 'ollama',
+  AzureOpenAI = 'azure-openai',
 }
 
 class EnvironmentVariables {
@@ -14,11 +26,31 @@ class EnvironmentVariables {
   @IsNumber()
   PORT: number;
 
+  @IsEnum(LLMProvider)
+  @IsOptional()
+  LLM_PROVIDER: LLMProvider = LLMProvider.Ollama;
+
+  // Ollama config - required when LLM_PROVIDER is 'ollama'
+  @ValidateIf((o) => o.LLM_PROVIDER === LLMProvider.Ollama || !o.LLM_PROVIDER)
   @IsString()
   OLLAMA_BASE_URL: string;
 
+  @ValidateIf((o) => o.LLM_PROVIDER === LLMProvider.Ollama || !o.LLM_PROVIDER)
   @IsString()
   OLLAMA_MODEL: string;
+
+  // Azure OpenAI config - required when LLM_PROVIDER is 'azure-openai'
+  @ValidateIf((o) => o.LLM_PROVIDER === LLMProvider.AzureOpenAI)
+  @IsString()
+  AZURE_OPENAI_ENDPOINT: string;
+
+  @ValidateIf((o) => o.LLM_PROVIDER === LLMProvider.AzureOpenAI)
+  @IsString()
+  AZURE_OPENAI_API_KEY: string;
+
+  @ValidateIf((o) => o.LLM_PROVIDER === LLMProvider.AzureOpenAI)
+  @IsString()
+  AZURE_OPENAI_MODEL: string;
 
   @IsString()
   TAVILY_API_KEY: string;

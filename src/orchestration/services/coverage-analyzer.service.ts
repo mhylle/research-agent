@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from './event-coordinator.service';
 import { Source } from './result-extractor.service';
 import { SubQuery } from '../interfaces/sub-query.interface';
@@ -15,7 +15,7 @@ export class CoverageAnalyzerService {
   private readonly MIN_CONFIDENCE = 0.7;
 
   constructor(
-    private readonly ollamaService: OllamaService,
+    private readonly ollamaService: LLMService,
     private readonly eventCoordinator: EventCoordinatorService,
   ) {}
 

@@ -7,7 +7,7 @@ import { EvaluationRecordEntity } from '../src/evaluation/entities/evaluation-re
 import { EvaluationService } from '../src/evaluation/services/evaluation.service';
 import { Orchestrator } from '../src/orchestration/orchestrator.service';
 import { PlannerService } from '../src/orchestration/planner.service';
-import { OllamaService } from '../src/llm/ollama.service';
+import { LLMService } from '../src/llm/llm.service';
 import { TavilySearchProvider } from '../src/tools/providers/tavily-search.provider';
 import { mockOllamaResponses } from '../src/evaluation/tests/test-fixtures';
 
@@ -25,12 +25,12 @@ describe('Evaluation Pipeline (e2e)', () => {
   let app: INestApplication;
   let orchestrator: Orchestrator;
   let evaluationRepository: Repository<EvaluationRecordEntity>;
-  let mockOllamaService: any;
+  let mockLLMService: any;
   let mockTavilyProvider: any;
 
   beforeAll(async () => {
     // Create mock services with default implementations
-    mockOllamaService = {
+    mockLLMService = {
       chat: jest.fn().mockResolvedValue({
         message: { role: 'assistant', content: 'default', tool_calls: [] },
       }),
@@ -65,8 +65,8 @@ describe('Evaluation Pipeline (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideProvider(OllamaService)
-      .useValue(mockOllamaService)
+      .overrideProvider(LLMService)
+      .useValue(mockLLMService)
       .overrideProvider(TavilySearchProvider)
       .useValue(mockTavilyProvider)
       .compile();
@@ -275,12 +275,12 @@ describe('Evaluation Pipeline (e2e)', () => {
 
   function setupSuccessfulResearchMocks() {
     // Clear previous mock implementations
-    mockOllamaService.chat.mockClear();
-    mockOllamaService.generateResponse.mockClear();
+    mockLLMService.chat.mockClear();
+    mockLLMService.generateResponse.mockClear();
     mockTavilyProvider.execute.mockClear();
 
     // Mock planner - create plan, add phase, add step, finalize
-    mockOllamaService.chat
+    mockLLMService.chat
       .mockResolvedValueOnce({
         message: {
           role: 'assistant',
@@ -414,7 +414,7 @@ describe('Evaluation Pipeline (e2e)', () => {
     ]);
 
     // Mock evaluation LLM responses
-    mockOllamaService.generateResponse.mockImplementation((prompt: string) => {
+    mockLLMService.generateResponse.mockImplementation((prompt: string) => {
       if (prompt.includes('Intent Analyst')) {
         return Promise.resolve({
           response: mockOllamaResponses.intentAnalyst.content,
@@ -462,19 +462,19 @@ describe('Evaluation Pipeline (e2e)', () => {
     setupSuccessfulResearchMocks();
 
     // Override to make evaluation fail
-    mockOllamaService.generateResponse.mockRejectedValue(
+    mockLLMService.generateResponse.mockRejectedValue(
       new Error('Evaluation LLM unavailable'),
     );
   }
 
   function setupFailingPlanEvaluationMocks() {
     // Clear previous mock implementations
-    mockOllamaService.chat.mockClear();
-    mockOllamaService.generateResponse.mockClear();
+    mockLLMService.chat.mockClear();
+    mockLLMService.generateResponse.mockClear();
     mockTavilyProvider.execute.mockClear();
 
     // Setup basic research mocks with same structure
-    mockOllamaService.chat
+    mockLLMService.chat
       .mockResolvedValueOnce({
         message: {
           role: 'assistant',

@@ -11,7 +11,7 @@ import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry
 import { WorkingMemoryService } from './services/working-memory.service';
 import { QueryDecomposerService } from './services/query-decomposer.service';
 import { CoverageAnalyzerService } from './services/coverage-analyzer.service';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ReflectionService } from '../reflection/services/reflection.service';
 import { ResearchResultService } from '../research/research-result.service';
 import { ReflectionConfig, ReflectionResult } from '../reflection/interfaces';
@@ -75,7 +75,7 @@ export class Orchestrator {
     private workingMemory: WorkingMemoryService,
     private queryDecomposer: QueryDecomposerService,
     private coverageAnalyzer: CoverageAnalyzerService,
-    private llmService: OllamaService,
+    private llmService: LLMService,
     private reflectionService: ReflectionService,
     private resultService: ResearchResultService,
   ) {}
@@ -120,6 +120,15 @@ export class Orchestrator {
       result.metadata.decomposition = decomposition;
 
       return result;
+    } catch (error) {
+      // Emit session_failed event on error
+      console.error(`[Orchestrator] Research failed for logId ${logId}:`, error);
+      await this.eventCoordinator.emit(logId, 'session_failed', {
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date(),
+      });
+      throw error;
     } finally {
       // Cleanup working memory after completion or error
       this.workingMemory.cleanup(logId);
@@ -293,34 +302,123 @@ export class Orchestrator {
     const allSources: Array<{ url: string; title: string; relevance: string }> = [];
     const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
 
+    // Emit planning_started on parent logId so UI knows decomposition is happening
+    await this.eventCoordinator.emit(logId, 'planning_started', {
+      query: decomposition.originalQuery,
+      availableTools: ['tavily_search', 'web_fetch', 'duckduckgo_search', 'knowledge_search'],
+      message: 'Query decomposed into sub-queries, preparing execution plan...',
+      isDecomposed: true,
+    });
+
+    // Generate a plan ID for the decomposed query
+    const decomposedPlanId = randomUUID();
+
+    // Build a virtual plan structure representing the decomposed query execution
+    const virtualPlan = {
+      id: decomposedPlanId,
+      phases: decomposition.subQueries.map((sq, index) => ({
+        id: `subquery-phase-${sq.id}`,
+        name: `Sub-query ${index + 1}: ${sq.type}`,
+        description: sq.text.substring(0, 100) + (sq.text.length > 100 ? '...' : ''),
+      })),
+    };
+
+    // Emit plan_created on parent logId so UI exits planning phase
+    await this.eventCoordinator.emit(logId, 'plan_created', {
+      planId: decomposedPlanId,
+      phases: virtualPlan.phases,
+      totalPhases: decomposition.subQueries.length + 1, // +1 for synthesis
+      isDecomposed: true,
+      subQueryCount: decomposition.subQueries.length,
+    });
+
     console.log(`[Orchestrator] Executing ${decomposition.executionPlan.length} phases of sub-queries`);
+    console.log(`[Orchestrator] Decomposition plan details:`, {
+      totalPhases: decomposition.executionPlan.length,
+      subQueries: decomposition.subQueries.map(sq => ({
+        id: sq.id,
+        order: sq.order,
+        text: sq.text.substring(0, 50),
+        dependencies: sq.dependencies
+      }))
+    });
 
     // Execute each phase of sub-queries
     for (let phaseIndex = 0; phaseIndex < decomposition.executionPlan.length; phaseIndex++) {
       const phase = decomposition.executionPlan[phaseIndex];
       const phaseStartTime = Date.now();
+      const phaseId = `decomposed-phase-${phaseIndex + 1}`;
 
       console.log(`[Orchestrator] Executing phase ${phaseIndex + 1} with ${phase.length} sub-queries in parallel`);
+      console.log(`[Orchestrator] Phase ${phaseIndex + 1} sub-queries:`, phase.map(sq => ({ id: sq.id, text: sq.text.substring(0, 50), dependencies: sq.dependencies })));
 
-      // Execute all sub-queries in this phase in parallel
-      await Promise.all(
-        phase.map(async (subQuery) => {
-          // Gather dependency results for context
-          const dependencyResults = subQuery.dependencies
-            .map(depId => subQueryResults.get(depId))
-            .filter((r): r is SubQueryResult => r !== undefined);
+      // Emit phase_started on parent logId for UI progress tracking
+      await this.eventCoordinator.emit(logId, 'phase_started', {
+        phaseId,
+        phaseName: `Research Phase ${phaseIndex + 1}`,
+        phaseIndex,
+        totalPhases: decomposition.executionPlan.length + 1, // +1 for synthesis
+        subQueryCount: phase.length,
+        isDecomposed: true,
+      });
 
-          // Execute sub-query
-          const result = await this.executeSubQuery(
-            subQuery,
-            dependencyResults,
-            logId,
+      // Execute all sub-queries in this phase with controlled concurrency
+      // Limit to 2 concurrent sub-queries to avoid overwhelming the LLM service
+      // and prevent rate limiting / connection pool exhaustion
+      const MAX_CONCURRENT_SUBQUERIES = 2;
+      console.log(`[Orchestrator] Starting sub-query execution for phase ${phaseIndex + 1} with ${phase.length} sub-queries (max ${MAX_CONCURRENT_SUBQUERIES} concurrent)`);
+
+      try {
+        // Execute sub-queries in batches to limit concurrency
+        for (let i = 0; i < phase.length; i += MAX_CONCURRENT_SUBQUERIES) {
+          const batch = phase.slice(i, i + MAX_CONCURRENT_SUBQUERIES);
+          console.log(`[Orchestrator] Processing batch ${Math.floor(i / MAX_CONCURRENT_SUBQUERIES) + 1} with ${batch.length} sub-queries`);
+
+          await Promise.all(
+            batch.map(async (subQuery) => {
+              console.log(`[Orchestrator] Starting sub-query execution: ${subQuery.id} - ${subQuery.text.substring(0, 50)}`);
+
+              // Gather dependency results for context
+              const dependencyResults = subQuery.dependencies
+                .map(depId => {
+                  const result = subQueryResults.get(depId);
+                  if (!result) {
+                    console.log(`[Orchestrator] WARNING: Dependency ${depId} not found for sub-query ${subQuery.id}`);
+                  }
+                  return result;
+                })
+                .filter((r): r is SubQueryResult => r !== undefined);
+
+              console.log(`[Orchestrator] Sub-query ${subQuery.id} has ${dependencyResults.length} resolved dependencies`);
+
+              // Execute sub-query
+              const result = await this.executeSubQuery(
+                subQuery,
+                dependencyResults,
+                logId,
+              );
+
+              console.log(`[Orchestrator] Sub-query ${subQuery.id} completed successfully`);
+              subQueryResults.set(subQuery.id, result);
+              allSources.push(...result.sources);
+            })
           );
 
-          subQueryResults.set(subQuery.id, result);
-          allSources.push(...result.sources);
-        })
-      );
+          console.log(`[Orchestrator] Batch ${Math.floor(i / MAX_CONCURRENT_SUBQUERIES) + 1} completed`);
+        }
+        console.log(`[Orchestrator] All sub-queries completed for phase ${phaseIndex + 1}`);
+      } catch (error) {
+        console.error(`[Orchestrator] Error in sub-query execution for phase ${phaseIndex + 1}:`, error);
+        throw error;
+      }
+
+      // Emit phase_completed on parent logId
+      await this.eventCoordinator.emit(logId, 'phase_completed', {
+        phaseId,
+        phaseName: `Research Phase ${phaseIndex + 1}`,
+        stepsCompleted: phase.length,
+        isDecomposed: true,
+      });
 
       phaseMetrics.push({
         phase: `sub-query-phase-${phaseIndex + 1}`,
@@ -330,12 +428,28 @@ export class Orchestrator {
 
     // Synthesize final answer from all sub-query results
     const synthesisStartTime = Date.now();
+    const synthesisPhaseId = 'decomposed-synthesis';
+
+    // Emit final_synthesis_started on parent logId
+    await this.eventCoordinator.emit(logId, 'final_synthesis_started', {
+      phaseId: synthesisPhaseId,
+      subQueryCount: decomposition.subQueries.length,
+      isDecomposed: true,
+    });
+
     const finalAnswer = await this.synthesizeFinalAnswer(
       decomposition.originalQuery,
       decomposition.subQueries,
       subQueryResults,
       logId,
     );
+
+    // Emit final_synthesis_completed on parent logId
+    await this.eventCoordinator.emit(logId, 'final_synthesis_completed', {
+      phaseId: synthesisPhaseId,
+      answerLength: finalAnswer.length,
+      isDecomposed: true,
+    });
 
     phaseMetrics.push({
       phase: 'final-synthesis',
@@ -350,10 +464,11 @@ export class Orchestrator {
 
     // Persist result to database BEFORE emitting session_completed
     console.log(`[Orchestrator] Persisting decomposed research result for logId: ${logId}`);
+    // Note: decomposedPlanId was already generated at the start of this method
     try {
       await this.resultService.save({
         logId,
-        planId: `decomposed-${logId}`,
+        planId: decomposedPlanId,
         query: decomposition.originalQuery,
         answer: finalAnswer,
         sources: uniqueSources,
@@ -378,7 +493,7 @@ export class Orchestrator {
 
     return {
       logId,
-      planId: `decomposed-${logId}`,
+      planId: decomposedPlanId,
       answer: finalAnswer,
       sources: uniqueSources,
       metadata: {
@@ -397,7 +512,10 @@ export class Orchestrator {
     dependencyResults: SubQueryResult[],
     logId: string,
   ): Promise<SubQueryResult> {
-    const subLogId = `${logId}-${subQuery.id}`;
+    // Use a unique UUID for each sub-query to avoid race conditions between parallel sub-queries
+    // This ensures working memory and internal events are isolated per sub-query
+    // Parent-level events (sub_query_execution_started/completed) still use parent logId
+    const subQueryLogId = randomUUID();
 
     await this.eventCoordinator.emit(logId, 'sub_query_execution_started', {
       subQueryId: subQuery.id,
@@ -417,18 +535,18 @@ export class Orchestrator {
       }
 
       // Execute a simplified research flow for the sub-query
-      // Initialize working memory for sub-query
-      this.workingMemory.initialize(subLogId, enrichedQuery);
+      // Initialize working memory with unique UUID for this sub-query to avoid race conditions
+      this.workingMemory.initialize(subQueryLogId, enrichedQuery);
 
       try {
-        // Create plan for sub-query (with reduced complexity)
-        const plan = await this.plannerService.createPlan(enrichedQuery, subLogId);
+        // Create plan for sub-query - use subQueryLogId so internal events/memory are isolated
+        const plan = await this.plannerService.createPlan(enrichedQuery, subQueryLogId);
 
-        // Execute plan
+        // Execute plan with subQueryLogId for isolated working memory
         const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
         const { finalOutput, sources, confidence } = await this.executePlan(
           plan,
-          subLogId,
+          subQueryLogId,
           phaseMetrics,
         );
 
@@ -448,7 +566,7 @@ export class Orchestrator {
 
         return result;
       } finally {
-        this.workingMemory.cleanup(subLogId);
+        this.workingMemory.cleanup(subQueryLogId);
       }
     } catch (error) {
       console.error(`[Orchestrator] Sub-query ${subQuery.id} failed:`, error);
@@ -1479,73 +1597,84 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
         `[Orchestrator] Phase ${phaseIndex + 1}: ${phase.length} sub-queries`,
       );
 
-      // Execute sub-queries in parallel with reduced retrieval cycles
-      await Promise.all(
-        phase.map(async (subQuery) => {
-          const subLogId = `${logId}-${subQuery.id}`;
+      // Execute sub-queries with controlled concurrency (iterative retrieval mode)
+      // Limit to 2 concurrent sub-queries to avoid overwhelming the LLM service
+      const MAX_CONCURRENT_SUBQUERIES = 2;
 
-          await this.eventCoordinator.emit(
-            logId,
-            'sub_query_execution_started',
-            {
-              subQueryId: subQuery.id,
-              subQueryText: subQuery.text,
-              useIterativeRetrieval: true,
-            },
-          );
+      for (let i = 0; i < phase.length; i += MAX_CONCURRENT_SUBQUERIES) {
+        const batch = phase.slice(i, i + MAX_CONCURRENT_SUBQUERIES);
+        console.log(`[Orchestrator] Processing batch ${Math.floor(i / MAX_CONCURRENT_SUBQUERIES) + 1} with ${batch.length} sub-queries (iterative retrieval)`);
 
-          try {
-            // Use iterative retrieval with max 1 additional cycle for sub-queries
-            const result = await this.executeWithIterativeRetrieval(
-              subQuery.text,
-              subLogId,
-              1, // Max 1 additional cycle for sub-queries
-            );
-
-            const subResult: SubQueryResult = {
-              subQueryId: subQuery.id,
-              answer: result.answer,
-              sources: result.sources,
-              confidence: result.metadata.finalCoverage,
-            };
-
-            subQueryResults.set(subQuery.id, subResult);
-            allSources.push(...result.sources);
+        await Promise.all(
+          batch.map(async (subQuery) => {
+            // Use parent logId for sub-queries to avoid invalid UUID format
+            const subLogId = logId;
 
             await this.eventCoordinator.emit(
               logId,
-              'sub_query_execution_completed',
+              'sub_query_execution_started',
               {
                 subQueryId: subQuery.id,
-                success: true,
-                sourceCount: result.sources.length,
+                subQueryText: subQuery.text,
+                useIterativeRetrieval: true,
               },
             );
-          } catch (error) {
-            console.error(
-              `[Orchestrator] Sub-query ${subQuery.id} failed:`,
-              error,
-            );
 
-            // Return partial result on failure
-            subQueryResults.set(subQuery.id, {
-              subQueryId: subQuery.id,
-              answer: `Failed: ${error.message}`,
-              sources: [],
-            });
+            try {
+              // Use iterative retrieval with max 1 additional cycle for sub-queries
+              const result = await this.executeWithIterativeRetrieval(
+                subQuery.text,
+                subLogId,
+                1, // Max 1 additional cycle for sub-queries
+              );
 
-            await this.eventCoordinator.emit(
-              logId,
-              'sub_query_execution_completed',
-              {
+              const subResult: SubQueryResult = {
                 subQueryId: subQuery.id,
-                success: false,
-                error: error.message,
-              },
-            );
-          }
-        }),
-      );
+                answer: result.answer,
+                sources: result.sources,
+                confidence: result.metadata.finalCoverage,
+              };
+
+              subQueryResults.set(subQuery.id, subResult);
+              allSources.push(...result.sources);
+
+              await this.eventCoordinator.emit(
+                logId,
+                'sub_query_execution_completed',
+                {
+                  subQueryId: subQuery.id,
+                  success: true,
+                  sourceCount: result.sources.length,
+                },
+              );
+            } catch (error) {
+              console.error(
+                `[Orchestrator] Sub-query ${subQuery.id} failed:`,
+                error,
+              );
+
+              // Return partial result on failure
+              subQueryResults.set(subQuery.id, {
+                subQueryId: subQuery.id,
+                answer: `Failed: ${error.message}`,
+                sources: [],
+              });
+
+              await this.eventCoordinator.emit(
+                logId,
+                'sub_query_execution_completed',
+                {
+                  subQueryId: subQuery.id,
+                  success: false,
+                  error: error.message,
+                },
+              );
+            }
+          }),
+        );
+
+        console.log(`[Orchestrator] Batch ${Math.floor(i / MAX_CONCURRENT_SUBQUERIES) + 1} completed (iterative retrieval)`);
+      }
 
       phaseMetrics.push({
         phase: `sub-query-phase-${phaseIndex + 1}`,
@@ -1571,7 +1700,7 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
 
     return {
       logId,
-      planId: `agentic-decomposed-${logId}`,
+      planId: randomUUID(),
       answer: finalAnswer,
       sources: uniqueSources,
       metadata: {

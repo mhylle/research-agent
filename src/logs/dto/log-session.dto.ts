@@ -6,4 +6,5 @@ export class LogSessionDto {
   stageCount: number;
   toolCallCount: number;
   status: 'completed' | 'error' | 'incomplete';
+  answer?: string;
 }

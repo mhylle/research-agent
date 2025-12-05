@@ -1,21 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EscalationHandlerService } from './escalation-handler.service';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { DEFAULT_EVALUATION_CONFIG } from '../interfaces';
 
 describe('EscalationHandlerService', () => {
   let service: EscalationHandlerService;
-  let mockOllamaService: any;
+  let mockLLMService: any;
 
   beforeEach(async () => {
-    mockOllamaService = {
+    mockLLMService = {
       chat: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EscalationHandlerService,
-        { provide: OllamaService, useValue: mockOllamaService },
+        { provide: LLMService, useValue: mockLLMService },
       ],
     }).compile();
 
@@ -24,7 +24,7 @@ describe('EscalationHandlerService', () => {
 
   describe('escalate', () => {
     it('should call larger model and return meta-evaluation', async () => {
-      mockOllamaService.chat.mockResolvedValue({
+      mockLLMService.chat.mockResolvedValue({
         message: {
           content: JSON.stringify({
             trustDecisions: {
@@ -55,7 +55,7 @@ describe('EscalationHandlerService', () => {
 
       expect(result.finalVerdict).toBe('pass');
       expect(result.scores.intentAlignment).toBe(0.75);
-      expect(mockOllamaService.chat).toHaveBeenCalledWith(
+      expect(mockLLMService.chat).toHaveBeenCalledWith(
         expect.any(Array),
         [],
         'qwen3:30b', // Escalation model
@@ -63,7 +63,7 @@ describe('EscalationHandlerService', () => {
     });
 
     it('should use escalation model from config', async () => {
-      mockOllamaService.chat.mockResolvedValue({
+      mockLLMService.chat.mockResolvedValue({
         message: {
           content: JSON.stringify({
             trustDecisions: {},
@@ -83,7 +83,7 @@ describe('EscalationHandlerService', () => {
         panelResults: [],
       });
 
-      expect(mockOllamaService.chat).toHaveBeenCalledWith(
+      expect(mockLLMService.chat).toHaveBeenCalledWith(
         expect.any(Array),
         [],
         DEFAULT_EVALUATION_CONFIG.escalationModel,
@@ -91,7 +91,7 @@ describe('EscalationHandlerService', () => {
     });
 
     it('should handle parse errors gracefully', async () => {
-      mockOllamaService.chat.mockResolvedValue({
+      mockLLMService.chat.mockResolvedValue({
         message: { content: 'not valid json' },
       });
 

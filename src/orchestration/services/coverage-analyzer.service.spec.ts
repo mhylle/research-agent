@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CoverageAnalyzerService } from './coverage-analyzer.service';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from './event-coordinator.service';
 import { Source } from './result-extractor.service';
 import { SubQuery } from '../interfaces/sub-query.interface';
@@ -8,11 +8,11 @@ import { QueryAspect } from '../interfaces/query-aspect.interface';
 
 describe('CoverageAnalyzerService', () => {
   let service: CoverageAnalyzerService;
-  let ollamaService: jest.Mocked<OllamaService>;
+  let ollamaService: jest.Mocked<LLMService>;
   let eventCoordinator: jest.Mocked<EventCoordinatorService>;
 
   beforeEach(async () => {
-    const mockOllamaService = {
+    const mockLLMService = {
       chat: jest.fn(),
     };
 
@@ -23,13 +23,13 @@ describe('CoverageAnalyzerService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CoverageAnalyzerService,
-        { provide: OllamaService, useValue: mockOllamaService },
+        { provide: LLMService, useValue: mockLLMService },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
       ],
     }).compile();
 
     service = module.get<CoverageAnalyzerService>(CoverageAnalyzerService);
-    ollamaService = module.get(OllamaService);
+    ollamaService = module.get(LLMService);
     eventCoordinator = module.get(EventCoordinatorService);
   });
 

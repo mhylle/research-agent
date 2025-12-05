@@ -1,8 +1,12 @@
 import { Module } from '@nestjs/common';
-import { OllamaService } from './ollama.service';
+import { ConfigModule } from '@nestjs/config';
+import { LLMService } from './llm.service';
+import { OllamaAdapter } from './adapters/ollama.adapter';
+import { AzureOpenAIAdapter } from './adapters/azure-openai.adapter';
 
 @Module({
-  providers: [OllamaService],
-  exports: [OllamaService],
+  imports: [ConfigModule],
+  providers: [LLMService, OllamaAdapter, AzureOpenAIAdapter],
+  exports: [LLMService],
 })
 export class LLMModule {}

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RefinementEngineService } from './refinement-engine.service';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
 import { SelfCritique } from '../interfaces/self-critique.interface';
@@ -9,7 +9,7 @@ import { Source } from '../interfaces/refinement-result.interface';
 
 describe('RefinementEngineService', () => {
   let service: RefinementEngineService;
-  let ollamaService: jest.Mocked<OllamaService>;
+  let ollamaService: jest.Mocked<LLMService>;
   let eventCoordinator: jest.Mocked<EventCoordinatorService>;
   let researchLogger: jest.Mocked<ResearchLogger>;
 
@@ -81,7 +81,7 @@ describe('RefinementEngineService', () => {
   ];
 
   beforeEach(async () => {
-    const mockOllamaService = {
+    const mockLLMService = {
       chat: jest.fn(),
     };
 
@@ -99,14 +99,14 @@ describe('RefinementEngineService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RefinementEngineService,
-        { provide: OllamaService, useValue: mockOllamaService },
+        { provide: LLMService, useValue: mockLLMService },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
         { provide: ResearchLogger, useValue: mockResearchLogger },
       ],
     }).compile();
 
     service = module.get<RefinementEngineService>(RefinementEngineService);
-    ollamaService = module.get(OllamaService);
+    ollamaService = module.get(LLMService);
     eventCoordinator = module.get(EventCoordinatorService);
     researchLogger = module.get(ResearchLogger);
   });

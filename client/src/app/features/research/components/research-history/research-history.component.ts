@@ -129,14 +129,17 @@ export class ResearchHistoryComponent implements OnInit {
   }
 
   private extractAnswerFromSession(session: LogSession): string {
-    // For now, return a placeholder since LogSession doesn't include the answer
-    // The full answer would need to be fetched from LogDetail when expanded
-    // This is a simplified version for the history view
+    // Return the actual answer if available
+    if (session.answer) {
+      return session.answer;
+    }
+
+    // Fallback for sessions without answer (older or in-progress sessions)
     const statusText = session.status === 'completed'
       ? 'Research completed successfully'
       : session.status === 'error'
       ? 'Research encountered an error'
-      : 'Research incomplete';
+      : 'Research in progress...';
 
     return `${statusText} • ${session.toolCallCount} tool call${session.toolCallCount !== 1 ? 's' : ''} • ${session.stageCount} stage${session.stageCount !== 1 ? 's' : ''}`;
   }

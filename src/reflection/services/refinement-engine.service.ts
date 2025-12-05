@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
 import { SelfCritique } from '../interfaces/self-critique.interface';
@@ -18,7 +18,7 @@ export class RefinementEngineService {
   private readonly MAX_REFINEMENT_PASSES = 3;
 
   constructor(
-    private readonly llmService: OllamaService,
+    private readonly llmService: LLMService,
     private readonly eventCoordinator: EventCoordinatorService,
     private readonly researchLogger: ResearchLogger,
   ) {}

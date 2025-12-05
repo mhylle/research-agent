@@ -98,16 +98,33 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
           return result;
         }
 
-        // Run confidence scoring
-        const confidenceResult = await this.runConfidenceScoring(
-          answerText,
-          sources,
-          phase,
-          context,
-        );
+        // Run confidence scoring with error handling - don't block answer delivery
+        let confidenceResult: ConfidenceResult | null = null;
+        try {
+          confidenceResult = await this.runConfidenceScoring(
+            answerText,
+            sources,
+            phase,
+            context,
+          );
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          this.logger.error(`Confidence scoring failed: ${errorMessage}. Continuing without confidence score.`);
+          // Emit failure event so UI knows confidence scoring failed
+          await this.eventCoordinator.emit(
+            context.logId,
+            'confidence_scoring_failed',
+            {
+              phaseName: phase.name,
+              phaseId: phase.id,
+              error: errorMessage,
+            },
+            phase.id,
+          );
+        }
 
-        // Run reflection if enabled
-        if (this.isReflectionEnabled()) {
+        // Run reflection if enabled and confidence scoring succeeded
+        if (this.isReflectionEnabled() && confidenceResult) {
           await this.runReflection(answerText, sources, context, result, confidenceResult);
         }
       } catch (error: unknown) {

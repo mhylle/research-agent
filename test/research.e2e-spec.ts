@@ -2,20 +2,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { OllamaService } from '../src/llm/ollama.service';
+import { LLMService } from '../src/llm/llm.service';
 import { TavilySearchProvider } from '../src/tools/providers/tavily-search.provider';
 import { EvaluationService } from '../src/evaluation/services/evaluation.service';
 
 describe('Research Pipeline (e2e)', () => {
   let app: INestApplication;
-  let ollamaService: OllamaService;
+  let ollamaService: LLMService;
   let tavilyProvider: TavilySearchProvider;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideProvider(OllamaService)
+      .overrideProvider(LLMService)
       .useValue({
         chat: jest.fn(),
         generateResponse: jest.fn(),
@@ -73,7 +73,7 @@ describe('Research Pipeline (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
     await app.init();
 
-    ollamaService = moduleFixture.get<OllamaService>(OllamaService);
+    ollamaService = moduleFixture.get<LLMService>(LLMService);
     tavilyProvider =
       moduleFixture.get<TavilySearchProvider>(TavilySearchProvider);
   });

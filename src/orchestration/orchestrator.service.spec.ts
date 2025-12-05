@@ -10,7 +10,7 @@ import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry
 import { WorkingMemoryService } from './services/working-memory.service';
 import { QueryDecomposerService } from './services/query-decomposer.service';
 import { CoverageAnalyzerService } from './services/coverage-analyzer.service';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ReflectionService } from '../reflection/services/reflection.service';
 import { ResearchResultService } from '../research/research-result.service';
 import { Plan } from './interfaces/plan.interface';
@@ -27,7 +27,7 @@ describe('Orchestrator', () => {
   let mockWorkingMemory: jest.Mocked<WorkingMemoryService>;
   let mockQueryDecomposer: jest.Mocked<QueryDecomposerService>;
   let mockCoverageAnalyzer: jest.Mocked<CoverageAnalyzerService>;
-  let mockLlmService: jest.Mocked<OllamaService>;
+  let mockLlmService: jest.Mocked<LLMService>;
   let mockReflectionService: jest.Mocked<ReflectionService>;
   let mockResultService: jest.Mocked<ResearchResultService>;
 
@@ -166,7 +166,7 @@ describe('Orchestrator', () => {
       chat: jest.fn().mockResolvedValue({
         message: { content: 'Test response' },
       }),
-    } as unknown as jest.Mocked<OllamaService>;
+    } as unknown as jest.Mocked<LLMService>;
 
     mockReflectionService = {
       reflect: jest.fn().mockResolvedValue({
@@ -254,7 +254,7 @@ describe('Orchestrator', () => {
         { provide: WorkingMemoryService, useValue: mockWorkingMemory },
         { provide: QueryDecomposerService, useValue: mockQueryDecomposer },
         { provide: CoverageAnalyzerService, useValue: mockCoverageAnalyzer },
-        { provide: OllamaService, useValue: mockLlmService },
+        { provide: LLMService, useValue: mockLlmService },
         { provide: ReflectionService, useValue: mockReflectionService },
         { provide: ResearchResultService, useValue: mockResultService },
       ],

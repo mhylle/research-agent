@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
 import { Gap } from '../interfaces/gap.interface';
@@ -25,7 +25,7 @@ interface LLMGapResponse {
 @Injectable()
 export class GapDetectorService {
   constructor(
-    private readonly llmService: OllamaService,
+    private readonly llmService: LLMService,
     private readonly eventCoordinator: EventCoordinatorService,
     private readonly researchLogger: ResearchLogger,
   ) {}

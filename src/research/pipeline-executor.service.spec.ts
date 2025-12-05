@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PipelineExecutor } from './pipeline-executor.service';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ToolRegistry } from '../tools/registry/tool-registry.service';
 import { ResearchLogger } from '../logging/research-logger.service';
 
 describe('PipelineExecutor', () => {
   let executor: PipelineExecutor;
-  let ollamaService: jest.Mocked<OllamaService>;
+  let ollamaService: jest.Mocked<LLMService>;
   let toolRegistry: jest.Mocked<ToolRegistry>;
   let logger: jest.Mocked<ResearchLogger>;
 
@@ -15,7 +15,7 @@ describe('PipelineExecutor', () => {
       providers: [
         PipelineExecutor,
         {
-          provide: OllamaService,
+          provide: LLMService,
           useValue: {
             chat: jest.fn(),
           },
@@ -44,7 +44,7 @@ describe('PipelineExecutor', () => {
     }).compile();
 
     executor = module.get<PipelineExecutor>(PipelineExecutor);
-    ollamaService = module.get(OllamaService);
+    ollamaService = module.get(LLMService);
     toolRegistry = module.get(ToolRegistry);
     logger = module.get(ResearchLogger);
   });

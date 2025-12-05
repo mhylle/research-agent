@@ -163,6 +163,15 @@ export class AgentActivityService {
       this.handlePlanningIteration(JSON.parse(e.data));
     });
 
+    // Decomposed query synthesis events
+    this.eventSource.addEventListener('final_synthesis_started', (e: MessageEvent) => {
+      this.handleFinalSynthesisStarted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('final_synthesis_completed', (e: MessageEvent) => {
+      this.handleFinalSynthesisCompleted(JSON.parse(e.data));
+    });
+
     // Milestone events for granular progress feedback
     this.eventSource.addEventListener('milestone_started', (e: MessageEvent) => {
       this.handleMilestoneEvent(JSON.parse(e.data), 'started');
@@ -324,6 +333,56 @@ export class AgentActivityService {
     });
   }
 
+  private handleFinalSynthesisStarted(event: any): void {
+    console.log('Final synthesis started:', event);
+    const { phaseId, subQueryCount } = event;
+
+    // Increment phase counter for synthesis phase
+    this.phaseCounter++;
+    this.currentStage.set(this.phaseCounter);
+    this.currentPhaseName.set('Final Synthesis');
+
+    const newTask: ActivityTask = {
+      id: phaseId || 'synthesis',
+      nodeId: phaseId || 'synthesis',
+      stage: this.phaseCounter as 1 | 2 | 3,
+      type: 'milestone',
+      description: `Synthesizing final answer from ${subQueryCount || 0} sub-queries`,
+      progress: 0,
+      status: 'running',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+
+    this.activeTasks.update(tasks => [...tasks, newTask]);
+    this.updateStageProgress();
+  }
+
+  private handleFinalSynthesisCompleted(event: any): void {
+    console.log('Final synthesis completed:', event);
+    const { phaseId, answerLength, subQueryCount } = event;
+
+    const taskId = phaseId || 'synthesis';
+
+    this.activeTasks.update(tasks => {
+      const index = tasks.findIndex(t => t.id === taskId);
+      if (index >= 0) {
+        const completedTask = {
+          ...tasks[index],
+          description: `Synthesized final answer (${answerLength || 0} chars from ${subQueryCount || 0} sub-queries)`,
+          status: 'completed' as TaskStatus,
+          progress: 100,
+        };
+        this.completedTasks.update(completed => [...completed, completedTask]);
+        return tasks.filter((_, i) => i !== index);
+      }
+      return tasks;
+    });
+
+    this.updateStageProgress();
+  }
+
   private handlePlanCreated(event: any): void {
     console.log('Plan created:', event);
     const { totalPhases, phases, query, planId } = event;
@@ -343,7 +402,11 @@ export class AgentActivityService {
 
     // Store the full plan structure
     if (phases && Array.isArray(phases)) {
-      this.plannedPhases.set(phases as PlannedPhase[]);
+      const phasesWithOrder = phases.map((phase, index) => ({
+        ...phase,
+        order: phase.order ?? index
+      }));
+      this.plannedPhases.set(phasesWithOrder as PlannedPhase[]);
     }
 
     // Complete the planning task and move to completed
@@ -414,19 +477,24 @@ export class AgentActivityService {
   }
 
   private handlePhaseStarted(event: any): void {
-    const { phaseId, phaseName, stepCount } = event;
+    const { phaseId, phaseName, stepCount, subQueryCount, isDecomposed } = event;
 
     // Increment phase counter
     this.phaseCounter++;
     this.currentStage.set(this.phaseCounter);
     this.currentPhaseName.set(phaseName);
 
+    // For decomposed queries, use subQueryCount; otherwise use stepCount
+    // Provide default value of 0 to prevent undefined
+    const itemCount = isDecomposed ? (subQueryCount || 0) : (stepCount || 0);
+    const itemLabel = isDecomposed ? 'sub-queries' : 'steps';
+
     const newTask: ActivityTask = {
       id: phaseId,
       nodeId: phaseId,
       stage: this.phaseCounter as 1 | 2 | 3,
       type: 'milestone',
-      description: `Phase: ${phaseName} (${stepCount} steps)`,
+      description: `Phase: ${phaseName} (${itemCount} ${itemLabel})`,
       progress: 0,
       status: 'running',
       timestamp: new Date(event.timestamp),

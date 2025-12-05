@@ -4,7 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomUUID } from 'crypto';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ToolExecutor } from '../executors/tool.executor';
 import { LogService } from '../logging/log.service';
 import { ReasoningTraceService } from '../reasoning/services/reasoning-trace.service';
@@ -29,7 +29,7 @@ export class PlannerService {
   private planCreationCount: number = 0;
 
   constructor(
-    private llmService: OllamaService,
+    private llmService: LLMService,
     private toolExecutor: ToolExecutor,
     private logService: LogService,
     private eventEmitter: EventEmitter2,
@@ -128,6 +128,11 @@ export class PlannerService {
 
       if (response.message.tool_calls?.length > 0) {
         console.log(`[PlannerService] createPlan: Processing ${response.message.tool_calls.length} tool calls`);
+
+        // Push assistant message ONCE before processing tool calls (Azure OpenAI requirement)
+        messages.push(response.message);
+
+        // Process all tool calls and push their results
         for (const toolCall of response.message.tool_calls) {
           console.log(`[PlannerService] createPlan: Before executePlanningTool - tool: ${toolCall.function.name}`);
           const result = await this.executePlanningTool(toolCall, logId);
@@ -143,10 +148,9 @@ export class PlannerService {
             }
           }
 
-          console.log(`[PlannerService] createPlan: Pushing messages to chat history`);
-          messages.push(response.message);
-          messages.push({ role: 'tool', content: JSON.stringify(result) });
-          console.log(`[PlannerService] createPlan: Messages pushed - total messages: ${messages.length}`);
+          console.log(`[PlannerService] createPlan: Pushing tool result to chat history`);
+          messages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: (toolCall as any).id } as any);
+          console.log(`[PlannerService] createPlan: Tool result pushed - total messages: ${messages.length}`);
         }
       } else {
         console.log(`[PlannerService] createPlan: No tool calls - prompting to continue`);
@@ -451,6 +455,9 @@ export class PlannerService {
       const response = await this.llmService.chat(messages, planningTools);
 
       if (response.message.tool_calls?.length > 0) {
+        // Push assistant message ONCE before processing tool calls (Azure OpenAI requirement)
+        messages.push(response.message);
+
         for (const toolCall of response.message.tool_calls) {
           const result = await this.executePlanningTool(toolCall, logId);
 
@@ -460,8 +467,7 @@ export class PlannerService {
             }
           }
 
-          messages.push(response.message);
-          messages.push({ role: 'tool', content: JSON.stringify(result) });
+          messages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: (toolCall as any).id } as any);
         }
       } else {
         messages.push(response.message);
@@ -1214,15 +1220,21 @@ REQUIREMENTS:
 3. **CRITICAL: EVERY add_step call MUST include a config parameter with specific details:**
    - For tavily_search: provide {query: "specific search terms IN THE USER'S LANGUAGE with SPECIFIC DATES", max_results: 5}
    - For web_fetch: provide {url: "https://specific-url.com"}
-   - For synthesize: provide {prompt: "detailed instructions"}
+   - For synthesize: provide {prompt: "detailed instructions IN ENGLISH"}
 4. **MANDATORY: Add a final synthesis phase using the "synthesize" tool to generate the answer**
 5. Call finalize_plan when done
 
+**LANGUAGE USAGE REQUIREMENTS:**
+- Search queries (tavily_search) MUST be in the user's language: ${enhancement.detectedLanguage}
+- Search queries MUST include specific dates: ${enhancement.formattedDates.join(', ') || 'if temporal references exist'}
+- **ALL SYNTHESIS PROMPTS (synthesize tool config.prompt) MUST BE IN ENGLISH**
+- Internal instructions and prompts MUST be in English
+- Only the final answer to the user can be in the user's language
+
 Remember:
 - EVERY step MUST have a config parameter with specific values
-- Search queries MUST be in the user's language (${enhancement.detectedLanguage})
-- Search queries MUST include specific dates (${enhancement.formattedDates.join(', ') || 'if temporal references exist'})
-- The plan MUST end with a synthesis phase that produces a comprehensive answer to the query.`;
+- The plan MUST end with a synthesis phase that produces a comprehensive answer to the query
+- Synthesis/internal prompts = English, Search queries = User's language (${enhancement.detectedLanguage}), Final answer = User's language`;
   }
 
   private buildReplannerSystemPrompt(): string {

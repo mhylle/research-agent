@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryDecomposerService } from './query-decomposer.service';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from './event-coordinator.service';
 import { DecompositionResult } from '../interfaces/decomposition-result.interface';
 import { SubQuery } from '../interfaces/sub-query.interface';
 
 describe('QueryDecomposerService', () => {
   let service: QueryDecomposerService;
-  let llmService: jest.Mocked<OllamaService>;
+  let llmService: jest.Mocked<LLMService>;
   let eventCoordinator: jest.Mocked<EventCoordinatorService>;
 
   beforeEach(async () => {
@@ -22,13 +22,13 @@ describe('QueryDecomposerService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QueryDecomposerService,
-        { provide: OllamaService, useValue: mockLLMService },
+        { provide: LLMService, useValue: mockLLMService },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
       ],
     }).compile();
 
     service = module.get<QueryDecomposerService>(QueryDecomposerService);
-    llmService = module.get(OllamaService);
+    llmService = module.get(LLMService);
     eventCoordinator = module.get(EventCoordinatorService);
   });
 

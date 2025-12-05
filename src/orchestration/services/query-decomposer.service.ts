@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from './event-coordinator.service';
 import { SubQuery } from '../interfaces/sub-query.interface';
 import { DecompositionResult } from '../interfaces/decomposition-result.interface';
@@ -21,7 +21,7 @@ interface LLMDecompositionResponse {
 @Injectable()
 export class QueryDecomposerService {
   constructor(
-    private readonly llmService: OllamaService,
+    private readonly llmService: LLMService,
     private readonly eventCoordinator: EventCoordinatorService,
   ) {}
 
@@ -64,6 +64,7 @@ export class QueryDecomposerService {
       }
 
       // Generate IDs for sub-queries and create SubQuery objects
+      // First pass: create sub-queries with temporary IDs
       const subQueries: SubQuery[] = llmResponse.subQueries.map((sq, index) => ({
         id: `sq-${uuidv4()}`,
         text: sq.text,
@@ -73,6 +74,20 @@ export class QueryDecomposerService {
         priority: sq.priority,
         estimatedComplexity: sq.estimatedComplexity,
       }));
+
+      // Second pass: resolve dependencies from order-based references to actual IDs
+      // The LLM returns dependencies as order numbers (e.g., [1, 2]) but we need UUIDs
+      subQueries.forEach((sq) => {
+        sq.dependencies = sq.dependencies.map((dep) => {
+          // If dependency is a number or string number, convert to actual sub-query ID
+          const depOrder = typeof dep === 'string' ? parseInt(dep, 10) : dep;
+          if (!isNaN(depOrder)) {
+            const depSubQuery = subQueries.find((s) => s.order === depOrder);
+            return depSubQuery ? depSubQuery.id : dep;
+          }
+          return dep;
+        });
+      });
 
       // Emit event for each sub-query identified
       if (logId) {

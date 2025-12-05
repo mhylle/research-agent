@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { GapDetectorService } from './gap-detector.service';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
 import { Claim } from '../../evaluation/interfaces/claim.interface';
@@ -10,7 +10,7 @@ import { Gap } from '../interfaces/gap.interface';
 
 describe('GapDetectorService', () => {
   let service: GapDetectorService;
-  let ollamaService: jest.Mocked<OllamaService>;
+  let ollamaService: jest.Mocked<LLMService>;
   let eventCoordinator: jest.Mocked<EventCoordinatorService>;
   let researchLogger: jest.Mocked<ResearchLogger>;
 
@@ -72,7 +72,7 @@ describe('GapDetectorService', () => {
       providers: [
         GapDetectorService,
         {
-          provide: OllamaService,
+          provide: LLMService,
           useValue: {
             chat: jest.fn(),
           },
@@ -94,7 +94,7 @@ describe('GapDetectorService', () => {
     }).compile();
 
     service = module.get<GapDetectorService>(GapDetectorService);
-    ollamaService = module.get(OllamaService);
+    ollamaService = module.get(LLMService);
     eventCoordinator = module.get(EventCoordinatorService);
     researchLogger = module.get(ResearchLogger);
   });

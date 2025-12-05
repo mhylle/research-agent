@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { Executor } from './interfaces/executor.interface';
 import { ExecutorResult } from './interfaces/executor-result.interface';
 import { PlanStep } from '../orchestration/interfaces/plan-step.interface';
@@ -9,7 +9,7 @@ import { ReasoningTraceService } from '../reasoning/services/reasoning-trace.ser
 @Injectable()
 export class LLMExecutor implements Executor {
   constructor(
-    private llmService: OllamaService,
+    private llmService: LLMService,
     private reasoningTrace: ReasoningTraceService,
   ) {}
 

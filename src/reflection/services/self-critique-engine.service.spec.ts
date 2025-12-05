@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SelfCritiqueEngineService } from './self-critique-engine.service';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
 import { Gap } from '../interfaces/gap.interface';
@@ -12,7 +12,7 @@ import { SelfCritique } from '../interfaces/self-critique.interface';
 
 describe('SelfCritiqueEngineService', () => {
   let service: SelfCritiqueEngineService;
-  let mockOllamaService: jest.Mocked<Partial<OllamaService>>;
+  let mockLLMService: jest.Mocked<Partial<LLMService>>;
   let mockEventCoordinator: jest.Mocked<Partial<EventCoordinatorService>>;
   let mockResearchLogger: jest.Mocked<Partial<ResearchLogger>>;
 
@@ -85,7 +85,7 @@ describe('SelfCritiqueEngineService', () => {
   });
 
   beforeEach(async () => {
-    mockOllamaService = {
+    mockLLMService = {
       chat: jest.fn(),
     };
 
@@ -102,7 +102,7 @@ describe('SelfCritiqueEngineService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SelfCritiqueEngineService,
-        { provide: OllamaService, useValue: mockOllamaService },
+        { provide: LLMService, useValue: mockLLMService },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
         { provide: ResearchLogger, useValue: mockResearchLogger },
       ],
@@ -119,7 +119,7 @@ describe('SelfCritiqueEngineService', () => {
     describe('successful critique generation', () => {
       it('should generate a valid critique when LLM returns valid JSON', async () => {
         const llmResponse = createValidLLMResponse();
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(llmResponse) },
         });
 
@@ -147,7 +147,7 @@ describe('SelfCritiqueEngineService', () => {
       it('should extract JSON from response with surrounding text', async () => {
         const llmResponse = createValidLLMResponse();
         const responseWithText = `Here is my analysis:\n\n${JSON.stringify(llmResponse)}\n\nI hope this helps!`;
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: responseWithText },
         });
 
@@ -164,7 +164,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should call LLM with correct system and user messages', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -176,8 +176,8 @@ describe('SelfCritiqueEngineService', () => {
           [createMockGap({ description: 'Missing AI history' })],
         );
 
-        expect(mockOllamaService.chat).toHaveBeenCalledTimes(1);
-        const callArgs = mockOllamaService.chat.mock.calls[0][0];
+        expect(mockLLMService.chat).toHaveBeenCalledTimes(1);
+        const callArgs = mockLLMService.chat.mock.calls[0][0];
 
         expect(callArgs).toHaveLength(2);
         expect(callArgs[0].role).toBe('system');
@@ -196,7 +196,7 @@ describe('SelfCritiqueEngineService', () => {
           criticalIssues: ['Critical issue 1'],
           suggestedImprovements: ['Improvement 1', 'Improvement 2', 'Improvement 3'],
         });
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(llmResponse) },
         });
 
@@ -224,7 +224,7 @@ describe('SelfCritiqueEngineService', () => {
           criticalIssues: [],
           suggestedImprovements: [],
         };
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(llmResponse) },
         });
 
@@ -250,7 +250,7 @@ describe('SelfCritiqueEngineService', () => {
           criticalIssues: undefined,
           suggestedImprovements: 123,
         };
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(llmResponse) },
         });
 
@@ -277,7 +277,7 @@ describe('SelfCritiqueEngineService', () => {
           suggestedImprovements: ['Detailed improvement with more than fifty characters of explanation'],
           criticalIssues: ['Critical issue identified'],
         });
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(comprehensiveResponse) },
         });
 
@@ -301,7 +301,7 @@ describe('SelfCritiqueEngineService', () => {
           criticalIssues: [],
           suggestedImprovements: [],
         };
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(incompleteResponse) },
         });
 
@@ -321,7 +321,7 @@ describe('SelfCritiqueEngineService', () => {
         const responseWithCriticalIssues = createValidLLMResponse({
           criticalIssues: ['Major data gap identified'],
         });
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(responseWithCriticalIssues) },
         });
 
@@ -336,7 +336,7 @@ describe('SelfCritiqueEngineService', () => {
         const responseNoCriticalIssues = createValidLLMResponse({
           criticalIssues: [],
         });
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(responseNoCriticalIssues) },
         });
 
@@ -368,7 +368,7 @@ describe('SelfCritiqueEngineService', () => {
           suggestedImprovements: [],
         };
 
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(responseOnlyStrengths) },
         });
 
@@ -380,7 +380,7 @@ describe('SelfCritiqueEngineService', () => {
           [],
         );
 
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(responseOnlyStrengths) },
         });
 
@@ -409,7 +409,7 @@ describe('SelfCritiqueEngineService', () => {
           suggestedImprovements: Array(10).fill('Very detailed improvement with over fifty characters'),
           criticalIssues: Array(5).fill('Critical issue'),
         });
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(maxResponse) },
         });
 
@@ -428,7 +428,7 @@ describe('SelfCritiqueEngineService', () => {
 
     describe('JSON parsing error handling', () => {
       it('should return fallback critique when LLM returns malformed JSON', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: '{ invalid json here }}}' },
         });
 
@@ -450,7 +450,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should return fallback critique when no JSON found in response', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: 'This is just plain text with no JSON at all.' },
         });
 
@@ -475,7 +475,7 @@ describe('SelfCritiqueEngineService', () => {
           criticalIssues: [],
           suggestedImprovements: [],
         };
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(responseWithoutAssessment) },
         });
 
@@ -494,7 +494,7 @@ describe('SelfCritiqueEngineService', () => {
     describe('LLM failure handling', () => {
       it('should return fallback critique when LLM throws error', async () => {
         const errorMessage = 'LLM service unavailable';
-        mockOllamaService.chat.mockRejectedValue(new Error(errorMessage));
+        mockLLMService.chat.mockRejectedValue(new Error(errorMessage));
 
         const result = await service.critiqueSynthesis(
           'Answer',
@@ -513,7 +513,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should log error when LLM fails', async () => {
-        mockOllamaService.chat.mockRejectedValue(new Error('Connection timeout'));
+        mockLLMService.chat.mockRejectedValue(new Error('Connection timeout'));
 
         await service.critiqueSynthesis(
           'Answer',
@@ -532,7 +532,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should emit self_critique_failed event on error', async () => {
-        mockOllamaService.chat.mockRejectedValue(new Error('Network error'));
+        mockLLMService.chat.mockRejectedValue(new Error('Network error'));
 
         await service.critiqueSynthesis(
           'Answer',
@@ -556,7 +556,7 @@ describe('SelfCritiqueEngineService', () => {
 
     describe('SSE events', () => {
       it('should emit self_critique_started at beginning when logId provided', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -581,7 +581,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should emit self_critique_completed at end when successful', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -605,7 +605,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should not emit events when logId is not provided', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -621,7 +621,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should call researchLogger.nodeStart and nodeComplete with logId', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -658,7 +658,7 @@ describe('SelfCritiqueEngineService', () => {
 
     describe('input integration', () => {
       it('should include gaps with various severities in prompt', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -691,7 +691,7 @@ describe('SelfCritiqueEngineService', () => {
           gaps,
         );
 
-        const callArgs = mockOllamaService.chat.mock.calls[0][0];
+        const callArgs = mockLLMService.chat.mock.calls[0][0];
         const userPrompt = callArgs[1].content;
 
         expect(userPrompt).toContain('CRITICAL');
@@ -704,7 +704,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should include claim confidences in prompt', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -726,7 +726,7 @@ describe('SelfCritiqueEngineService', () => {
           [],
         );
 
-        const callArgs = mockOllamaService.chat.mock.calls[0][0];
+        const callArgs = mockLLMService.chat.mock.calls[0][0];
         const userPrompt = callArgs[1].content;
 
         expect(userPrompt).toContain('0.450');
@@ -736,7 +736,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should include sources in prompt with title and truncated content', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -762,7 +762,7 @@ describe('SelfCritiqueEngineService', () => {
           [],
         );
 
-        const callArgs = mockOllamaService.chat.mock.calls[0][0];
+        const callArgs = mockLLMService.chat.mock.calls[0][0];
         const userPrompt = callArgs[1].content;
 
         expect(userPrompt).toContain('First Article');
@@ -774,7 +774,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should handle sources without title', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -795,14 +795,14 @@ describe('SelfCritiqueEngineService', () => {
           [],
         );
 
-        const callArgs = mockOllamaService.chat.mock.calls[0][0];
+        const callArgs = mockLLMService.chat.mock.calls[0][0];
         const userPrompt = callArgs[1].content;
 
         expect(userPrompt).toContain('Untitled');
       });
 
       it('should handle empty sources and gaps', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -814,7 +814,7 @@ describe('SelfCritiqueEngineService', () => {
           [],
         );
 
-        const callArgs = mockOllamaService.chat.mock.calls[0][0];
+        const callArgs = mockLLMService.chat.mock.calls[0][0];
         const userPrompt = callArgs[1].content;
 
         expect(userPrompt).toContain('No sources available');
@@ -824,7 +824,7 @@ describe('SelfCritiqueEngineService', () => {
 
     describe('edge cases', () => {
       it('should handle empty answer', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -837,11 +837,11 @@ describe('SelfCritiqueEngineService', () => {
         );
 
         expect(result).toBeDefined();
-        expect(mockOllamaService.chat).toHaveBeenCalled();
+        expect(mockLLMService.chat).toHaveBeenCalled();
       });
 
       it('should handle very long answer', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -859,7 +859,7 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should handle source with empty content', async () => {
-        mockOllamaService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
           message: { content: JSON.stringify(createValidLLMResponse()) },
         });
 
@@ -886,7 +886,7 @@ describe('SelfCritiqueEngineService', () => {
       const llmResponse = createValidLLMResponse({
         overallAssessment: 'Legacy assessment result',
       });
-      mockOllamaService.chat.mockResolvedValue({
+      mockLLMService.chat.mockResolvedValue({
         message: { content: JSON.stringify(llmResponse) },
       });
 
@@ -897,11 +897,11 @@ describe('SelfCritiqueEngineService', () => {
       );
 
       expect(result).toBe('Legacy assessment result');
-      expect(mockOllamaService.chat).toHaveBeenCalled();
+      expect(mockLLMService.chat).toHaveBeenCalled();
     });
 
     it('should work with empty gaps array', async () => {
-      mockOllamaService.chat.mockResolvedValue({
+      mockLLMService.chat.mockResolvedValue({
         message: { content: JSON.stringify(createValidLLMResponse()) },
       });
 
@@ -911,7 +911,7 @@ describe('SelfCritiqueEngineService', () => {
     });
 
     it('should emit events with taskId as logId', async () => {
-      mockOllamaService.chat.mockResolvedValue({
+      mockLLMService.chat.mockResolvedValue({
         message: { content: JSON.stringify(createValidLLMResponse()) },
       });
 
@@ -927,7 +927,7 @@ describe('SelfCritiqueEngineService', () => {
 
   describe('fallback critique structure', () => {
     it('should have correct structure for fallback critique', async () => {
-      mockOllamaService.chat.mockRejectedValue(new Error('Test error'));
+      mockLLMService.chat.mockRejectedValue(new Error('Test error'));
 
       const result = await service.critiqueSynthesis(
         'Answer',
@@ -954,7 +954,7 @@ describe('SelfCritiqueEngineService', () => {
 
   describe('concurrent calls', () => {
     it('should handle multiple concurrent critique requests', async () => {
-      mockOllamaService.chat.mockImplementation(async () => {
+      mockLLMService.chat.mockImplementation(async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
         return {
           message: { content: JSON.stringify(createValidLLMResponse()) },
@@ -974,7 +974,7 @@ describe('SelfCritiqueEngineService', () => {
         expect(result.overallAssessment).toBeDefined();
         expect(result.confidence).toBeGreaterThan(0);
       });
-      expect(mockOllamaService.chat).toHaveBeenCalledTimes(3);
+      expect(mockLLMService.chat).toHaveBeenCalledTimes(3);
     });
   });
 });

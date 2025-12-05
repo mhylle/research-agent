@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EvaluatorResult, DEFAULT_EVALUATION_CONFIG } from '../interfaces';
 import {
   INTENT_ANALYST_PROMPT,
@@ -44,7 +44,7 @@ export class PanelEvaluatorService {
     answerCompleteness: ANSWER_COMPLETENESS_PROMPT,
   };
 
-  constructor(private readonly ollamaService: OllamaService) {}
+  constructor(private readonly ollamaService: LLMService) {}
 
   async evaluateWithRole(
     role: EvaluatorRole,

@@ -246,8 +246,8 @@ export const mockOllamaResponses = {
   },
 };
 
-// Helper to create a mock Ollama service
-export const createMockOllamaService = () => ({
+// Helper to create a mock LLM service
+export const createMockLLMService = () => ({
   generateResponse: jest.fn((prompt: string, options?: any) => {
     // Determine which evaluator is being called based on prompt content
     if (prompt.includes('Intent Analyst')) {

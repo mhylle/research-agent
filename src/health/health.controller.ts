@@ -1,11 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 
 interface HealthResponse {
   status: 'healthy' | 'degraded';
   services: {
-    ollama: boolean;
+    llm: boolean;
+    llmProvider: string;
     tavily: boolean;
   };
 }
@@ -13,33 +14,26 @@ interface HealthResponse {
 @Controller('api/health')
 export class HealthController {
   constructor(
-    private ollamaService: OllamaService,
+    private llmService: LLMService,
     private configService: ConfigService,
   ) {}
 
   @Get()
   async check(): Promise<HealthResponse> {
+    const llmAvailable = await this.checkLLM();
     const services = {
-      ollama: await this.checkOllama(),
+      llm: llmAvailable,
+      llmProvider: this.llmService.getProviderName(),
       tavily: this.checkTavily(),
     };
 
-    const status = Object.values(services).every((s) => s)
-      ? 'healthy'
-      : 'degraded';
+    const status = llmAvailable && services.tavily ? 'healthy' : 'degraded';
 
     return { status, services };
   }
 
-  private async checkOllama(): Promise<boolean> {
-    try {
-      await this.ollamaService.chat([
-        { role: 'user', content: 'health check' },
-      ]);
-      return true;
-    } catch {
-      return false;
-    }
+  private async checkLLM(): Promise<boolean> {
+    return this.llmService.isAvailable();
   }
 
   private checkTavily(): boolean {

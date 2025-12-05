@@ -1,18 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthController } from './health.controller';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('HealthController', () => {
   let controller: HealthController;
-  let ollamaService: jest.Mocked<OllamaService>;
+  let ollamaService: jest.Mocked<LLMService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HealthController],
       providers: [
         {
-          provide: OllamaService,
+          provide: LLMService,
           useValue: {
             chat: jest.fn(),
           },
@@ -27,7 +27,7 @@ describe('HealthController', () => {
     }).compile();
 
     controller = module.get<HealthController>(HealthController);
-    ollamaService = module.get(OllamaService);
+    ollamaService = module.get(LLMService);
   });
 
   it('should be defined', () => {

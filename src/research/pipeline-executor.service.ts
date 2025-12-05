@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ToolRegistry } from '../tools/registry/tool-registry.service';
 import { ResearchLogger } from '../logging/research-logger.service';
 import { StageContext } from './interfaces/stage-context.interface';
@@ -10,7 +10,7 @@ import { getMilestoneTemplates } from '../logging/milestone-templates';
 @Injectable()
 export class PipelineExecutor {
   constructor(
-    private ollamaService: OllamaService,
+    private ollamaService: LLMService,
     private toolRegistry: ToolRegistry,
     private logger: ResearchLogger,
   ) {}

@@ -36,13 +36,28 @@ export class LogsService {
 
     const logIds = await subQuery.getRawMany();
 
-    // Build session summaries
-    const sessions: LogSessionDto[] = await Promise.all(
+    // Fetch all research results in a single query for efficiency
+    const allResults = await this.resultRepository.find();
+    const resultsMap = new Map(allResults.map(r => [r.logId, r]));
+
+    // Build session summaries and filter out sub-query sessions
+    const allSessions: LogSessionDto[] = await Promise.all(
       logIds.map(async ({ logId }) => {
         const entries = await this.getEntriesForLogId(logId);
-        return this.buildSessionSummary(logId, entries);
+        const result = resultsMap.get(logId);
+        return this.buildSessionSummary(logId, entries, result?.answer);
       }),
     );
+
+    // Filter out sub-query sessions (those with isSubQuery flag or enriched context pattern)
+    const sessions = allSessions.filter((session) => {
+      // Check if this is a sub-query session by looking at the query text
+      // Sub-queries contain the enriched context pattern
+      if (session.query.includes('Context from previous research:')) {
+        return false;
+      }
+      return true;
+    });
 
     return this.filterAndPaginate(sessions, options);
   }
@@ -106,6 +121,7 @@ export class LogsService {
   private buildSessionSummary(
     logId: string,
     entries: LogEntry[],
+    answer?: string,
   ): LogSessionDto {
     const sortedEntries = entries.sort(
       (a, b) =>
@@ -116,7 +132,15 @@ export class LogsService {
     const sessionStarted = entries.find(
       (e) => e.eventType === 'session_started',
     );
-    const query = (sessionStarted?.data?.query as string) || 'Unknown query';
+
+    // Get the query text, but check if this is a sub-query session
+    let query = (sessionStarted?.data?.query as string) || 'Unknown query';
+
+    // If the query contains the enriched context pattern, it's a sub-query
+    // Extract just the main query part before the context
+    if (query.includes('\n\nContext from previous research:')) {
+      query = query.split('\n\nContext from previous research:')[0];
+    }
 
     // Calculate total duration
     const firstEntry = sortedEntries[0];
@@ -162,6 +186,7 @@ export class LogsService {
       stageCount: phaseCount,
       toolCallCount: stepCount,
       status,
+      answer,
     };
   }
 

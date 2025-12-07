@@ -37,7 +37,12 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
     private readonly confidenceScoringService: ConfidenceScoringService,
     private readonly reflectionService: ReflectionService,
   ) {
-    super(eventCoordinator, milestoneService, executorRegistry, stepConfiguration);
+    super(
+      eventCoordinator,
+      milestoneService,
+      executorRegistry,
+      stepConfiguration,
+    );
   }
 
   /**
@@ -58,9 +63,16 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
   private getReflectionConfig(): ReflectionConfig {
     return {
       maxIterations: parseInt(process.env.REFLECTION_MAX_ITERATIONS || '3', 10),
-      minImprovementThreshold: parseFloat(process.env.REFLECTION_MIN_IMPROVEMENT || '0.05'),
-      qualityTargetThreshold: parseFloat(process.env.REFLECTION_QUALITY_TARGET || '0.9'),
-      timeoutPerIteration: parseInt(process.env.REFLECTION_TIMEOUT_PER_ITERATION || '30000', 10),
+      minImprovementThreshold: parseFloat(
+        process.env.REFLECTION_MIN_IMPROVEMENT || '0.05',
+      ),
+      qualityTargetThreshold: parseFloat(
+        process.env.REFLECTION_QUALITY_TARGET || '0.9',
+      ),
+      timeoutPerIteration: parseInt(
+        process.env.REFLECTION_TIMEOUT_PER_ITERATION || '30000',
+        10,
+      ),
     };
   }
 
@@ -69,6 +81,13 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
    */
   private isReflectionEnabled(): boolean {
     return process.env.REFLECTION_ENABLED !== 'false'; // enabled by default
+  }
+
+  /**
+   * Check if confidence scoring is enabled via environment variables
+   */
+  private isConfidenceScoringEnabled(): boolean {
+    return process.env.CONFIDENCE_SCORING_ENABLED !== 'false'; // enabled by default
   }
 
   /**
@@ -90,28 +109,44 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
 
         if (!answerText || sources.length === 0) {
           if (!answerText) {
-            this.logger.warn('No answer text found in synthesis results, skipping post-synthesis processing');
+            this.logger.warn(
+              'No answer text found in synthesis results, skipping post-synthesis processing',
+            );
           }
           if (sources.length === 0) {
-            this.logger.warn('No sources found in previous results, skipping post-synthesis processing');
+            this.logger.warn(
+              'No sources found in previous results, skipping post-synthesis processing',
+            );
           }
           return result;
         }
 
-        // Run confidence scoring
-        const confidenceResult = await this.runConfidenceScoring(
-          answerText,
-          sources,
-          phase,
-          context,
-        );
+        // Run confidence scoring if enabled
+        let confidenceResult: ConfidenceResult | null = null;
+        if (this.isConfidenceScoringEnabled()) {
+          confidenceResult = await this.runConfidenceScoring(
+            answerText,
+            sources,
+            phase,
+            context,
+          );
+        } else {
+          this.logger.log('Confidence scoring disabled via CONFIDENCE_SCORING_ENABLED=false');
+        }
 
-        // Run reflection if enabled
-        if (this.isReflectionEnabled()) {
-          await this.runReflection(answerText, sources, context, result, confidenceResult);
+        // Run reflection if enabled (requires confidence scoring)
+        if (this.isReflectionEnabled() && confidenceResult) {
+          await this.runReflection(
+            answerText,
+            sources,
+            context,
+            result,
+            confidenceResult,
+          );
         }
       } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
         this.logger.error(`Post-synthesis processing failed: ${errorMessage}`);
         // Don't fail the synthesis phase due to post-processing errors
       }
@@ -140,14 +175,17 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
       phase.id,
     );
 
-    this.logger.debug(`Extracted ${sources.length} sources for confidence scoring`);
+    this.logger.debug(
+      `Extracted ${sources.length} sources for confidence scoring`,
+    );
 
     // Perform confidence scoring
-    const confidenceResult = await this.confidenceScoringService.scoreConfidence(
-      answerText,
-      sources,
-      context.logId,
-    );
+    const confidenceResult =
+      await this.confidenceScoringService.scoreConfidence(
+        answerText,
+        sources,
+        context.logId,
+      );
 
     // Emit confidence scoring completed event
     await this.eventCoordinator.emit(
@@ -200,17 +238,20 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
           iterationCount: reflectionResult.iterationCount,
           initialConfidence: confidenceResult.overallConfidence,
           finalConfidence: reflectionResult.finalConfidence,
-          improvement: reflectionResult.finalConfidence - confidenceResult.overallConfidence,
+          improvement:
+            reflectionResult.finalConfidence -
+            confidenceResult.overallConfidence,
           gapsResolved: reflectionResult.identifiedGaps.length,
         },
       );
 
       this.logger.log(
         `Reflection completed: ${reflectionResult.iterationCount} iterations, ` +
-        `confidence: ${confidenceResult.overallConfidence.toFixed(3)} → ${reflectionResult.finalConfidence.toFixed(3)}`,
+          `confidence: ${confidenceResult.overallConfidence.toFixed(3)} → ${reflectionResult.finalConfidence.toFixed(3)}`,
       );
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Reflection failed: ${errorMessage}`);
       await this.eventCoordinator.emit(
         context.logId,

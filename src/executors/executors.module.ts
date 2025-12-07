@@ -1,12 +1,13 @@
-import { Module, OnModuleInit } from '@nestjs/common';
+import { Module, OnModuleInit, forwardRef } from '@nestjs/common';
 import { ExecutorRegistry } from './executor-registry.service';
 import { ToolExecutor } from './tool.executor';
 import { LLMExecutor } from './llm.executor';
 import { ToolsModule } from '../tools/tools.module';
 import { LLMModule } from '../llm/llm.module';
+import { ReasoningModule } from '../reasoning/reasoning.module';
 
 @Module({
-  imports: [ToolsModule, LLMModule],
+  imports: [ToolsModule, LLMModule, forwardRef(() => ReasoningModule)],
   providers: [ExecutorRegistry, ToolExecutor, LLMExecutor],
   exports: [ExecutorRegistry, ToolExecutor, LLMExecutor],
 })

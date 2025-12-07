@@ -100,7 +100,9 @@ export class KnowledgeSearchService {
       [query, maxResults],
     );
 
-    this.logger.debug(`Found ${results.length} prior research results (phrase)`);
+    this.logger.debug(
+      `Found ${results.length} prior research results (phrase)`,
+    );
 
     return results.map((result: any) => this.mapToSearchResult(result));
   }
@@ -185,14 +187,16 @@ export class KnowledgeSearchService {
    * @param query - The search query
    * @param maxResults - Maximum number of results
    * @param weights - Optional custom weights for scoring
+   * @param minScore - Minimum relevance score threshold (0-1, default: 0.3)
    */
   async searchHybrid(
     query: string,
     maxResults: number = 5,
     weights: HybridSearchWeights = this.defaultWeights,
+    minScore: number = 0.5,
   ): Promise<KnowledgeSearchResult[]> {
     this.logger.debug(
-      `Hybrid search for: "${query}" (semantic: ${weights.semantic}, fullText: ${weights.fullText})`,
+      `Hybrid search for: "${query}" (semantic: ${weights.semantic}, fullText: ${weights.fullText}, minScore: ${minScore})`,
     );
 
     // Generate query embedding
@@ -206,17 +210,17 @@ export class KnowledgeSearchService {
     ]);
 
     // Merge and re-rank results
-    const merged = this.mergeResults(
-      semanticResults,
-      fullTextResults,
-      weights,
-    );
+    const merged = this.mergeResults(semanticResults, fullTextResults, weights);
+
+    // Filter out results below minimum score threshold to avoid irrelevant matches
+    // This prevents common word matches (like "what", "is") from returning unrelated results
+    const filtered = merged.filter((r) => (r.score || 0) >= minScore);
 
     this.logger.debug(
-      `Hybrid search found ${merged.length} results (semantic: ${semanticResults.length}, fullText: ${fullTextResults.length})`,
+      `Hybrid search found ${filtered.length} relevant results (${merged.length - filtered.length} filtered below ${minScore}) (semantic: ${semanticResults.length}, fullText: ${fullTextResults.length})`,
     );
 
-    return merged.slice(0, maxResults);
+    return filtered.slice(0, maxResults);
   }
 
   /**
@@ -228,7 +232,9 @@ export class KnowledgeSearchService {
     queryEmbedding: number[],
     maxResults: number = 5,
   ): Promise<KnowledgeSearchResult[]> {
-    this.logger.debug(`Semantic search with ${queryEmbedding.length}-dim vector`);
+    this.logger.debug(
+      `Semantic search with ${queryEmbedding.length}-dim vector`,
+    );
 
     // Convert embedding array to pgvector format
     const embeddingStr = `[${queryEmbedding.join(',')}]`;
@@ -264,11 +270,14 @@ export class KnowledgeSearchService {
     fullTextResults: KnowledgeSearchResult[],
     weights: HybridSearchWeights,
   ): KnowledgeSearchResult[] {
-    const resultMap = new Map<string, {
-      result: KnowledgeSearchResult;
-      semanticScore: number;
-      fullTextScore: number;
-    }>();
+    const resultMap = new Map<
+      string,
+      {
+        result: KnowledgeSearchResult;
+        semanticScore: number;
+        fullTextScore: number;
+      }
+    >();
 
     // Add semantic results
     for (const result of semanticResults) {

@@ -65,7 +65,12 @@ export class MilestoneService {
       await this.delay(50);
 
       // Immediately complete the milestone with output data
-      const output = this.buildMilestoneOutput(stageType, template.id, query, phase);
+      const output = this.buildMilestoneOutput(
+        stageType,
+        template.id,
+        query,
+        phase,
+      );
       await this.eventCoordinator.emit(
         logId,
         'milestone_completed',
@@ -277,12 +282,17 @@ export class MilestoneService {
             return {
               title: item.title || item.query || undefined,
               url: item.url || undefined,
-              snippet: item.snippet || item.content?.substring(0, 300) || undefined,
+              snippet:
+                item.snippet || item.content?.substring(0, 300) || undefined,
               score: item.score || item.relevanceScore || undefined,
               source: item.source || undefined,
               // Include any other important fields
               ...(item.logId && { logId: item.logId }),
-              ...(item.answer && { answer: item.answer.substring(0, 500) + (item.answer.length > 500 ? '...' : '') }),
+              ...(item.answer && {
+                answer:
+                  item.answer.substring(0, 500) +
+                  (item.answer.length > 500 ? '...' : ''),
+              }),
             };
           }
           return item;
@@ -290,14 +300,17 @@ export class MilestoneService {
       } else if (typeof result.output === 'string') {
         // For string outputs (synthesis), include with truncation
         stepOutput.contentLength = result.output.length;
-        stepOutput.content = result.output.length > 1000
-          ? result.output.substring(0, 1000) + '...'
-          : result.output;
+        stepOutput.content =
+          result.output.length > 1000
+            ? result.output.substring(0, 1000) + '...'
+            : result.output;
       } else if (typeof result.output === 'object' && result.output !== null) {
         // For object outputs, include as-is (with size limit)
         const outputStr = JSON.stringify(result.output);
         if (outputStr.length > 5000) {
-          stepOutput.output = JSON.parse(outputStr.substring(0, 5000) + '..."truncated"}');
+          stepOutput.output = JSON.parse(
+            outputStr.substring(0, 5000) + '..."truncated"}',
+          );
         } else {
           stepOutput.output = result.output;
         }
@@ -476,7 +489,9 @@ export class MilestoneService {
   /**
    * Assess query complexity based on word count and content
    */
-  private assessQueryComplexity(query: string): 'simple' | 'medium' | 'complex' {
+  private assessQueryComplexity(
+    query: string,
+  ): 'simple' | 'medium' | 'complex' {
     const words = query.trim().split(/\s+/);
     const wordCount = words.length;
 
@@ -486,7 +501,9 @@ export class MilestoneService {
     }
 
     // Complex: >15 words or contains multiple question indicators
-    const questionIndicators = (query.match(/\?|how|why|compare|analyze|explain|difference/gi) || []).length;
+    const questionIndicators = (
+      query.match(/\?|how|why|compare|analyze|explain|difference/gi) || []
+    ).length;
     if (wordCount > 15 || questionIndicators >= 2) {
       return 'complex';
     }

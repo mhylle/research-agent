@@ -113,8 +113,12 @@ describe('MilestoneService', () => {
 
       // Verify we have 3 milestone_started events and 3 milestone_completed events
       const calls = (eventCoordinator.emit as jest.Mock).mock.calls;
-      const startedEvents = calls.filter(call => call[1] === 'milestone_started');
-      const completedEvents = calls.filter(call => call[1] === 'milestone_completed');
+      const startedEvents = calls.filter(
+        (call) => call[1] === 'milestone_started',
+      );
+      const completedEvents = calls.filter(
+        (call) => call[1] === 'milestone_completed',
+      );
       expect(startedEvents).toHaveLength(3);
       expect(completedEvents).toHaveLength(3);
     });
@@ -212,8 +216,9 @@ describe('MilestoneService', () => {
       );
 
       // Get all milestone_completed events
-      const completedCalls = (eventCoordinator.emit as jest.Mock).mock.calls
-        .filter((call) => call[1] === 'milestone_completed');
+      const completedCalls = (
+        eventCoordinator.emit as jest.Mock
+      ).mock.calls.filter((call) => call[1] === 'milestone_completed');
 
       // Should have 3 completed events (all except last milestone)
       expect(completedCalls).toHaveLength(3);
@@ -359,8 +364,16 @@ describe('MilestoneService', () => {
       } as Phase;
 
       const stepResults = [
-        { stepId: 'step1', output: [{ url: 'test1.com' }], toolName: 'tavily_search' },
-        { stepId: 'step2', output: [{ url: 'test2.com' }], toolName: 'tavily_search' },
+        {
+          stepId: 'step1',
+          output: [{ url: 'test1.com' }],
+          toolName: 'tavily_search',
+        },
+        {
+          stepId: 'step2',
+          output: [{ url: 'test2.com' }],
+          toolName: 'tavily_search',
+        },
       ];
 
       await service.emitPhaseCompletion(phase, 'log1', stepResults);

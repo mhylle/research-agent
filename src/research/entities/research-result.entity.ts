@@ -5,6 +5,7 @@ import {
   Index,
   CreateDateColumn,
 } from 'typeorm';
+import type { ConfidenceResult } from '../../evaluation/interfaces/confidence.interface';
 
 export interface ResearchSource {
   url: string;
@@ -15,6 +16,15 @@ export interface ResearchSource {
 export interface ResearchMetadata {
   totalExecutionTime: number;
   phases: Array<{ phase: string; executionTime: number }>;
+  // Optional fields for different research types
+  decomposition?: any;
+  subQueryResults?: any;
+  retrievalCycles?: number;
+  finalCoverage?: number;
+  reflectionIterations?: number;
+  totalImprovement?: number;
+  usedAgenticPipeline?: boolean;
+  [key: string]: any; // Allow additional metadata fields
 }
 
 @Entity('research_results')
@@ -40,6 +50,9 @@ export class ResearchResultEntity {
 
   @Column('simple-json')
   metadata: ResearchMetadata;
+
+  @Column('simple-json', { nullable: true })
+  confidence?: ConfidenceResult;
 
   @CreateDateColumn()
   createdAt: Date;

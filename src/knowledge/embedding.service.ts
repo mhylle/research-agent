@@ -49,7 +49,9 @@ export class EmbeddingService {
       }
 
       const embedding = embeddings[0];
-      this.logger.debug(`Generated embedding with ${embedding.length} dimensions`);
+      this.logger.debug(
+        `Generated embedding with ${embedding.length} dimensions`,
+      );
 
       return embedding;
     } catch (error) {
@@ -80,7 +82,11 @@ export class EmbeddingService {
     );
 
     const summarizedAnswer = await this.summarizeForEmbedding(answer);
-    const reducedText = this.combineQueryAndAnswer(query, summarizedAnswer, true);
+    const reducedText = this.combineQueryAndAnswer(
+      query,
+      summarizedAnswer,
+      true,
+    );
 
     return this.generateEmbedding(reducedText);
   }

@@ -80,13 +80,13 @@ export class SerpApiSearchProvider implements ITool {
       });
 
       // Map SerpAPI organic results to SearchResult[]
-      const results: SearchResult[] = (
-        response.data.organic_results || []
-      ).map((result: any) => ({
-        title: result.title,
-        url: result.link,
-        content: result.snippet,
-      }));
+      const results: SearchResult[] = (response.data.organic_results || []).map(
+        (result: any) => ({
+          title: result.title,
+          url: result.link,
+          content: result.snippet,
+        }),
+      );
 
       console.log(
         `[SerpApiSearchProvider] Search completed successfully. Found ${results.length} results.`,

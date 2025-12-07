@@ -1,0 +1,111 @@
+[
+  {
+    "id": "ee37340f-be10-458c-93aa-f0990e4dd9b4",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:08:26.265Z",
+    "eventType": "planning_started",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "query": "What concerts are in Copenhagen next weekend?",
+      "availableTools": [
+        "tavily_search",
+        "web_fetch",
+        "duckduckgo_search",
+        "brave_search",
+        "serpapi_search",
+        "knowledge_search"
+      ],
+      "message": "LLM is generating research plan..."
+    }
+  },
+  {
+    "id": "19f0221c-7aa4-45df-adb0-830fb1eb30ae",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:08:26.269Z",
+    "eventType": "planning_iteration",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "iteration": 1,
+      "maxIterations": 20,
+      "message": "Planning iteration 1/20"
+    }
+  },
+  {
+    "id": "25caeec3-d2ae-450f-ab87-9bf6e8607f5d",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:09:03.836Z",
+    "eventType": "planning_iteration",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "iteration": 2,
+      "maxIterations": 20,
+      "message": "Planning iteration 2/20"
+    }
+  },
+  {
+    "id": "9582b2c0-d7eb-4ea5-a5f0-3c964bd4dd4f",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:05.888Z",
+    "eventType": "planning_started",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "query": "What concerts are in Copenhagen next weekend?",
+      "availableTools": [
+        "tavily_search",
+        "web_fetch",
+        "duckduckgo_search",
+        "brave_search",
+        "serpapi_search",
+        "knowledge_search"
+      ],
+      "message": "LLM is regenerating plan (attempt 2)...",
+      "isRegeneration": true,
+      "attemptNumber": 2,
+      "feedback": {
+        "critique": "[intentAnalyst]: This plan fundamentally misunderstands the temporal context of 'next weekend'. It should have specified the correct dates (e.g., December 3-4) instead of leaving it open-ended.\n\n[coverageChecker]: The query is fundamentally flawed due to a major temporal error: it does not specify the correct dates for 'next weekend' (December 6-7, 2025). This omission will return concerts outside the intended timeframe, rendering the results irrelevant. The query should have explicitly included the dates to ensure accuracy.",
+        "failingDimensions": [
+          "intentAlignment",
+          "queryAccuracy"
+        ]
+      }
+    }
+  },
+  {
+    "id": "9b1eceb5-d5fc-43d4-b172-5badc7283f04",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:05.890Z",
+    "eventType": "planning_iteration",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "iteration": 1,
+      "maxIterations": 20,
+      "message": "Regeneration iteration 1/20 (attempt 2)",
+      "isRegeneration": true
+    }
+  },
+  {
+    "id": "e9bdf579-573d-4ea5-bbcc-bb229776a5eb",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:17.496Z",
+    "eventType": "planning_iteration",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "iteration": 2,
+      "maxIterations": 20,
+      "message": "Regeneration iteration 2/20 (attempt 2)",
+      "isRegeneration": true
+    }
+  }
+]

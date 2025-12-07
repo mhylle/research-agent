@@ -31,8 +31,9 @@ describe('Multi-Provider Search System (e2e)', () => {
       DuckDuckGoSearchProvider,
     );
     braveProvider = moduleFixture.get<BraveSearchProvider>(BraveSearchProvider);
-    serpapiProvider =
-      moduleFixture.get<SerpApiSearchProvider>(SerpApiSearchProvider);
+    serpapiProvider = moduleFixture.get<SerpApiSearchProvider>(
+      SerpApiSearchProvider,
+    );
   });
 
   afterAll(async () => {
@@ -123,12 +124,8 @@ describe('Multi-Provider Search System (e2e)', () => {
       expect(duckduckgoTool?.function.parameters).toHaveProperty('required');
 
       console.log('[Test] ✓ DuckDuckGo tool definition is valid');
-      console.log(
-        `  Name: ${duckduckgoTool?.function.name}`,
-      );
-      console.log(
-        `  Description: ${duckduckgoTool?.function.description}`,
-      );
+      console.log(`  Name: ${duckduckgoTool?.function.name}`);
+      console.log(`  Description: ${duckduckgoTool?.function.description}`);
     });
 
     it('should validate tool parameter schemas', () => {
@@ -239,13 +236,31 @@ describe('Multi-Provider Search System (e2e)', () => {
 
     it('should execute ALL available search providers and compare results', async () => {
       const searchProviders = [
-        { name: 'duckduckgo_search', provider: duckduckgoProvider, requiresKey: false },
-        { name: 'brave_search', provider: braveProvider, requiresKey: true, keyEnv: 'BRAVE_API_KEY' },
-        { name: 'serpapi_search', provider: serpapiProvider, requiresKey: true, keyEnv: 'SERPAPI_API_KEY' },
+        {
+          name: 'duckduckgo_search',
+          provider: duckduckgoProvider,
+          requiresKey: false,
+        },
+        {
+          name: 'brave_search',
+          provider: braveProvider,
+          requiresKey: true,
+          keyEnv: 'BRAVE_API_KEY',
+        },
+        {
+          name: 'serpapi_search',
+          provider: serpapiProvider,
+          requiresKey: true,
+          keyEnv: 'SERPAPI_API_KEY',
+        },
       ];
 
       const testQuery = 'latest technology trends 2024';
-      const allResults: { provider: string; count: number; firstTitle: string }[] = [];
+      const allResults: {
+        provider: string;
+        count: number;
+        firstTitle: string;
+      }[] = [];
 
       for (const sp of searchProviders) {
         if (sp.requiresKey && !process.env[sp.keyEnv!]) {
@@ -254,7 +269,10 @@ describe('Multi-Provider Search System (e2e)', () => {
         }
 
         try {
-          const results = await sp.provider.execute({ query: testQuery, max_results: 3 });
+          const results = await sp.provider.execute({
+            query: testQuery,
+            max_results: 3,
+          });
           allResults.push({
             provider: sp.name,
             count: results.length,
@@ -298,7 +316,10 @@ describe('Multi-Provider Search System (e2e)', () => {
         },
       };
 
-      const executorResult = await toolExecutor.execute(mockStep, 'test-log-id');
+      const executorResult = await toolExecutor.execute(
+        mockStep,
+        'test-log-id',
+      );
 
       expect(executorResult).toBeDefined();
       expect(executorResult.output).toBeDefined();
@@ -413,7 +434,9 @@ describe('Multi-Provider Search System (e2e)', () => {
       // Should have at least DuckDuckGo
       expect(searchProviders.length).toBeGreaterThanOrEqual(1);
 
-      const providerNames = searchProviders.map((p) => p.definition.function.name);
+      const providerNames = searchProviders.map(
+        (p) => p.definition.function.name,
+      );
       console.log('[Test] ✓ Graceful degradation verified');
       console.log(`  Available providers: ${providerNames.join(', ')}`);
 
@@ -456,17 +479,22 @@ describe('Multi-Provider Search System (e2e)', () => {
       console.log('========================================');
       console.log(`Total Tools Registered: ${allTools.length}`);
       console.log(`Search Providers: ${searchProviders.length}`);
-      console.log(`Tools Available to Orchestrator: ${availableToOrchestrator.length}`);
+      console.log(
+        `Tools Available to Orchestrator: ${availableToOrchestrator.length}`,
+      );
       console.log('\nRegistered Search Providers:');
 
       searchProviders.forEach((provider) => {
         const tool = allTools.find(
-          (t) => t.definition.function.name === provider.definition.function.name,
+          (t) =>
+            t.definition.function.name === provider.definition.function.name,
         );
         const requiresKey = tool?.requiresApiKey ? 'Yes' : 'No';
         console.log(`  - ${provider.definition.function.name}`);
         console.log(`    Requires API Key: ${requiresKey}`);
-        console.log(`    Description: ${provider.definition.function.description}`);
+        console.log(
+          `    Description: ${provider.definition.function.description}`,
+        );
       });
 
       console.log('\n========================================\n');

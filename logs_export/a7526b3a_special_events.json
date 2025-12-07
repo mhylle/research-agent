@@ -1,0 +1,114 @@
+[
+  {
+    "id": "d0034a24-69ee-4883-8f17-4c5f9cfd9b22",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:09:20.780Z",
+    "eventType": "auto_recovery",
+    "planId": "5fd9c58b-29ab-49ed-935b-186f11ea86f7",
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "reason": "Auto-adding default steps after multiple finalize failures",
+      "emptyPhaseCount": 2,
+      "failureCount": 2
+    }
+  },
+  {
+    "id": "b3f59639-aada-49a2-b46f-094729581647",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:05.885Z",
+    "eventType": "plan_regeneration_started",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "attemptNumber": 2,
+      "previousScores": {
+        "intentAlignment": 0.42,
+        "queryCoverage": 0.6,
+        "queryAccuracy": 0.4,
+        "scopeAppropriateness": 0.6
+      },
+      "failingDimensions": [
+        "intentAlignment",
+        "queryAccuracy"
+      ],
+      "critique": "[intentAnalyst]: This plan fundamentally misunderstands the temporal context of 'next weekend'. It should have specified the correct dates (e.g., December 3-4) instead of leaving it open-ended.\n\n[coverageChecker]: The query is fundamentally flawed due to a major temporal error: it does not specify the correct dates for 'next weekend' (December 6-7, 2025). This omission will return concerts outside the intended timeframe, rendering the results irrelevant. The query should have explicitly included the dates to ensure accuracy."
+    }
+  },
+  {
+    "id": "d3c6f093-61ad-4b12-9274-fad443613f30",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:46.641Z",
+    "eventType": "plan_created",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "planId": "5cbd22ea-dfd4-472c-a68b-2c9eb38f5c2f",
+      "query": "What concerts are in Copenhagen next weekend?",
+      "status": "executing",
+      "totalPhases": 2,
+      "createdAt": "2025-12-01T18:16:17.487Z",
+      "phases": [
+        {
+          "id": "f11de8d6-38f3-4afd-9bbc-1d695727b92e",
+          "name": "Initial_Search",
+          "description": "Search for concerts in Copenhagen with specific dates",
+          "status": "pending",
+          "order": 0,
+          "replanCheckpoint": false,
+          "totalSteps": 2,
+          "steps": [
+            {
+              "id": "dca75a0f-6b1b-4a4b-8bba-976ba4134d5b",
+              "toolName": "tavily_search",
+              "type": "tool_call",
+              "config": {
+                "max_results": 5,
+                "query": "concerts in Copenhagen 2025-12-13"
+              },
+              "dependencies": [],
+              "status": "pending",
+              "order": 0
+            },
+            {
+              "id": "0323052a-e4ee-4870-8cea-7009aa2a0708",
+              "toolName": "tavily_search",
+              "type": "tool_call",
+              "config": {
+                "max_results": 5,
+                "query": "concerts in Copenhagen 2025-12-14"
+              },
+              "dependencies": [],
+              "status": "pending",
+              "order": 1
+            }
+          ]
+        },
+        {
+          "id": "6ca33e29-60ab-4286-96ae-30ae273ca63c",
+          "name": "Synthesis",
+          "description": "Generate final answer with concert details",
+          "status": "pending",
+          "order": 1,
+          "replanCheckpoint": false,
+          "totalSteps": 1,
+          "steps": [
+            {
+              "id": "becb0a81-89fa-4d98-806a-ea878fcfd48a",
+              "toolName": "synthesize",
+              "type": "llm_call",
+              "config": {
+                "prompt": "Compile and summarize all concert events found in Copenhagen on December 13th and 14th, 2025. Present details like venue, artist, and time."
+              },
+              "dependencies": [],
+              "status": "pending",
+              "order": 0
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

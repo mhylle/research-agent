@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EvaluatorResult, DEFAULT_EVALUATION_CONFIG } from '../interfaces';
 import {
   INTENT_ANALYST_PROMPT,
@@ -44,7 +44,7 @@ export class PanelEvaluatorService {
     answerCompleteness: ANSWER_COMPLETENESS_PROMPT,
   };
 
-  constructor(private readonly ollamaService: OllamaService) {}
+  constructor(private readonly llmService: LLMService) {}
 
   async evaluateWithRole(
     role: EvaluatorRole,
@@ -63,7 +63,7 @@ export class PanelEvaluatorService {
     try {
       const prompt = this.buildPrompt(role, context);
 
-      const response = await this.ollamaService.chat(
+      const response = await this.llmService.chat(
         [{ role: 'user', content: prompt }],
         [],
         model,
@@ -191,7 +191,8 @@ export class PanelEvaluatorService {
       if (jsonMatch) {
         // Strip comments, remove trailing commas, and sanitize JSON string before parsing
         const commentStripped = this.stripJsonComments(jsonMatch[0]);
-        const trailingCommasRemoved = this.removeTrailingCommas(commentStripped);
+        const trailingCommasRemoved =
+          this.removeTrailingCommas(commentStripped);
         const sanitizedJson = this.sanitizeJsonString(trailingCommasRemoved);
         const parsed = JSON.parse(sanitizedJson);
 
@@ -276,7 +277,7 @@ export class PanelEvaluatorService {
   private removeTrailingCommas(str: string): string {
     // Remove trailing commas before } or ]
     return str
-      .replace(/,(\s*})/g, '$1')  // Remove , before }
+      .replace(/,(\s*})/g, '$1') // Remove , before }
       .replace(/,(\s*\])/g, '$1'); // Remove , before ]
   }
 

@@ -1,7 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import type { TimelineNode, LogSession, ResearchResultData } from '../../../../models';
 import { StageNodeComponent } from '../stage-node/stage-node';
+import { MarkdownService } from '../../../../core/services/markdown.service';
 
 @Component({
   selector: 'app-log-timeline',
@@ -15,6 +16,15 @@ export class LogTimelineComponent {
   @Input() timelineNodes: TimelineNode[] = [];
   @Input() isLoading = false;
   @Input() result?: ResearchResultData;
+
+  private markdownService = inject(MarkdownService);
+
+  get parsedAnswerHtml() {
+    if (this.result?.answer) {
+      return this.markdownService.parseToSafeHtml(this.result.answer);
+    }
+    return null;
+  }
 
   copyLogId(): void {
     navigator.clipboard.writeText(this.session.logId).then(() => {

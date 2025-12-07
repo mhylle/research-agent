@@ -6,6 +6,7 @@
 @use 'sass:color';
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
+@use '../../../../../styles/markdown' as *;
 
 // Animations
 @keyframes spin {
@@ -290,7 +291,7 @@
     margin-top: $spacing-md;
 
     .answer-text {
-      font-size: $font-size-lg;
+      font-size: $font-size-base;
       line-height: $line-height-loose;
       color: $charcoal;
       margin: 0;

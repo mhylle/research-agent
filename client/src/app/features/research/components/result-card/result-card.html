@@ -4,9 +4,14 @@
     <span class="result-card__timestamp">{{ formatTimestamp(result.timestamp) }}</span>
   </div>
 
-  <div class="result-card__answer">
-    {{ result.answer }}
-  </div>
+  <div class="result-card__answer markdown-content" [innerHTML]="parsedAnswerHtml"></div>
+
+  <!-- Confidence Display -->
+  @if (result.confidence) {
+    <div class="result-card__confidence">
+      <app-confidence-display [result]="result.confidence" />
+    </div>
+  }
 
   <div class="result-card__meta">
     <span class="result-card__execution-time">

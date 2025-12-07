@@ -1,0 +1,52 @@
+Log Export Index for Session: a7526b3a-c9ec-4ad2-ae77-4dafb1566c66
+=================================================================
+
+Query: "What concerts are in Copenhagen next weekend?"
+Status: completed
+Total Duration: 665.5 seconds (11.09 minutes)
+Timestamp: 2025-12-01T18:08:26.254Z
+
+Event Summary:
+--------------
+Total Entries: 53
+
+Event Type Breakdown:
+- milestone_completed: 8
+- milestone_started: 6
+- evaluation_completed: 5
+- planning_iteration: 4
+- phase_added: 4
+- evaluation_started: 4
+- step_started: 3
+- step_completed: 3
+- step_added: 3
+- step_auto_added: 2
+- planning_started: 2
+- phase_started: 2
+- phase_completed: 2
+- session_started: 1
+- session_completed: 1
+- plan_regeneration_started: 1
+- plan_created: 1
+- auto_recovery: 1
+
+Exported Files:
+---------------
+1. a7526b3a_complete.json - Full log with all 53 entries
+2. a7526b3a_metadata.json - Session metadata (query, duration, status)
+3. a7526b3a_session_events.json - Session lifecycle events (2 entries)
+4. a7526b3a_planning_events.json - Planning iterations (6 entries)
+5. a7526b3a_phase_events.json - Phase lifecycle events (10 entries)
+6. a7526b3a_step_events.json - Step execution events (11 entries)
+7. a7526b3a_milestone_events.json - Milestone tracking (14 entries)
+8. a7526b3a_evaluation_events.json - Evaluation results (9 entries)
+9. a7526b3a_special_events.json - Recovery and plan creation (3 entries)
+
+Key Findings:
+-------------
+- 2 stages of execution (planning + execution)
+- 3 tool calls made during research
+- Auto-recovery was triggered once
+- Plan regeneration occurred (1 event)
+- 6 milestones tracked with 8 completion events
+- Multiple evaluation cycles with comprehensive data

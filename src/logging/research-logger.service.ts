@@ -269,6 +269,21 @@ export class ResearchLogger {
     return this.activeNodes;
   }
 
+  log(
+    logId: string,
+    component: string,
+    operation: string,
+    data: Record<string, any>,
+  ): void {
+    this.logger.info(`${component} - ${operation}`, {
+      logId,
+      component,
+      operation,
+      ...data,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   async logMilestone(
     logId: string,
     nodeId: string,

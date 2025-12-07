@@ -1,5 +1,11 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsNumber, IsString, validateSync } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  validateSync,
+} from 'class-validator';
 
 enum Environment {
   Development = 'development',
@@ -14,11 +20,30 @@ class EnvironmentVariables {
   @IsNumber()
   PORT: number;
 
+  // LLM Provider Selection
+  @IsString()
+  @IsOptional()
+  LLM_PROVIDER?: string; // 'ollama' | 'azure-mistral'
+
+  // Ollama Configuration
   @IsString()
   OLLAMA_BASE_URL: string;
 
   @IsString()
   OLLAMA_MODEL: string;
+
+  // Azure Mistral Configuration (optional - required when LLM_PROVIDER=azure-mistral)
+  @IsString()
+  @IsOptional()
+  AZURE_OPENAI_ENDPOINT?: string;
+
+  @IsString()
+  @IsOptional()
+  AZURE_OPENAI_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  AZURE_MISTRAL_MODEL?: string;
 
   @IsString()
   TAVILY_API_KEY: string;

@@ -4,6 +4,8 @@ import { EventCoordinatorService } from '../services/event-coordinator.service';
 import { MilestoneService } from '../services/milestone.service';
 import { ExecutorRegistry } from '../../executors/executor-registry.service';
 import { StepConfigurationService } from '../services/step-configuration.service';
+import { ConfidenceScoringService } from '../../evaluation/services/confidence-scoring.service';
+import { ReflectionService } from '../../reflection/services/reflection.service';
 import { Phase } from '../interfaces/phase.interface';
 import { PhaseExecutionContext } from './interfaces/phase-execution-context';
 import { PlanStep } from '../interfaces/plan-step.interface';
@@ -45,6 +47,35 @@ describe('SynthesisPhaseExecutor', () => {
           useValue: {
             enrichSynthesizeStep: jest.fn(),
             getDefaultConfig: jest.fn().mockReturnValue({}),
+          },
+        },
+        {
+          provide: ConfidenceScoringService,
+          useValue: {
+            scoreConfidence: jest.fn().mockResolvedValue({
+              overallConfidence: 0.85,
+              level: 'high',
+              claimConfidences: [],
+              methodology: {
+                entailmentWeight: 0.5,
+                suScoreWeight: 0.3,
+                sourceCountWeight: 0.2,
+              },
+              recommendations: [],
+            }),
+          },
+        },
+        {
+          provide: ReflectionService,
+          useValue: {
+            reflect: jest.fn().mockResolvedValue({
+              iterationCount: 2,
+              improvements: [0.05, 0.03],
+              identifiedGaps: [],
+              finalAnswer: 'refined answer',
+              finalConfidence: 0.88,
+              reflectionTrace: [],
+            }),
           },
         },
       ],

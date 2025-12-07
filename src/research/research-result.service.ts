@@ -8,6 +8,7 @@ import {
   ResearchMetadata,
 } from './entities/research-result.entity';
 import { EmbeddingService } from '../knowledge/embedding.service';
+import { ConfidenceResult } from '../evaluation/interfaces/confidence.interface';
 
 export interface SaveResearchResultDto {
   logId: string;
@@ -16,6 +17,7 @@ export interface SaveResearchResultDto {
   answer: string;
   sources: ResearchSource[];
   metadata: ResearchMetadata;
+  confidence?: ConfidenceResult;
 }
 
 @Injectable()
@@ -34,10 +36,11 @@ export class ResearchResultService {
     // Generate embedding for semantic search
     let embeddingStr: string | undefined;
     try {
-      const embedding = await this.embeddingService.generateEmbeddingForResearch(
-        dto.query,
-        dto.answer,
-      );
+      const embedding =
+        await this.embeddingService.generateEmbeddingForResearch(
+          dto.query,
+          dto.answer,
+        );
       embeddingStr = `[${embedding.join(',')}]`;
       this.logger.debug(`Generated embedding for research result ${id}`);
     } catch (error) {
@@ -55,6 +58,7 @@ export class ResearchResultService {
       answer: dto.answer,
       sources: dto.sources,
       metadata: dto.metadata,
+      confidence: dto.confidence,
     });
 
     // Save entity first
@@ -107,7 +111,9 @@ export class ResearchResultService {
    * @returns Number of results processed
    */
   async backfillEmbeddings(): Promise<{ processed: number; failed: number }> {
-    this.logger.log('Starting embedding backfill for existing research results');
+    this.logger.log(
+      'Starting embedding backfill for existing research results',
+    );
 
     // Find all results without embeddings
     const resultsWithoutEmbeddings = await this.resultRepository.query(`
@@ -126,10 +132,11 @@ export class ResearchResultService {
 
     for (const result of resultsWithoutEmbeddings) {
       try {
-        const embedding = await this.embeddingService.generateEmbeddingForResearch(
-          result.query,
-          result.answer,
-        );
+        const embedding =
+          await this.embeddingService.generateEmbeddingForResearch(
+            result.query,
+            result.answer,
+          );
         const embeddingStr = `[${embedding.join(',')}]`;
 
         await this.resultRepository.query(
@@ -138,7 +145,9 @@ export class ResearchResultService {
         );
 
         processed++;
-        this.logger.debug(`Backfilled embedding for ${result.id} (${processed}/${resultsWithoutEmbeddings.length})`);
+        this.logger.debug(
+          `Backfilled embedding for ${result.id} (${processed}/${resultsWithoutEmbeddings.length})`,
+        );
       } catch (error) {
         failed++;
         this.logger.error(

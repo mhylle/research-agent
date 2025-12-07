@@ -1,0 +1,32 @@
+[
+  {
+    "timestamp": "2025-12-01T18:16:05.859Z",
+    "phase": "plan",
+    "confidence": 0.8,
+    "quality": null
+  },
+  {
+    "timestamp": "2025-12-01T18:16:46.628Z",
+    "phase": "plan",
+    "confidence": 0.975,
+    "quality": null
+  },
+  {
+    "timestamp": "2025-12-01T18:17:30.562Z",
+    "phase": "retrieval",
+    "confidence": 0.9,
+    "quality": null
+  },
+  {
+    "timestamp": "2025-12-01T18:18:31.121Z",
+    "phase": "retrieval",
+    "confidence": 0.9033333333333333,
+    "quality": null
+  },
+  {
+    "timestamp": "2025-12-01T18:19:31.743Z",
+    "phase": "answer",
+    "confidence": 0.86,
+    "quality": null
+  }
+]

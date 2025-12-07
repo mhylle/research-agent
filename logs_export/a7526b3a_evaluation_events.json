@@ -1,0 +1,314 @@
+[
+  {
+    "id": "1ddf4a92-ddb3-4d53-9f40-05ffb5249701",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:09:20.788Z",
+    "eventType": "evaluation_started",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "phase": "plan",
+      "query": "What concerts are in Copenhagen next weekend?"
+    }
+  },
+  {
+    "id": "8ea3c29a-211e-4c3e-980f-95698c921e1c",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:05.859Z",
+    "eventType": "evaluation_completed",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "phase": "plan",
+      "passed": false,
+      "scores": {
+        "intentAlignment": 0.42,
+        "queryCoverage": 0.6,
+        "queryAccuracy": 0.4,
+        "scopeAppropriateness": 0.6
+      },
+      "confidence": 0.8,
+      "totalIterations": 3,
+      "escalatedToLargeModel": true,
+      "evaluationSkipped": false
+    }
+  },
+  {
+    "id": "a91ba2d7-b98f-47ec-b684-38b826c42c4e",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:31.464Z",
+    "eventType": "evaluation_started",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "phase": "plan",
+      "query": "What concerts are in Copenhagen next weekend?"
+    }
+  },
+  {
+    "id": "d1eaa674-9cb2-454a-81d5-fd1ae483a813",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:46.628Z",
+    "eventType": "evaluation_completed",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "phase": "plan",
+      "passed": true,
+      "scores": {
+        "intentAlignment": 0.85,
+        "queryCoverage": 1,
+        "queryAccuracy": 1,
+        "scopeAppropriateness": 1
+      },
+      "confidence": 0.975,
+      "totalIterations": 1,
+      "escalatedToLargeModel": false,
+      "evaluationSkipped": false
+    }
+  },
+  {
+    "id": "90abb568-50a2-45ab-91f7-b2d282344277",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:16:48.553Z",
+    "eventType": "evaluation_started",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "phase": "retrieval",
+      "query": "What concerts are in Copenhagen next weekend?"
+    }
+  },
+  {
+    "id": "5ed14ac6-8540-4dfc-a8a8-88f2ab449401",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:17:30.562Z",
+    "eventType": "evaluation_completed",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "phase": "retrieval",
+      "passed": true,
+      "scores": {
+        "contextRecall": 0.93,
+        "contextPrecision": 0.73,
+        "sourceQuality": 0.82,
+        "coverageCompleteness": 0.85,
+        "actionableInformation": 0.39999999999999997
+      },
+      "confidence": 0.9,
+      "flaggedSevere": false,
+      "sourceDetails": [
+        {
+          "url": "https://copenhagenfestivalensemble.com/calendar/",
+          "relevanceScore": 0.8300000000000001,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://www.shazam.com/events/copenhagen-denmark/-/-/jazz-11",
+          "relevanceScore": 0.8300000000000001,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://www.songkick.com/metro-areas/28617-denmark-copenhagen/2025",
+          "relevanceScore": 0.8300000000000001,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://www.jambase.com/concerts/dk/~/concerts-in-copenhagen",
+          "relevanceScore": 0.8300000000000001,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://concerts50.com/denmark/copenhagen",
+          "relevanceScore": 0.8300000000000001,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://www.shazam.com/events/copenhagen-denmark/-/-/hip-hoprap-18",
+          "relevanceScore": 0.8300000000000001,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://en.concerts-metal.com/v-47__Copenhagen.html",
+          "relevanceScore": 0.8300000000000001,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://cafe.hardrock.com/copenhagen/event-calendar.aspx?date=12/13/2025&display=event&eventid=2457984",
+          "relevanceScore": 0.8300000000000001,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://concertful.com/area/denmark/",
+          "relevanceScore": 0.8300000000000001,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://www.visitdenmark.com/denmark/events/event-calendar/events-october-november-december",
+          "relevanceScore": 0.8300000000000001,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        }
+      ],
+      "evaluationSkipped": false
+    }
+  },
+  {
+    "id": "e4992176-cda2-46ac-9f1d-8da7b67a0d90",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:17:30.579Z",
+    "eventType": "evaluation_started",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "phase": "retrieval",
+      "query": "What concerts are in Copenhagen next weekend?"
+    }
+  },
+  {
+    "id": "48936d1e-05e6-443b-b3b6-44a2d562094f",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:18:31.121Z",
+    "eventType": "evaluation_completed",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "phase": "retrieval",
+      "passed": true,
+      "scores": {
+        "contextRecall": 0.95,
+        "contextPrecision": 0.85,
+        "sourceQuality": 0.82,
+        "coverageCompleteness": 0.82,
+        "actionableInformation": 0.39999999999999997
+      },
+      "confidence": 0.9033333333333333,
+      "flaggedSevere": false,
+      "sourceDetails": [
+        {
+          "url": "https://copenhagenfestivalensemble.com/calendar/",
+          "relevanceScore": 0.8999999999999999,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://www.shazam.com/events/copenhagen-denmark/-/-/jazz-11",
+          "relevanceScore": 0.8999999999999999,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://www.songkick.com/metro-areas/28617-denmark-copenhagen/2025",
+          "relevanceScore": 0.8999999999999999,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://www.jambase.com/concerts/dk/~/concerts-in-copenhagen",
+          "relevanceScore": 0.8999999999999999,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://concerts50.com/denmark/copenhagen",
+          "relevanceScore": 0.8999999999999999,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://www.shazam.com/events/copenhagen-denmark/-/-/hip-hoprap-18",
+          "relevanceScore": 0.8999999999999999,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://en.concerts-metal.com/v-47__Copenhagen.html",
+          "relevanceScore": 0.8999999999999999,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://cafe.hardrock.com/copenhagen/event-calendar.aspx?date=12/13/2025&display=event&eventid=2457984",
+          "relevanceScore": 0.8999999999999999,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://concertful.com/area/denmark/",
+          "relevanceScore": 0.8999999999999999,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        },
+        {
+          "url": "https://www.visitdenmark.com/denmark/events/event-calendar/events-october-november-december",
+          "relevanceScore": 0.8999999999999999,
+          "qualityScore": 0.82,
+          "resultType": "NAVIGATION",
+          "actionableScore": 0.4
+        }
+      ],
+      "evaluationSkipped": false
+    }
+  },
+  {
+    "id": "7c149e43-c023-4baa-99ec-5f58d461a273",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:19:31.743Z",
+    "eventType": "evaluation_completed",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "phase": "answer",
+      "passed": false,
+      "scores": {
+        "faithfulness": 0.55,
+        "accuracy": 0.65,
+        "answerRelevance": 0.92,
+        "focus": 0.95,
+        "completeness": 0.75,
+        "depth": 0.7
+      },
+      "confidence": 0.86,
+      "shouldRegenerate": true,
+      "evaluationSkipped": false
+    }
+  }
+]

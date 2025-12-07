@@ -1,20 +1,22 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 import { Test, TestingModule } from '@nestjs/testing';
 import { PlannerService } from './planner.service';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ToolExecutor } from '../executors/tool.executor';
 import { LogService } from '../logging/log.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ReasoningTraceService } from '../reasoning/services/reasoning-trace.service';
 
 describe('PlannerService', () => {
   let service: PlannerService;
-  let mockOllamaService: any;
+  let mockLLMService: any;
   let mockToolExecutor: any;
   let mockLogService: any;
   let mockEventEmitter: any;
+  let mockReasoningTrace: any;
 
   beforeEach(async () => {
-    mockOllamaService = {
+    mockLLMService = {
       chat: jest.fn().mockResolvedValue({
         message: {
           role: 'assistant',
@@ -41,13 +43,21 @@ describe('PlannerService', () => {
       emit: jest.fn(),
     };
 
+    mockReasoningTrace = {
+      emitThought: jest.fn().mockResolvedValue('thought-id'),
+      emitObservation: jest.fn().mockResolvedValue('observation-id'),
+      emitConclusion: jest.fn().mockResolvedValue('conclusion-id'),
+      emitActionPlan: jest.fn().mockResolvedValue('action-id'),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PlannerService,
-        { provide: OllamaService, useValue: mockOllamaService },
+        { provide: LLMService, useValue: mockLLMService },
         { provide: ToolExecutor, useValue: mockToolExecutor },
         { provide: LogService, useValue: mockLogService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
+        { provide: ReasoningTraceService, useValue: mockReasoningTrace },
       ],
     }).compile();
 
@@ -56,7 +66,7 @@ describe('PlannerService', () => {
 
   describe('createPlan', () => {
     it('should create a plan through iterative tool calls', async () => {
-      mockOllamaService.chat
+      mockLLMService.chat
         .mockResolvedValueOnce({
           message: {
             role: 'assistant',
@@ -131,7 +141,7 @@ describe('PlannerService', () => {
     });
 
     it('should auto-add synthesis phase when plan lacks one', async () => {
-      mockOllamaService.chat
+      mockLLMService.chat
         .mockResolvedValueOnce({
           message: {
             role: 'assistant',
@@ -210,7 +220,7 @@ describe('PlannerService', () => {
     });
 
     it('should NOT auto-add synthesis phase when plan already has one', async () => {
-      mockOllamaService.chat
+      mockLLMService.chat
         .mockResolvedValueOnce({
           message: {
             role: 'assistant',
@@ -320,7 +330,7 @@ describe('PlannerService', () => {
 
   describe('decideRecovery', () => {
     it('should return retry action when retry_step is called', async () => {
-      mockOllamaService.chat.mockResolvedValueOnce({
+      mockLLMService.chat.mockResolvedValueOnce({
         message: {
           role: 'assistant',
           content: '',

@@ -57,7 +57,36 @@
             <!-- Full answer (when expanded) -->
             @if (isExpanded(item.id)) {
               <div class="history-item__answer">
-                <p class="answer-text">{{ item.answer }}</p>
+                @if (isLoadingDetail(item.logId)) {
+                  <div class="answer-loading">
+                    <span class="loading-spinner" role="status" aria-label="Loading answer"></span>
+                    <p class="loading-text">Loading answer...</p>
+                  </div>
+                } @else if (getSessionDetail(item.logId)?.error) {
+                  <div class="answer-error" role="alert">
+                    <span aria-hidden="true">⚠️</span>
+                    <p>{{ getSessionDetail(item.logId)?.error }}</p>
+                  </div>
+                } @else {
+                  <div class="answer-content">
+                    <div class="answer-text markdown-content" [innerHTML]="getSessionAnswerHtml(item.logId, item.answer)"></div>
+
+                    @if (getSessionDetail(item.logId)?.sources?.length) {
+                      <div class="answer-sources">
+                        <h4 class="sources-title">Sources</h4>
+                        <ul class="sources-list">
+                          @for (source of getSessionDetail(item.logId)?.sources; track source.url) {
+                            <li class="source-item">
+                              <a [href]="source.url" target="_blank" rel="noopener noreferrer">
+                                {{ source.title || source.url }}
+                              </a>
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
             }
           </div>

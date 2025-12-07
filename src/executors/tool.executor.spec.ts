@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ToolExecutor } from './tool.executor';
 import { ToolRegistry } from '../tools/registry/tool-registry.service';
+import { ReasoningTraceService } from '../reasoning/services/reasoning-trace.service';
 import { PlanStep } from '../orchestration/interfaces/plan-step.interface';
 
 describe('ToolExecutor', () => {
@@ -32,6 +33,13 @@ describe('ToolExecutor', () => {
           provide: EventEmitter2,
           useValue: {
             emit: jest.fn(),
+          },
+        },
+        {
+          provide: ReasoningTraceService,
+          useValue: {
+            emitActionPlan: jest.fn().mockResolvedValue('action-id'),
+            emitObservation: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

@@ -1,0 +1,28 @@
+[
+  {
+    "id": "70f6d9bb-fbe6-41b5-880a-0ec62521e245",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:08:26.254Z",
+    "eventType": "session_started",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "query": "What concerts are in Copenhagen next weekend?"
+    }
+  },
+  {
+    "id": "915bc616-e5bf-499a-8734-8a54fe5a3a46",
+    "logId": "a7526b3a-c9ec-4ad2-ae77-4dafb1566c66",
+    "timestamp": "2025-12-01T18:19:31.759Z",
+    "eventType": "session_completed",
+    "planId": null,
+    "phaseId": null,
+    "stepId": null,
+    "data": {
+      "planId": "5cbd22ea-dfd4-472c-a68b-2c9eb38f5c2f",
+      "totalExecutionTime": 665505,
+      "phaseCount": 2
+    }
+  }
+]

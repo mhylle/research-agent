@@ -59,6 +59,12 @@ export class AgentActivityService {
   retrievalEvaluation = signal<EvaluationResult | null>(null);
   answerEvaluation = signal<EvaluationResult | null>(null);
 
+  // Reasoning events signal
+  reasoningEvents = signal<any[]>([]);
+
+  // Confidence result signal
+  confidenceResult = signal<any | null>(null);
+
   private phaseCounter = 0; // Track current phase index
 
   // Computed signals
@@ -186,15 +192,63 @@ export class AgentActivityService {
       console.log('🔍 [EVALUATION] evaluation_failed SSE event received');
       this.handleEvaluationFailed(JSON.parse(e.data));
     });
+
+    // Reasoning events
+    this.eventSource.addEventListener('reasoning_thought', (e: MessageEvent) => {
+      this.handleReasoningEvent(JSON.parse(e.data), 'thought');
+    });
+
+    this.eventSource.addEventListener('reasoning_action_planned', (e: MessageEvent) => {
+      this.handleReasoningEvent(JSON.parse(e.data), 'action_planned');
+    });
+
+    this.eventSource.addEventListener('reasoning_observation', (e: MessageEvent) => {
+      this.handleReasoningEvent(JSON.parse(e.data), 'observation');
+    });
+
+    this.eventSource.addEventListener('reasoning_conclusion', (e: MessageEvent) => {
+      this.handleReasoningEvent(JSON.parse(e.data), 'conclusion');
+    });
+
+    // Confidence scoring events
+    this.eventSource.addEventListener('confidence_scoring_started', (e: MessageEvent) => {
+      this.handleConfidenceScoringStarted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('confidence_scoring_completed', (e: MessageEvent) => {
+      this.handleConfidenceScoringCompleted(JSON.parse(e.data));
+    });
+
+    this.eventSource.addEventListener('confidence_scoring_failed', (e: MessageEvent) => {
+      this.handleConfidenceScoringFailed(JSON.parse(e.data));
+    });
   }
 
   disconnect(): void {
+    this.closeConnection();
+    // Reset state to ensure clean slate when navigating away
+    this.resetState();
+  }
+
+  /**
+   * Close the SSE connection without resetting state.
+   * Use this when session completes/fails to preserve the result for display.
+   */
+  private closeConnection(): void {
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = null;
       this.isConnected.set(false);
     }
     this.currentLogId = null;
+  }
+
+  /**
+   * Public method to reset all state signals to initial values.
+   * Call this when navigating away from active research or starting new research.
+   */
+  public clearState(): void {
+    this.resetState();
   }
 
   private resetState(): void {
@@ -220,6 +274,10 @@ export class AgentActivityService {
     this.planEvaluation.set(null);
     this.retrievalEvaluation.set(null);
     this.answerEvaluation.set(null);
+    // Reset reasoning events
+    this.reasoningEvents.set([]);
+    // Reset confidence
+    this.confidenceResult.set(null);
   }
 
   // NEW ORCHESTRATOR EVENT HANDLERS
@@ -526,13 +584,22 @@ export class AgentActivityService {
 
   private async handleSessionCompleted(event: any): Promise<void> {
     console.log('Session completed:', event);
+
+    // Store logId before closing connection (closeConnection clears it)
+    const logId = this.currentLogId;
+
+    // Close SSE connection first to prevent reconnection attempts
+    // Use closeConnection() instead of disconnect() to preserve state for display
+    this.closeConnection();
+
+    // Now set completion state (after connection is closed)
     this.isComplete.set(true);
 
     // Fetch the final result from the API
-    if (this.currentLogId) {
+    if (logId) {
       try {
         const result = await firstValueFrom(
-          this.http.get<ResearchResult>(`${environment.apiUrl}/research/results/${this.currentLogId}`)
+          this.http.get<ResearchResult>(`${environment.apiUrl}/research/results/${logId}`)
         );
         if (result) {
           this.researchResult.set(result);
@@ -541,17 +608,15 @@ export class AgentActivityService {
         console.error('Failed to fetch research result:', error);
       }
     }
-
-    // Disconnect SSE to prevent reconnection attempts after completion
-    this.disconnect();
   }
 
   private handleSessionFailed(event: any): void {
     console.log('Session failed:', event);
     const { error } = event;
     this.connectionError.set(error || 'Research failed');
-    // Disconnect SSE to prevent reconnection attempts after failure
-    this.disconnect();
+    // Close SSE connection to prevent reconnection attempts after failure
+    // Use closeConnection() instead of disconnect() to preserve error state for display
+    this.closeConnection();
   }
 
   private formatDescription(template: string, data: Record<string, unknown>): string {
@@ -745,5 +810,99 @@ export class AgentActivityService {
         console.log('🔍 [EVALUATION] answerEvaluation signal updated:', this.answerEvaluation());
         break;
     }
+  }
+
+  /**
+   * Handle reasoning events for transparency into agent thinking
+   */
+  private handleReasoningEvent(event: any, type: 'thought' | 'action_planned' | 'observation' | 'conclusion'): void {
+    console.log(`🧠 [REASONING] ${type} event received:`, event);
+
+    // Extract data from SSE event structure (data is nested in event.data)
+    const data = event.data || event;
+
+    const reasoningEvent = {
+      type,
+      id: data.thoughtId || data.actionId || data.observationId || data.conclusionId || event.id || `${type}-${Date.now()}`,
+      timestamp: new Date(event.timestamp || Date.now()),
+      content: data.content,
+      action: data.action,
+      tool: data.tool,
+      parameters: data.parameters,
+      reasoning: data.reasoning,
+      actionId: data.actionId,
+      result: data.result,
+      analysis: data.analysis,
+      implications: data.implications,
+      conclusion: data.conclusion,
+      supportingThoughts: data.supportingThoughts,
+      confidence: data.confidence,
+      nextSteps: data.nextSteps,
+      context: data.context
+    };
+
+    this.reasoningEvents.update(events => [...events, reasoningEvent]);
+  }
+
+  /**
+   * Handle confidence scoring events for answer confidence
+   */
+  private handleConfidenceScoringStarted(event: any): void {
+    console.log('Confidence scoring started:', event);
+    // Create an activity task to show progress
+    const task: ActivityTask = {
+      id: 'confidence-scoring',
+      nodeId: 'confidence',
+      stage: (this.currentStage() || 1) as 1 | 2 | 3,
+      type: 'milestone',
+      description: '📊 Scoring answer confidence...',
+      progress: 0,
+      status: 'running',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+    this.activeTasks.update(tasks => [...tasks, task]);
+  }
+
+  private handleConfidenceScoringCompleted(event: any): void {
+    console.log('Confidence scoring completed:', event);
+    const { confidence } = event;
+    this.confidenceResult.set(confidence);
+
+    // Move task to completed
+    this.activeTasks.update(tasks => tasks.filter(t => t.id !== 'confidence-scoring'));
+    const completedTask: ActivityTask = {
+      id: 'confidence-scoring',
+      nodeId: 'confidence',
+      stage: (this.currentStage() || 1) as 1 | 2 | 3,
+      type: 'milestone',
+      description: `📊 Confidence: ${((confidence?.overallConfidence || 0) * 100).toFixed(0)}% (${confidence?.level || 'unknown'})`,
+      progress: 100,
+      status: 'completed',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+    this.completedTasks.update(tasks => [...tasks, completedTask]);
+  }
+
+  private handleConfidenceScoringFailed(event: any): void {
+    console.log('Confidence scoring failed:', event);
+    // Move task to failed
+    this.activeTasks.update(tasks => tasks.filter(t => t.id !== 'confidence-scoring'));
+    const failedTask: ActivityTask = {
+      id: 'confidence-scoring',
+      nodeId: 'confidence',
+      stage: (this.currentStage() || 1) as 1 | 2 | 3,
+      type: 'milestone',
+      description: `📊 Confidence scoring failed: ${event.error || 'Unknown error'}`,
+      progress: 0,
+      status: 'error',
+      timestamp: new Date(event.timestamp),
+      retryCount: 0,
+      canRetry: false,
+    };
+    this.completedTasks.update(tasks => [...tasks, failedTask]);
   }
 }

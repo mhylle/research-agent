@@ -77,7 +77,9 @@ describe('Knowledge Search (e2e)', () => {
       const count = await knowledgeSearchService.getSearchableCount();
       expect(typeof count).toBe('number');
       expect(count).toBeGreaterThanOrEqual(0);
-      console.log(`[Test] Knowledge base has ${count} searchable research results`);
+      console.log(
+        `[Test] Knowledge base has ${count} searchable research results`,
+      );
     });
   });
 
@@ -89,7 +91,9 @@ describe('Knowledge Search (e2e)', () => {
     it('should have correct tool definition', () => {
       const definition = knowledgeSearchProvider.definition;
       expect(definition.function.name).toBe('knowledge_search');
-      expect(definition.function.description).toContain('internal knowledge base');
+      expect(definition.function.description).toContain(
+        'internal knowledge base',
+      );
       expect(definition.function.parameters.required).toContain('query');
     });
 
@@ -133,15 +137,19 @@ describe('Knowledge Search (e2e)', () => {
         expect(result).toHaveProperty('content');
         expect(result.url).toMatch(/^knowledge:\/\/research\//);
         console.log(`[Test] Found ${results.length} prior research results`);
-        console.log(`[Test] First result: "${result.title}" (score: ${result.score})`);
+        console.log(
+          `[Test] First result: "${result.title}" (score: ${result.score})`,
+        );
       } else {
-        console.log('[Test] No prior research found (expected if no research has been done yet)');
+        console.log(
+          '[Test] No prior research found (expected if no research has been done yet)',
+        );
       }
     });
   });
 
   describe('Integration with Research Results', () => {
-    let testResultId: string | null = null;
+    const testResultId: string | null = null;
 
     it('should find research results by relevant query', async () => {
       // First, check if there are any existing research results
@@ -151,8 +159,13 @@ describe('Knowledge Search (e2e)', () => {
       });
 
       if (existingResults.length > 0) {
-        console.log(`[Test] Found ${existingResults.length} existing research results`);
-        console.log('[Test] Sample queries:', existingResults.map((r) => r.query).slice(0, 3));
+        console.log(
+          `[Test] Found ${existingResults.length} existing research results`,
+        );
+        console.log(
+          '[Test] Sample queries:',
+          existingResults.map((r) => r.query).slice(0, 3),
+        );
 
         // Search for terms from one of the existing results
         const sampleResult = existingResults[0];

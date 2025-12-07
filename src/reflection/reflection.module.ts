@@ -9,7 +9,12 @@ import { SelfCritiqueEngineService } from './services/self-critique-engine.servi
 import { RefinementEngineService } from './services/refinement-engine.service';
 
 @Module({
-  imports: [LLMModule, LoggingModule, EvaluationModule, forwardRef(() => OrchestrationModule)],
+  imports: [
+    LLMModule,
+    LoggingModule,
+    EvaluationModule,
+    forwardRef(() => OrchestrationModule),
+  ],
   providers: [
     ReflectionService,
     GapDetectorService,

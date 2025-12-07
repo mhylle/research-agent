@@ -195,7 +195,11 @@ describe('GapDetectorService', () => {
           [createMockSource()],
           [createMockClaim({ id: 'claim-weak' })],
           [lowConfidenceClaim],
-          [createMockEntailmentResult({ claim: createMockClaim({ id: 'claim-weak' }) })],
+          [
+            createMockEntailmentResult({
+              claim: createMockClaim({ id: 'claim-weak' }),
+            }),
+          ],
           'test query',
           'log-123',
         );
@@ -231,7 +235,11 @@ describe('GapDetectorService', () => {
           [createMockSource()],
           [createMockClaim({ id: 'claim-weak' })],
           [weakClaim],
-          [createMockEntailmentResult({ claim: createMockClaim({ id: 'claim-weak' }) })],
+          [
+            createMockEntailmentResult({
+              claim: createMockClaim({ id: 'claim-weak' }),
+            }),
+          ],
           'test query',
         );
 
@@ -291,7 +299,10 @@ describe('GapDetectorService', () => {
         const gaps = await service.detectGaps(
           'Test answer',
           [createMockSource()],
-          [createMockClaim({ id: 'claim-1' }), createMockClaim({ id: 'claim-2' })],
+          [
+            createMockClaim({ id: 'claim-1' }),
+            createMockClaim({ id: 'claim-2' }),
+          ],
           weakClaims,
           [],
           'test query',
@@ -362,7 +373,8 @@ describe('GapDetectorService', () => {
       });
 
       it('should handle LLM response with markdown code blocks', async () => {
-        const llmResponse = '```json\n[{"description": "Missing data sources", "severity": "critical", "suggestedAction": "Include primary research"}]\n```';
+        const llmResponse =
+          '```json\n[{"description": "Missing data sources", "severity": "critical", "suggestedAction": "Include primary research"}]\n```';
 
         ollamaService.chat.mockResolvedValue({
           message: { role: 'assistant', content: llmResponse },
@@ -420,7 +432,11 @@ describe('GapDetectorService', () => {
 
       it('should normalize severity values from LLM', async () => {
         const llmResponse = JSON.stringify([
-          { description: 'Gap 1', severity: 'CRITICAL', suggestedAction: 'Action' },
+          {
+            description: 'Gap 1',
+            severity: 'CRITICAL',
+            suggestedAction: 'Action',
+          },
           { description: 'Gap 2', severity: 'high', suggestedAction: 'Action' },
           { description: 'Gap 3', severity: 'low', suggestedAction: 'Action' },
         ]);
@@ -499,7 +515,9 @@ describe('GapDetectorService', () => {
           'test query',
         );
 
-        const coverageGaps = gaps.filter((g) => g.type === 'incomplete_coverage');
+        const coverageGaps = gaps.filter(
+          (g) => g.type === 'incomplete_coverage',
+        );
         expect(coverageGaps.length).toBe(1);
         expect(coverageGaps[0]).toMatchObject({
           type: 'incomplete_coverage',
@@ -538,7 +556,9 @@ describe('GapDetectorService', () => {
           'test query',
         );
 
-        const coverageGaps = gaps.filter((g) => g.type === 'incomplete_coverage');
+        const coverageGaps = gaps.filter(
+          (g) => g.type === 'incomplete_coverage',
+        );
         expect(coverageGaps.length).toBe(0);
       });
 
@@ -606,7 +626,9 @@ describe('GapDetectorService', () => {
           'test query',
         );
 
-        const contradictionGaps = gaps.filter((g) => g.type === 'contradiction');
+        const contradictionGaps = gaps.filter(
+          (g) => g.type === 'contradiction',
+        );
         expect(contradictionGaps.length).toBe(1);
         expect(contradictionGaps[0]).toMatchObject({
           type: 'contradiction',
@@ -644,7 +666,9 @@ describe('GapDetectorService', () => {
           'test query',
         );
 
-        const contradictionGaps = gaps.filter((g) => g.type === 'contradiction');
+        const contradictionGaps = gaps.filter(
+          (g) => g.type === 'contradiction',
+        );
         expect(contradictionGaps.length).toBe(0);
       });
 
@@ -693,7 +717,9 @@ describe('GapDetectorService', () => {
 
     describe('Error Handling', () => {
       it('should continue gap detection when LLM fails', async () => {
-        ollamaService.chat.mockRejectedValue(new Error('LLM service unavailable'));
+        ollamaService.chat.mockRejectedValue(
+          new Error('LLM service unavailable'),
+        );
 
         const weakClaim = createMockClaimConfidence({
           claimId: 'claim-weak',
@@ -719,9 +745,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should log error when LLM fails', async () => {
-        ollamaService.chat.mockRejectedValue(
-          new Error('Connection timeout'),
-        );
+        ollamaService.chat.mockRejectedValue(new Error('Connection timeout'));
 
         await service.detectGaps(
           'Test answer',
@@ -785,7 +809,11 @@ describe('GapDetectorService', () => {
 
       it('should filter out incomplete LLM response items', async () => {
         const llmResponse = JSON.stringify([
-          { description: 'Valid gap', severity: 'major', suggestedAction: 'Fix it' },
+          {
+            description: 'Valid gap',
+            severity: 'major',
+            suggestedAction: 'Fix it',
+          },
           { description: 'Missing severity' }, // Missing required fields
           { severity: 'major', suggestedAction: 'Missing description' }, // Missing description
           null,
@@ -812,9 +840,9 @@ describe('GapDetectorService', () => {
 
       it('should emit error event when detectGaps throws', async () => {
         // Force an error by making the main flow throw
-        jest.spyOn(service as any, 'detectWeakClaims').mockRejectedValue(
-          new Error('Unexpected error'),
-        );
+        jest
+          .spyOn(service as any, 'detectWeakClaims')
+          .mockRejectedValue(new Error('Unexpected error'));
 
         await expect(
           service.detectGaps(
@@ -916,7 +944,9 @@ describe('GapDetectorService', () => {
         );
 
         // No contradiction gaps since no entailment data
-        const contradictionGaps = gaps.filter((g) => g.type === 'contradiction');
+        const contradictionGaps = gaps.filter(
+          (g) => g.type === 'contradiction',
+        );
         expect(contradictionGaps.length).toBe(0);
       });
 
@@ -1000,7 +1030,11 @@ describe('GapDetectorService', () => {
             createMockClaim({ id: 'claim-contradicted' }),
             createMockClaim({ id: 'claim-unsupported' }),
           ],
-          [weakClaim, unsupportedClaim, createMockClaimConfidence({ claimId: 'claim-contradicted' })],
+          [
+            weakClaim,
+            unsupportedClaim,
+            createMockClaimConfidence({ claimId: 'claim-contradicted' }),
+          ],
           [contradictedEntailment],
           'test query',
           'log-123',
@@ -1119,7 +1153,10 @@ describe('GapDetectorService', () => {
         const gaps = await service.detectGaps(
           'Test answer',
           [createMockSource()],
-          [createMockClaim({ id: 'claim-1' }), createMockClaim({ id: 'claim-2' })],
+          [
+            createMockClaim({ id: 'claim-1' }),
+            createMockClaim({ id: 'claim-2' }),
+          ],
           weakClaims,
           [],
           'test query',
@@ -1139,13 +1176,22 @@ describe('GapDetectorService', () => {
         // Setup complex scenario
         const claims = [
           createMockClaim({ id: 'claim-weak', text: 'Weak claim' }),
-          createMockClaim({ id: 'claim-contradicted', text: 'Contradicted claim' }),
-          createMockClaim({ id: 'claim-unsupported', text: 'Unsupported claim' }),
+          createMockClaim({
+            id: 'claim-contradicted',
+            text: 'Contradicted claim',
+          }),
+          createMockClaim({
+            id: 'claim-unsupported',
+            text: 'Unsupported claim',
+          }),
           createMockClaim({ id: 'claim-valid', text: 'Valid claim' }),
         ];
 
         const claimConfidences = [
-          createMockClaimConfidence({ claimId: 'claim-weak', confidence: 0.25 }),
+          createMockClaimConfidence({
+            claimId: 'claim-weak',
+            confidence: 0.25,
+          }),
           createMockClaimConfidence({
             claimId: 'claim-contradicted',
             confidence: 0.6,
@@ -1227,7 +1273,11 @@ describe('GapDetectorService', () => {
       it('should pass source titles to LLM for context', async () => {
         const sources = [
           createMockSource({ title: 'AI Research Paper' }),
-          createMockSource({ id: 'source-2', title: 'Productivity Study', url: 'https://example.com/prod' }),
+          createMockSource({
+            id: 'source-2',
+            title: 'Productivity Study',
+            url: 'https://example.com/prod',
+          }),
         ];
 
         ollamaService.chat.mockResolvedValue({

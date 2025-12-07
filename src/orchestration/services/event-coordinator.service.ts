@@ -18,7 +18,9 @@ export class EventCoordinatorService {
     phaseId?: string,
     stepId?: string,
   ): Promise<void> {
-    console.log(`[EventCoordinatorService] emit: Starting - ${JSON.stringify({ logId, eventType, phaseId, stepId })}`);
+    console.log(
+      `[EventCoordinatorService] emit: Starting - ${JSON.stringify({ logId, eventType, phaseId, stepId })}`,
+    );
 
     console.log(`[EventCoordinatorService] emit: Before logService.append`);
     try {
@@ -30,19 +32,32 @@ export class EventCoordinatorService {
         stepId,
         data,
       });
-      console.log(`[EventCoordinatorService] emit: After logService.append - entry: ${JSON.stringify({ id: entry.id, eventType: entry.eventType })}`);
+      console.log(
+        `[EventCoordinatorService] emit: After logService.append - entry: ${JSON.stringify({ id: entry.id, eventType: entry.eventType })}`,
+      );
 
-      console.log(`[EventCoordinatorService] emit: Before eventEmitter.emit (log.${logId})`);
+      console.log(
+        `[EventCoordinatorService] emit: Before eventEmitter.emit (log.${logId})`,
+      );
       this.eventEmitter.emit(`log.${logId}`, entry);
-      console.log(`[EventCoordinatorService] emit: After eventEmitter.emit (log.${logId})`);
+      console.log(
+        `[EventCoordinatorService] emit: After eventEmitter.emit (log.${logId})`,
+      );
 
-      console.log(`[EventCoordinatorService] emit: Before eventEmitter.emit (log.all)`);
+      console.log(
+        `[EventCoordinatorService] emit: Before eventEmitter.emit (log.all)`,
+      );
       this.eventEmitter.emit('log.all', entry);
-      console.log(`[EventCoordinatorService] emit: After eventEmitter.emit (log.all)`);
+      console.log(
+        `[EventCoordinatorService] emit: After eventEmitter.emit (log.all)`,
+      );
 
       console.log(`[EventCoordinatorService] emit: Completed successfully`);
     } catch (error) {
-      console.error(`[EventCoordinatorService] emit: FAILED - ${error.message}`, error.stack);
+      console.error(
+        `[EventCoordinatorService] emit: FAILED - ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

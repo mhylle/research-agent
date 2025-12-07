@@ -63,19 +63,22 @@ describe('RefinementEngineService', () => {
     {
       id: 'source-1',
       url: 'https://example.com/typescript-study',
-      content: 'TypeScript reduces bugs by 15% in large codebases according to research.',
+      content:
+        'TypeScript reduces bugs by 15% in large codebases according to research.',
       title: 'TypeScript Impact Study',
     },
     {
       id: 'source-2',
       url: 'https://example.com/typescript-tooling',
-      content: 'IDE support includes autocomplete, refactoring, and navigation features.',
+      content:
+        'IDE support includes autocomplete, refactoring, and navigation features.',
       title: 'TypeScript Tooling Guide',
     },
     {
       id: 'source-3',
       url: 'https://example.com/typescript-benefits',
-      content: 'Compile-time type checking prevents runtime errors and improves code quality.',
+      content:
+        'Compile-time type checking prevents runtime errors and improves code quality.',
       title: 'TypeScript Benefits Overview',
     },
   ];
@@ -314,7 +317,9 @@ describe('RefinementEngineService', () => {
     });
 
     it('should handle LLM errors gracefully and return fallback result', async () => {
-      ollamaService.chat.mockRejectedValue(new Error('LLM service unavailable'));
+      ollamaService.chat.mockRejectedValue(
+        new Error('LLM service unavailable'),
+      );
 
       const result = await service.refineAnswer(
         mockOriginalAnswer,

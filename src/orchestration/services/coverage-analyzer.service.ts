@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from './event-coordinator.service';
 import { Source } from './result-extractor.service';
 import { SubQuery } from '../interfaces/sub-query.interface';
@@ -15,7 +15,7 @@ export class CoverageAnalyzerService {
   private readonly MIN_CONFIDENCE = 0.7;
 
   constructor(
-    private readonly ollamaService: OllamaService,
+    private readonly llmService: LLMService,
     private readonly eventCoordinator: EventCoordinatorService,
   ) {}
 
@@ -37,16 +37,12 @@ export class CoverageAnalyzerService {
     logId?: string,
   ): Promise<CoverageResult> {
     if (logId) {
-      await this.eventCoordinator.emit(
-        logId,
-        'coverage_analysis_started',
-        {
-          query,
-          answerLength: currentAnswer.length,
-          sourceCount: sources.length,
-          subQueryCount: subQueries?.length || 0,
-        },
-      );
+      await this.eventCoordinator.emit(logId, 'coverage_analysis_started', {
+        query,
+        answerLength: currentAnswer.length,
+        sourceCount: sources.length,
+        subQueryCount: subQueries?.length || 0,
+      });
     }
 
     const prompt = this.buildCoverageAnalysisPrompt(
@@ -57,7 +53,7 @@ export class CoverageAnalyzerService {
     );
 
     try {
-      const response = await this.ollamaService.chat([
+      const response = await this.llmService.chat([
         {
           role: 'user',
           content: prompt,
@@ -83,31 +79,23 @@ export class CoverageAnalyzerService {
       };
 
       if (logId) {
-        await this.eventCoordinator.emit(
-          logId,
-          'coverage_analysis_completed',
-          {
-            overallCoverage,
-            aspectsCoveredCount: aspectsCovered.length,
-            aspectsMissingCount: aspectsMissing.length,
-            suggestedRetrievalsCount: parsed.suggestedRetrievals.length,
-            isComplete: result.isComplete,
-          },
-        );
+        await this.eventCoordinator.emit(logId, 'coverage_analysis_completed', {
+          overallCoverage,
+          aspectsCoveredCount: aspectsCovered.length,
+          aspectsMissingCount: aspectsMissing.length,
+          suggestedRetrievalsCount: parsed.suggestedRetrievals.length,
+          isComplete: result.isComplete,
+        });
       }
 
       return result;
     } catch (error) {
       if (logId) {
-        await this.eventCoordinator.emit(
-          logId,
-          'coverage_analysis_completed',
-          {
-            error: error.message,
-            overallCoverage: 0,
-            isComplete: false,
-          },
-        );
+        await this.eventCoordinator.emit(logId, 'coverage_analysis_completed', {
+          error: error.message,
+          overallCoverage: 0,
+          isComplete: false,
+        });
       }
       throw error;
     }
@@ -255,7 +243,8 @@ Respond with valid JSON only.`;
           description: aspect.description || '',
           keywords: Array.isArray(aspect.keywords) ? aspect.keywords : [],
           answered: aspect.answered === true,
-          confidence: typeof aspect.confidence === 'number' ? aspect.confidence : 0,
+          confidence:
+            typeof aspect.confidence === 'number' ? aspect.confidence : 0,
           supportingSources: Array.isArray(aspect.supportingSources)
             ? aspect.supportingSources
             : [],
@@ -292,11 +281,13 @@ Respond with valid JSON only.`;
   /**
    * Normalizes priority values to valid types.
    */
-  private normalizePriority(
-    priority: any,
-  ): 'high' | 'medium' | 'low' {
+  private normalizePriority(priority: any): 'high' | 'medium' | 'low' {
     const normalized = String(priority).toLowerCase();
-    if (normalized === 'high' || normalized === 'medium' || normalized === 'low') {
+    if (
+      normalized === 'high' ||
+      normalized === 'medium' ||
+      normalized === 'low'
+    ) {
       return normalized;
     }
     return 'medium'; // Default to medium

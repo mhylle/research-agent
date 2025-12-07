@@ -58,7 +58,7 @@ export class AzureMistralProvider implements ILLMProvider {
     // Validate and transform messages for Azure Mistral
     const validatedMessages = this.validateMessages(messages);
 
-    // DEBUG: Trace tool call / response balance before sending to API
+    // Strict validation: Trace tool call / response balance and THROW on mismatch
     this.debugTraceToolCallBalance(validatedMessages);
 
     // Build request body, sanitizing null values
@@ -69,55 +69,71 @@ export class AzureMistralProvider implements ILLMProvider {
       model,
     );
 
-    const response = await this.client.chat.completions.create({
-      ...requestBody,
-      stream: false, // Ensure non-streaming response type
-    });
-
-    return this.normalizeResponse(response);
+    try {
+      const response = await this.client.chat.completions.create({
+        ...requestBody,
+        stream: false, // Ensure non-streaming response type
+      });
+      return this.normalizeResponse(response);
+    } catch (err) {
+      // Log full message sequence on Azure error for debugging
+      if ((err as Error).message?.includes('3230')) {
+        console.error(
+          `[AzureMistral] Azure returned 3230 error - logging message sequence:`,
+        );
+        for (let i = 0; i < validatedMessages.length; i++) {
+          const msg = validatedMessages[i];
+          if (msg.role === 'assistant') {
+            const assistantMsg = msg;
+            const tcCount = assistantMsg.tool_calls?.length || 0;
+            const tcIds =
+              assistantMsg.tool_calls?.map((tc) => tc.id).join(', ') || 'none';
+            console.error(
+              `  [${i}] ASSISTANT: tool_calls=${tcCount} [${tcIds}]`,
+            );
+          } else if (msg.role === 'tool') {
+            const toolMsg = msg;
+            console.error(
+              `  [${i}] TOOL: tool_call_id=${toolMsg.tool_call_id}`,
+            );
+          } else {
+            console.error(`  [${i}] ${msg.role.toUpperCase()}`);
+          }
+        }
+      }
+      throw err;
+    }
   }
 
   /**
    * Debug method to trace tool call / response balance AND ordering in message history.
    * Azure Mistral requires: assistant message with tool_calls must be IMMEDIATELY followed
    * by exactly N tool responses (where N = number of tool_calls), before any other message type.
+   *
+   * THROWS an error if ordering issues detected to prevent the Azure API call.
    */
   private debugTraceToolCallBalance(
     messages: OpenAI.Chat.ChatCompletionMessageParam[],
   ): void {
-    // Print full message sequence for debugging
-    console.log(`[AzureMistral DEBUG] Full message sequence (${messages.length} messages):`);
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i];
-      if (msg.role === 'assistant') {
-        const assistantMsg = msg as OpenAI.Chat.ChatCompletionAssistantMessageParam;
-        const tcCount = assistantMsg.tool_calls?.length || 0;
-        const tcIds = assistantMsg.tool_calls?.map((tc) => tc.id).join(', ') || 'none';
-        const hasContent = assistantMsg.content && typeof assistantMsg.content === 'string' && assistantMsg.content.trim().length > 0;
-        console.log(`  [${i}] ASSISTANT: tool_calls=${tcCount} [${tcIds}], hasContent=${hasContent}`);
-      } else if (msg.role === 'tool') {
-        const toolMsg = msg as OpenAI.Chat.ChatCompletionToolMessageParam;
-        console.log(`  [${i}] TOOL: tool_call_id=${toolMsg.tool_call_id}`);
-      } else {
-        console.log(`  [${i}] ${msg.role.toUpperCase()}: ${(msg as any).content?.substring(0, 50) || '...'}`);
-      }
-    }
-
     // Verify ordering: each assistant message with tool_calls must be followed by exactly those tool responses
-    let orderingErrors: string[] = [];
+    const orderingErrors: string[] = [];
     let i = 0;
     while (i < messages.length) {
       const msg = messages[i];
       if (msg.role === 'assistant') {
-        const assistantMsg = msg as OpenAI.Chat.ChatCompletionAssistantMessageParam;
+        const assistantMsg = msg;
         if (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0) {
-          const expectedIds = new Set(assistantMsg.tool_calls.map((tc) => tc.id));
+          const expectedIds = new Set(
+            assistantMsg.tool_calls.map((tc) => tc.id),
+          );
           const foundIds = new Set<string>();
 
           // Check next N messages are tool responses
           let j = i + 1;
           while (j < messages.length && messages[j].role === 'tool') {
-            const toolMsg = messages[j] as OpenAI.Chat.ChatCompletionToolMessageParam;
+            const toolMsg = messages[
+              j
+            ] as OpenAI.Chat.ChatCompletionToolMessageParam;
             foundIds.add(toolMsg.tool_call_id);
             j++;
           }
@@ -129,8 +145,8 @@ export class AzureMistralProvider implements ILLMProvider {
           if (missing.length > 0 || extra.length > 0) {
             orderingErrors.push(
               `At index ${i}: Assistant has tool_calls [${[...expectedIds].join(', ')}] ` +
-              `but next ${j - i - 1} tool responses have IDs [${[...foundIds].join(', ')}]. ` +
-              `Missing: [${missing.join(', ')}], Extra: [${extra.join(', ')}]`
+                `but next ${j - i - 1} tool responses have IDs [${[...foundIds].join(', ')}]. ` +
+                `Missing: [${missing.join(', ')}], Extra: [${extra.join(', ')}]`,
             );
           }
 
@@ -142,12 +158,40 @@ export class AzureMistralProvider implements ILLMProvider {
     }
 
     if (orderingErrors.length > 0) {
-      console.error(`[AzureMistral DEBUG] ORDERING ERRORS DETECTED:`);
+      // Log FULL message sequence for debugging
+      console.error(
+        `[AzureMistral] CRITICAL: Message ordering errors detected!`,
+      );
+      console.error(
+        `[AzureMistral] Full message sequence (${messages.length} messages):`,
+      );
+      for (let idx = 0; idx < messages.length; idx++) {
+        const msg = messages[idx];
+        if (msg.role === 'assistant') {
+          const assistantMsg = msg;
+          const tcCount = assistantMsg.tool_calls?.length || 0;
+          const tcIds =
+            assistantMsg.tool_calls?.map((tc) => tc.id).join(', ') || 'none';
+          console.error(
+            `  [${idx}] ASSISTANT: tool_calls=${tcCount} [${tcIds}]`,
+          );
+        } else if (msg.role === 'tool') {
+          const toolMsg = msg;
+          console.error(
+            `  [${idx}] TOOL: tool_call_id=${toolMsg.tool_call_id}`,
+          );
+        } else {
+          console.error(`  [${idx}] ${msg.role.toUpperCase()}`);
+        }
+      }
+      console.error(`[AzureMistral] Errors:`);
       for (const err of orderingErrors) {
         console.error(`  - ${err}`);
       }
-    } else {
-      console.log(`[AzureMistral DEBUG] Message ordering OK`);
+      // Throw to prevent the Azure API call
+      throw new Error(
+        `Message ordering validation failed: ${orderingErrors[0]}`,
+      );
     }
   }
 

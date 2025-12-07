@@ -67,15 +67,38 @@ export class PlanEvaluationOrchestratorService {
       );
 
       try {
+        // Determine which evaluators to use based on plan content
+        const searchQueries = currentPlan.searchQueries || [];
+        const hasSearchSteps = this.planHasSearchSteps(currentPlan);
+
+        // Only use coverageChecker if the plan has search queries or search steps
+        // For simple factual queries that don't need web search, skip coverage checking
+        const evaluators: ('intentAnalyst' | 'coverageChecker')[] =
+          searchQueries.length > 0 || hasSearchSteps
+            ? ['intentAnalyst', 'coverageChecker']
+            : ['intentAnalyst'];
+
+        this.logger.debug(
+          `Using evaluators: ${evaluators.join(', ')} (searchQueries: ${searchQueries.length}, hasSearchSteps: ${hasSearchSteps})`,
+        );
+
         // Step 1: Panel evaluation (no timeout)
         const evaluatorResults = await this.panelEvaluator.evaluateWithPanel(
-          ['intentAnalyst', 'coverageChecker'],
+          evaluators,
           {
             query: input.query,
             plan: currentPlan,
-            searchQueries: currentPlan.searchQueries || [],
+            searchQueries,
           },
         );
+
+        // If coverage checker was skipped, add default high scores for coverage dimensions
+        // since the plan correctly identified no search is needed
+        if (!evaluators.includes('coverageChecker')) {
+          this.logger.debug(
+            'Coverage checker skipped - plan correctly identified no search needed',
+          );
+        }
 
         console.log(
           `[PlanEvaluationOrchestrator] Panel evaluation completed for attempt ${attemptNumber}`,
@@ -300,5 +323,37 @@ export class PlanEvaluationOrchestratorService {
       totalIterations: 0,
       escalatedToLargeModel: false,
     };
+  }
+
+  /**
+   * Check if the plan has any steps that perform web searches.
+   * This includes tavily_search, web_fetch, duckduckgo_search, brave_search, etc.
+   */
+  private planHasSearchSteps(plan: any): boolean {
+    const searchToolNames = [
+      'tavily_search',
+      'web_fetch',
+      'duckduckgo_search',
+      'brave_search',
+      'serpapi_search',
+      'knowledge_search',
+    ];
+
+    if (!plan.phases || !Array.isArray(plan.phases)) {
+      return false;
+    }
+
+    for (const phase of plan.phases) {
+      if (!phase.steps || !Array.isArray(phase.steps)) {
+        continue;
+      }
+      for (const step of phase.steps) {
+        if (searchToolNames.includes(step.toolName)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 }

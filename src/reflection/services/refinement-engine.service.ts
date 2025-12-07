@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
 import { SelfCritique } from '../interfaces/self-critique.interface';
@@ -18,7 +18,7 @@ export class RefinementEngineService {
   private readonly MAX_REFINEMENT_PASSES = 3;
 
   constructor(
-    private readonly llmService: OllamaService,
+    private readonly llmService: LLMService,
     private readonly eventCoordinator: EventCoordinatorService,
     private readonly researchLogger: ResearchLogger,
   ) {}
@@ -67,8 +67,14 @@ export class RefinementEngineService {
       let remainingGaps = [...gaps];
 
       // Multi-pass refinement strategy (max 3 passes)
-      for (let iteration = 1; iteration <= this.MAX_REFINEMENT_PASSES; iteration++) {
-        this.logger.debug(`Starting refinement pass ${iteration}/${this.MAX_REFINEMENT_PASSES}`);
+      for (
+        let iteration = 1;
+        iteration <= this.MAX_REFINEMENT_PASSES;
+        iteration++
+      ) {
+        this.logger.debug(
+          `Starting refinement pass ${iteration}/${this.MAX_REFINEMENT_PASSES}`,
+        );
 
         if (logId) {
           await this.eventCoordinator.emit(logId, 'refinement_pass', {
@@ -109,9 +115,7 @@ export class RefinementEngineService {
 
         // Stop if no significant improvement or all gaps addressed
         if (remainingGaps.length === 0) {
-          this.logger.log(
-            `Stopping refinement early: all gaps addressed`,
-          );
+          this.logger.log(`Stopping refinement early: all gaps addressed`);
           break;
         }
 
@@ -125,7 +129,8 @@ export class RefinementEngineService {
       }
 
       // Calculate final metrics
-      const totalImprovement = this.calculateTotalImprovement(refinementHistory);
+      const totalImprovement =
+        this.calculateTotalImprovement(refinementHistory);
       const gapsResolved = gaps.length - remainingGaps.length;
 
       const result: RefinementResult = {
@@ -391,7 +396,9 @@ REFINED ANSWER:`;
     // Penalize too much reduction, reward reasonable expansion
     const lengthRatio = refinedAnswer.length / originalAnswer.length;
     const lengthFactor =
-      lengthRatio >= 0.9 && lengthRatio <= 1.3 ? 1 : Math.max(0, 1 - Math.abs(1 - lengthRatio));
+      lengthRatio >= 0.9 && lengthRatio <= 1.3
+        ? 1
+        : Math.max(0, 1 - Math.abs(1 - lengthRatio));
 
     // Factor 3: Structural improvements (20%)
     // Check for citations, paragraphs, etc.

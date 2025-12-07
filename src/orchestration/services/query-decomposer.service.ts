@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from './event-coordinator.service';
 import { SubQuery } from '../interfaces/sub-query.interface';
 import { DecompositionResult } from '../interfaces/decomposition-result.interface';
@@ -21,7 +21,7 @@ interface LLMDecompositionResponse {
 @Injectable()
 export class QueryDecomposerService {
   constructor(
-    private readonly llmService: OllamaService,
+    private readonly llmService: LLMService,
     private readonly eventCoordinator: EventCoordinatorService,
   ) {}
 
@@ -64,15 +64,17 @@ export class QueryDecomposerService {
       }
 
       // Generate IDs for sub-queries and create SubQuery objects
-      const subQueries: SubQuery[] = llmResponse.subQueries.map((sq, index) => ({
-        id: `sq-${uuidv4()}`,
-        text: sq.text,
-        order: sq.order || index + 1,
-        dependencies: sq.dependencies || [],
-        type: sq.type,
-        priority: sq.priority,
-        estimatedComplexity: sq.estimatedComplexity,
-      }));
+      const subQueries: SubQuery[] = llmResponse.subQueries.map(
+        (sq, index) => ({
+          id: `sq-${uuidv4()}`,
+          text: sq.text,
+          order: sq.order || index + 1,
+          dependencies: sq.dependencies || [],
+          type: sq.type,
+          priority: sq.priority,
+          estimatedComplexity: sq.estimatedComplexity,
+        }),
+      );
 
       // Emit event for each sub-query identified
       if (logId) {
@@ -222,36 +224,41 @@ Respond with ONLY valid JSON, no additional text.`;
       }
 
       // Validate each sub-query
+      const validTypes = ['factual', 'analytical', 'comparative', 'temporal'];
+      const validPriorities = ['high', 'medium', 'low'];
+
       const subQueries = parsed.subQueries.map((sq: any, index: number) => {
         if (!sq.text || typeof sq.text !== 'string') {
           throw new Error(`Sub-query ${index}: missing or invalid text field`);
         }
 
-        if (!['factual', 'analytical', 'comparative', 'temporal'].includes(sq.type)) {
-          throw new Error(`Sub-query ${index}: invalid type field`);
-        }
+        // Normalize type (case-insensitive) with fallback to 'factual'
+        const normalizedType = sq.type?.toLowerCase?.() || 'factual';
+        const type = validTypes.includes(normalizedType)
+          ? normalizedType
+          : 'factual';
 
-        if (!['high', 'medium', 'low'].includes(sq.priority)) {
-          throw new Error(`Sub-query ${index}: invalid priority field`);
-        }
+        // Normalize priority (case-insensitive) with fallback to 'medium'
+        const normalizedPriority = sq.priority?.toLowerCase?.() || 'medium';
+        const priority = validPriorities.includes(normalizedPriority)
+          ? normalizedPriority
+          : 'medium';
 
-        if (
-          typeof sq.estimatedComplexity !== 'number' ||
-          sq.estimatedComplexity < 1 ||
-          sq.estimatedComplexity > 5
-        ) {
-          throw new Error(
-            `Sub-query ${index}: estimatedComplexity must be 1-5`,
-          );
-        }
+        // Normalize complexity with fallback to 3
+        const estimatedComplexity =
+          typeof sq.estimatedComplexity === 'number' &&
+          sq.estimatedComplexity >= 1 &&
+          sq.estimatedComplexity <= 5
+            ? sq.estimatedComplexity
+            : 3;
 
         return {
           text: sq.text,
           order: sq.order || index + 1,
           dependencies: Array.isArray(sq.dependencies) ? sq.dependencies : [],
-          type: sq.type as 'factual' | 'analytical' | 'comparative' | 'temporal',
-          priority: sq.priority as 'high' | 'medium' | 'low',
-          estimatedComplexity: sq.estimatedComplexity,
+          type: type as 'factual' | 'analytical' | 'comparative' | 'temporal',
+          priority: priority as 'high' | 'medium' | 'low',
+          estimatedComplexity,
         };
       });
 

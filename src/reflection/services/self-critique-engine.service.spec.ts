@@ -194,7 +194,11 @@ describe('SelfCritiqueEngineService', () => {
           strengths: ['Strength 1', 'Strength 2', 'Strength 3'],
           weaknesses: ['Weakness 1', 'Weakness 2'],
           criticalIssues: ['Critical issue 1'],
-          suggestedImprovements: ['Improvement 1', 'Improvement 2', 'Improvement 3'],
+          suggestedImprovements: [
+            'Improvement 1',
+            'Improvement 2',
+            'Improvement 3',
+          ],
         });
         mockOllamaService.chat.mockResolvedValue({
           message: { content: JSON.stringify(llmResponse) },
@@ -272,9 +276,15 @@ describe('SelfCritiqueEngineService', () => {
     describe('confidence calculation', () => {
       it('should calculate higher confidence when critique has content in all sections', async () => {
         const comprehensiveResponse = createValidLLMResponse({
-          strengths: ['Detailed strength with more than fifty characters of explanation'],
-          weaknesses: ['Detailed weakness with more than fifty characters of explanation'],
-          suggestedImprovements: ['Detailed improvement with more than fifty characters of explanation'],
+          strengths: [
+            'Detailed strength with more than fifty characters of explanation',
+          ],
+          weaknesses: [
+            'Detailed weakness with more than fifty characters of explanation',
+          ],
+          suggestedImprovements: [
+            'Detailed improvement with more than fifty characters of explanation',
+          ],
           criticalIssues: ['Critical issue identified'],
         });
         mockOllamaService.chat.mockResolvedValue({
@@ -404,9 +414,15 @@ describe('SelfCritiqueEngineService', () => {
       it('should ensure confidence stays within 0-1 range', async () => {
         // Test with maximum possible positive factors
         const maxResponse = createValidLLMResponse({
-          strengths: Array(10).fill('Very detailed strength item with over fifty characters'),
-          weaknesses: Array(10).fill('Very detailed weakness item with over fifty characters'),
-          suggestedImprovements: Array(10).fill('Very detailed improvement with over fifty characters'),
+          strengths: Array(10).fill(
+            'Very detailed strength item with over fifty characters',
+          ),
+          weaknesses: Array(10).fill(
+            'Very detailed weakness item with over fifty characters',
+          ),
+          suggestedImprovements: Array(10).fill(
+            'Very detailed improvement with over fifty characters',
+          ),
           criticalIssues: Array(5).fill('Critical issue'),
         });
         mockOllamaService.chat.mockResolvedValue({
@@ -513,7 +529,9 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       it('should log error when LLM fails', async () => {
-        mockOllamaService.chat.mockRejectedValue(new Error('Connection timeout'));
+        mockOllamaService.chat.mockRejectedValue(
+          new Error('Connection timeout'),
+        );
 
         await service.critiqueSynthesis(
           'Answer',
@@ -714,7 +732,10 @@ describe('SelfCritiqueEngineService', () => {
           claimConfidences: [
             createMockClaimConfidence({ level: 'high' }),
             createMockClaimConfidence({ claimId: 'claim-2', level: 'low' }),
-            createMockClaimConfidence({ claimId: 'claim-3', level: 'very_low' }),
+            createMockClaimConfidence({
+              claimId: 'claim-3',
+              level: 'very_low',
+            }),
           ],
         });
 
@@ -941,8 +962,12 @@ describe('SelfCritiqueEngineService', () => {
       // This is preserved when returning from catch block (not recalculated)
       expect(result.overallAssessment).toContain('Test error');
       expect(result.strengths).toEqual(['Answer was generated successfully']);
-      expect(result.weaknesses).toEqual(['Automated critique could not be completed']);
-      expect(result.criticalIssues).toEqual(['Self-critique system failure - manual review recommended']);
+      expect(result.weaknesses).toEqual([
+        'Automated critique could not be completed',
+      ]);
+      expect(result.criticalIssues).toEqual([
+        'Self-critique system failure - manual review recommended',
+      ]);
       expect(result.suggestedImprovements).toEqual([
         'Retry self-critique process',
         'Perform manual quality review',
@@ -962,9 +987,27 @@ describe('SelfCritiqueEngineService', () => {
       });
 
       const promises = [
-        service.critiqueSynthesis('Answer 1', [], 'Query 1', createMockConfidenceResult(), []),
-        service.critiqueSynthesis('Answer 2', [], 'Query 2', createMockConfidenceResult(), []),
-        service.critiqueSynthesis('Answer 3', [], 'Query 3', createMockConfidenceResult(), []),
+        service.critiqueSynthesis(
+          'Answer 1',
+          [],
+          'Query 1',
+          createMockConfidenceResult(),
+          [],
+        ),
+        service.critiqueSynthesis(
+          'Answer 2',
+          [],
+          'Query 2',
+          createMockConfidenceResult(),
+          [],
+        ),
+        service.critiqueSynthesis(
+          'Answer 3',
+          [],
+          'Query 3',
+          createMockConfidenceResult(),
+          [],
+        ),
       ];
 
       const results = await Promise.all(promises);

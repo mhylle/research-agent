@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { Claim, SubstantiveWord } from '../interfaces/claim.interface';
 
 @Injectable()
 export class ClaimExtractorService {
   private readonly logger = new Logger(ClaimExtractorService.name);
 
-  constructor(private readonly ollamaService: OllamaService) {}
+  constructor(private readonly llmService: LLMService) {}
 
   /**
    * Extract discrete claims from answer text using LLM
@@ -20,7 +20,7 @@ export class ClaimExtractorService {
     const prompt = this.buildExtractionPrompt(answerText);
 
     try {
-      const response = await this.ollamaService.chat([
+      const response = await this.llmService.chat([
         {
           role: 'system',
           content:

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import {
   EvaluatorResult,
   EscalationResult,
@@ -20,7 +20,7 @@ export class EscalationHandlerService {
   private readonly logger = new Logger(EscalationHandlerService.name);
   private readonly config = DEFAULT_EVALUATION_CONFIG;
 
-  constructor(private readonly ollamaService: OllamaService) {}
+  constructor(private readonly llmService: LLMService) {}
 
   async escalate(input: EscalationInput): Promise<EscalationResult> {
     const startTime = Date.now();
@@ -31,7 +31,7 @@ export class EscalationHandlerService {
     try {
       const prompt = this.buildPrompt(input);
 
-      const response = await this.ollamaService.chat(
+      const response = await this.llmService.chat(
         [{ role: 'user', content: prompt }],
         [],
         this.config.escalationModel,

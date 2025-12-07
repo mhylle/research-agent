@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LLMExecutor } from './llm.executor';
 import { OllamaService } from '../llm/ollama.service';
+import { ReasoningTraceService } from '../reasoning/services/reasoning-trace.service';
 import { PlanStep } from '../orchestration/interfaces/plan-step.interface';
 
 describe('LLMExecutor', () => {
@@ -22,6 +23,13 @@ describe('LLMExecutor', () => {
         {
           provide: OllamaService,
           useValue: mockOllamaService,
+        },
+        {
+          provide: ReasoningTraceService,
+          useValue: {
+            emitActionPlan: jest.fn().mockResolvedValue('action-id'),
+            emitObservation: jest.fn().mockResolvedValue(undefined),
+          },
         },
       ],
     }).compile();

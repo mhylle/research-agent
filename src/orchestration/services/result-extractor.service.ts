@@ -40,11 +40,21 @@ export class ResultExtractorService {
     let synthesisOutput: string | null = null;
     let genericStringOutput: string | null = null;
 
+    console.log(
+      `[ResultExtractor] extractAllResults called with ${phaseResult.stepResults.length} step results`,
+    );
+
     // Single pass through step results to extract both sources and output
     for (const stepResult of phaseResult.stepResults) {
+      console.log(
+        `[ResultExtractor] Step ${stepResult.stepId} (${stepResult.toolName}): output type=${typeof stepResult.output}, isArray=${Array.isArray(stepResult.output)}`,
+      );
       if (stepResult.output) {
         // Extract sources from search results
         if (Array.isArray(stepResult.output)) {
+          console.log(
+            `[ResultExtractor] Found array output with ${stepResult.output.length} items`,
+          );
           for (const item of stepResult.output) {
             if (this.isSearchResultItem(item)) {
               const score = typeof item.score === 'number' ? item.score : null;
@@ -94,6 +104,10 @@ export class ResultExtractorService {
       if (a.relevance === b.relevance) return 0;
       return a.relevance === 'high' ? -1 : 1;
     });
+
+    console.log(
+      `[ResultExtractor] extractAllResults returning ${sources.length} sources, output length=${(synthesisOutput || genericStringOutput || '').length}`,
+    );
 
     return {
       sources,

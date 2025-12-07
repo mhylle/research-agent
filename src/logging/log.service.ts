@@ -116,7 +116,9 @@ export class LogService {
   }
 
   async append(entry: CreateLogEntry): Promise<LogEntry> {
-    console.log(`[LogService] append: Starting - ${JSON.stringify({ logId: entry.logId, eventType: entry.eventType })}`);
+    console.log(
+      `[LogService] append: Starting - ${JSON.stringify({ logId: entry.logId, eventType: entry.eventType })}`,
+    );
 
     const logEntry: LogEntry = {
       id: randomUUID(),
@@ -130,13 +132,20 @@ export class LogService {
       await this.logRepository.insert(this.toEntity(logEntry));
       console.log(`[LogService] append: After logRepository.insert - success`);
     } catch (error) {
-      console.error(`[LogService] append: logRepository.insert FAILED - ${error.message}`, error.stack);
+      console.error(
+        `[LogService] append: logRepository.insert FAILED - ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
 
-    console.log(`[LogService] append: Before eventEmitter.emit (log.${entry.logId})`);
+    console.log(
+      `[LogService] append: Before eventEmitter.emit (log.${entry.logId})`,
+    );
     this.eventEmitter.emit(`log.${entry.logId}`, logEntry);
-    console.log(`[LogService] append: After eventEmitter.emit (log.${entry.logId})`);
+    console.log(
+      `[LogService] append: After eventEmitter.emit (log.${entry.logId})`,
+    );
 
     console.log(`[LogService] append: Before eventEmitter.emit (log.all)`);
     this.eventEmitter.emit('log.all', logEntry);

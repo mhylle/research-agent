@@ -3,7 +3,11 @@ import { ResearchLogger } from '../../logging/research-logger.service';
 import { ConfidenceScoringService } from '../../evaluation/services/confidence-scoring.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { WorkingMemoryService } from '../../orchestration/services/working-memory.service';
-import { ReflectionConfig, ReflectionResult, ReflectionStep } from '../interfaces';
+import {
+  ReflectionConfig,
+  ReflectionResult,
+  ReflectionStep,
+} from '../interfaces';
 import { GapDetectorService } from './gap-detector.service';
 import { SelfCritiqueEngineService } from './self-critique-engine.service';
 import { RefinementEngineService } from './refinement-engine.service';
@@ -108,11 +112,12 @@ export class ReflectionService {
         const refinedAnswer = refinementResult.finalAnswer;
 
         // Step 4: Get confidence score for refined answer
-        const newConfidenceResult = await this.confidenceScoring.scoreConfidence(
-          refinedAnswer,
-          sources,
-          taskId,
-        );
+        const newConfidenceResult =
+          await this.confidenceScoring.scoreConfidence(
+            refinedAnswer,
+            sources,
+            taskId,
+          );
         const newConfidence = newConfidenceResult.overallConfidence;
         const improvement = newConfidence - previousConfidence;
 

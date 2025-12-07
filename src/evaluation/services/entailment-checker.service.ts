@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EmbeddingService } from '../../knowledge/embedding.service';
 import { Claim } from '../interfaces/claim.interface';
 import {
@@ -22,7 +22,7 @@ export class EntailmentCheckerService {
   private readonly MAX_PASSAGES_PER_SOURCE = 3; // Max passages to extract per source
 
   constructor(
-    private readonly ollamaService: OllamaService,
+    private readonly llmService: LLMService,
     private readonly embeddingService: EmbeddingService,
   ) {}
 
@@ -166,7 +166,7 @@ export class EntailmentCheckerService {
     const prompt = this.buildEntailmentPrompt(claimText, passages);
 
     try {
-      const response = await this.ollamaService.chat([
+      const response = await this.llmService.chat([
         {
           role: 'system',
           content:

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LogsController } from './logs.controller';
 import { LogsService } from './logs.service';
+import { LogService } from '../logging/log.service';
 
 describe('LogsController', () => {
   let controller: LogsController;
@@ -15,6 +16,13 @@ describe('LogsController', () => {
           useValue: {
             getAllSessions: jest.fn(),
             getSessionDetails: jest.fn(),
+            getGraphData: jest.fn(),
+          },
+        },
+        {
+          provide: LogService,
+          useValue: {
+            getExecutionMetrics: jest.fn(),
           },
         },
       ],

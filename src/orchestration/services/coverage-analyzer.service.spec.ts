@@ -42,7 +42,11 @@ describe('CoverageAnalyzerService', () => {
       const query = 'What is the capital of France?';
       const answer = 'The capital of France is Paris.';
       const sources: Source[] = [
-        { url: 'https://example.com/france', title: 'France Facts', relevance: 'high' },
+        {
+          url: 'https://example.com/france',
+          title: 'France Facts',
+          relevance: 'high',
+        },
       ];
 
       const llmResponse = {
@@ -66,7 +70,13 @@ describe('CoverageAnalyzerService', () => {
 
       ollamaService.chat.mockResolvedValue(llmResponse as any);
 
-      const result = await service.analyzeCoverage(query, answer, sources, undefined, 'test-log-1');
+      const result = await service.analyzeCoverage(
+        query,
+        answer,
+        sources,
+        undefined,
+        'test-log-1',
+      );
 
       expect(result.overallCoverage).toBe(0.95);
       expect(result.aspectsCovered).toHaveLength(1);
@@ -97,9 +107,14 @@ describe('CoverageAnalyzerService', () => {
 
     it('should analyze coverage for a complex query with multiple aspects', async () => {
       const query = 'What are the causes and effects of climate change?';
-      const answer = 'Climate change is primarily caused by greenhouse gas emissions.';
+      const answer =
+        'Climate change is primarily caused by greenhouse gas emissions.';
       const sources: Source[] = [
-        { url: 'https://example.com/climate', title: 'Climate Science', relevance: 'high' },
+        {
+          url: 'https://example.com/climate',
+          title: 'Climate Science',
+          relevance: 'high',
+        },
       ];
 
       const llmResponse = {
@@ -138,7 +153,13 @@ describe('CoverageAnalyzerService', () => {
 
       ollamaService.chat.mockResolvedValue(llmResponse as any);
 
-      const result = await service.analyzeCoverage(query, answer, sources, undefined, 'test-log-2');
+      const result = await service.analyzeCoverage(
+        query,
+        answer,
+        sources,
+        undefined,
+        'test-log-2',
+      );
 
       expect(result.overallCoverage).toBe(0.4); // (0.8 + 0) / 2
       expect(result.aspectsCovered).toHaveLength(1);
@@ -149,10 +170,16 @@ describe('CoverageAnalyzerService', () => {
     });
 
     it('should handle mixed answered/unanswered aspects with varying confidence', async () => {
-      const query = 'Explain the history, architecture, and current status of the Eiffel Tower';
-      const answer = 'The Eiffel Tower was built in 1889. It has a unique iron lattice design.';
+      const query =
+        'Explain the history, architecture, and current status of the Eiffel Tower';
+      const answer =
+        'The Eiffel Tower was built in 1889. It has a unique iron lattice design.';
       const sources: Source[] = [
-        { url: 'https://example.com/eiffel', title: 'Eiffel Tower History', relevance: 'high' },
+        {
+          url: 'https://example.com/eiffel',
+          title: 'Eiffel Tower History',
+          relevance: 'high',
+        },
       ];
 
       const llmResponse = {
@@ -219,7 +246,11 @@ describe('CoverageAnalyzerService', () => {
       const query = 'What is quantum computing and how does it work?';
       const answer = 'Quantum computing uses quantum bits or qubits.';
       const sources: Source[] = [
-        { url: 'https://example.com/quantum', title: 'Quantum Computing 101', relevance: 'high' },
+        {
+          url: 'https://example.com/quantum',
+          title: 'Quantum Computing 101',
+          relevance: 'high',
+        },
       ];
 
       const subQueries: SubQuery[] = [
@@ -279,7 +310,12 @@ describe('CoverageAnalyzerService', () => {
 
       ollamaService.chat.mockResolvedValue(llmResponse as any);
 
-      const result = await service.analyzeCoverage(query, answer, sources, subQueries);
+      const result = await service.analyzeCoverage(
+        query,
+        answer,
+        sources,
+        subQueries,
+      );
 
       expect(result.overallCoverage).toBeCloseTo(0.525, 2); // (0.75 + 0.3) / 2
       expect(result.aspectsCovered).toHaveLength(1); // Only aspect with confidence >= 0.7
@@ -295,19 +331,22 @@ describe('CoverageAnalyzerService', () => {
       const llmResponse = {
         message: {
           role: 'assistant',
-          content: '```json\n' + JSON.stringify({
-            aspects: [
-              {
-                id: 'aspect-1',
-                description: 'Test aspect',
-                keywords: ['test'],
-                answered: true,
-                confidence: 0.9,
-                supportingSources: [],
-              },
-            ],
-            suggestedRetrievals: [],
-          }) + '\n```',
+          content:
+            '```json\n' +
+            JSON.stringify({
+              aspects: [
+                {
+                  id: 'aspect-1',
+                  description: 'Test aspect',
+                  keywords: ['test'],
+                  answered: true,
+                  confidence: 0.9,
+                  supportingSources: [],
+                },
+              ],
+              suggestedRetrievals: [],
+            }) +
+            '\n```',
         },
       };
 
@@ -347,10 +386,18 @@ describe('CoverageAnalyzerService', () => {
       const answer = 'Test answer';
       const sources: Source[] = [];
 
-      ollamaService.chat.mockRejectedValue(new Error('LLM service unavailable'));
+      ollamaService.chat.mockRejectedValue(
+        new Error('LLM service unavailable'),
+      );
 
       await expect(
-        service.analyzeCoverage(query, answer, sources, undefined, 'test-log-error'),
+        service.analyzeCoverage(
+          query,
+          answer,
+          sources,
+          undefined,
+          'test-log-error',
+        ),
       ).rejects.toThrow('LLM service unavailable');
 
       expect(eventCoordinator.emit).toHaveBeenCalledWith(

@@ -194,7 +194,8 @@ describe('QueryDecomposerService', () => {
 
       llmService.chat.mockResolvedValue({
         message: {
-          content: '```json\n{"isComplex": false, "reasoning": "test", "subQueries": []}\n```',
+          content:
+            '```json\n{"isComplex": false, "reasoning": "test", "subQueries": []}\n```',
         },
       } as any);
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
 import { Gap } from '../interfaces/gap.interface';
@@ -25,7 +25,7 @@ interface LLMGapResponse {
 @Injectable()
 export class GapDetectorService {
   constructor(
-    private readonly llmService: OllamaService,
+    private readonly llmService: LLMService,
     private readonly eventCoordinator: EventCoordinatorService,
     private readonly researchLogger: ResearchLogger,
   ) {}
@@ -45,22 +45,23 @@ export class GapDetectorService {
     try {
       // Emit gap detection started event
       if (logId) {
-        await this.eventCoordinator.emit(
-          logId,
-          'gap_detection_started',
-          {
-            query,
-            claimsCount: claims.length,
-            sourcesCount: sources.length,
-          },
-        );
+        await this.eventCoordinator.emit(logId, 'gap_detection_started', {
+          query,
+          claimsCount: claims.length,
+          sourcesCount: sources.length,
+        });
       }
 
-      this.researchLogger.log(logId || 'unknown', 'gap-detector', 'detect-gaps-start', {
-        query,
-        claimsCount: claims.length,
-        sourcesCount: sources.length,
-      });
+      this.researchLogger.log(
+        logId || 'unknown',
+        'gap-detector',
+        'detect-gaps-start',
+        {
+          query,
+          claimsCount: claims.length,
+          sourcesCount: sources.length,
+        },
+      );
 
       // 1. Detect weak claims (confidence < 0.5)
       const weakClaimGaps = await this.detectWeakClaims(
@@ -99,26 +100,29 @@ export class GapDetectorService {
       // 5. Query coverage is handled by missing information detection
 
       const durationMs = Date.now() - startTime;
-      const criticalGapsCount = gaps.filter((g) => g.severity === 'critical').length;
+      const criticalGapsCount = gaps.filter(
+        (g) => g.severity === 'critical',
+      ).length;
 
-      this.researchLogger.log(logId || 'unknown', 'gap-detector', 'detect-gaps-complete', {
-        totalGaps: gaps.length,
-        criticalGaps: criticalGapsCount,
-        durationMs,
-      });
+      this.researchLogger.log(
+        logId || 'unknown',
+        'gap-detector',
+        'detect-gaps-complete',
+        {
+          totalGaps: gaps.length,
+          criticalGaps: criticalGapsCount,
+          durationMs,
+        },
+      );
 
       // Emit gap detection completed event
       if (logId) {
-        await this.eventCoordinator.emit(
-          logId,
-          'gap_detection_completed',
-          {
-            totalGaps: gaps.length,
-            criticalGaps: criticalGapsCount,
-            gapTypes: this.aggregateGapTypes(gaps),
-            durationMs,
-          },
-        );
+        await this.eventCoordinator.emit(logId, 'gap_detection_completed', {
+          totalGaps: gaps.length,
+          criticalGaps: criticalGapsCount,
+          gapTypes: this.aggregateGapTypes(gaps),
+          durationMs,
+        });
       }
 
       return gaps;
@@ -127,14 +131,10 @@ export class GapDetectorService {
       this.researchLogger.logStageError(0, logId || 'unknown', error);
 
       if (logId) {
-        await this.eventCoordinator.emit(
-          logId,
-          'gap_detection_completed',
-          {
-            error: error.message,
-            durationMs,
-          },
-        );
+        await this.eventCoordinator.emit(logId, 'gap_detection_completed', {
+          error: error.message,
+          durationMs,
+        });
       }
 
       throw error;
@@ -154,7 +154,9 @@ export class GapDetectorService {
 
     for (const claimConfidence of claimConfidences) {
       if (claimConfidence.confidence < weakThreshold) {
-        const relatedClaim = claims.find((c) => c.id === claimConfidence.claimId);
+        const relatedClaim = claims.find(
+          (c) => c.id === claimConfidence.claimId,
+        );
         const gap: Gap = {
           id: uuidv4(),
           type: 'weak_claim',
@@ -168,17 +170,13 @@ export class GapDetectorService {
         gaps.push(gap);
 
         if (logId) {
-          await this.eventCoordinator.emit(
-            logId,
-            'gap_detected',
-            {
-              gapId: gap.id,
-              type: gap.type,
-              severity: gap.severity,
-              claimId: claimConfidence.claimId,
-              confidence: claimConfidence.confidence,
-            },
-          );
+          await this.eventCoordinator.emit(logId, 'gap_detected', {
+            gapId: gap.id,
+            type: gap.type,
+            severity: gap.severity,
+            claimId: claimConfidence.claimId,
+            confidence: claimConfidence.confidence,
+          });
         }
       }
     }
@@ -223,7 +221,8 @@ If no gaps exist, output: []`;
       const response = await this.llmService.chat([
         {
           role: 'system',
-          content: 'You are an expert research analyst identifying gaps in research answers. Respond with valid JSON only.',
+          content:
+            'You are an expert research analyst identifying gaps in research answers. Respond with valid JSON only.',
         },
         {
           role: 'user',
@@ -245,24 +244,25 @@ If no gaps exist, output: []`;
 
       for (const gap of gaps) {
         if (logId) {
-          await this.eventCoordinator.emit(
-            logId,
-            'gap_detected',
-            {
-              gapId: gap.id,
-              type: gap.type,
-              severity: gap.severity,
-              description: gap.description,
-            },
-          );
+          await this.eventCoordinator.emit(logId, 'gap_detected', {
+            gapId: gap.id,
+            type: gap.type,
+            severity: gap.severity,
+            description: gap.description,
+          });
         }
       }
 
       return gaps;
     } catch (error) {
-      this.researchLogger.log(logId || 'unknown', 'gap-detector', 'llm-gap-detection-error', {
-        error: error.message,
-      });
+      this.researchLogger.log(
+        logId || 'unknown',
+        'gap-detector',
+        'llm-gap-detection-error',
+        {
+          error: error.message,
+        },
+      );
       // Return empty array on error - don't fail gap detection
       return [];
     }
@@ -308,9 +308,7 @@ If no gaps exist, output: []`;
   /**
    * Normalize severity values from LLM
    */
-  private normalizeSeverity(
-    severity: string,
-  ): 'critical' | 'major' | 'minor' {
+  private normalizeSeverity(severity: string): 'critical' | 'major' | 'minor' {
     const normalized = severity.toLowerCase();
     if (normalized === 'critical') return 'critical';
     if (normalized === 'major' || normalized === 'high') return 'major';
@@ -330,12 +328,17 @@ If no gaps exist, output: []`;
 
     for (const claim of claims) {
       // Check ClaimConfidence supportingSources
-      const claimConfidence = claimConfidences.find((cc) => cc.claimId === claim.id);
+      const claimConfidence = claimConfidences.find(
+        (cc) => cc.claimId === claim.id,
+      );
       const supportingSourcesCount = claimConfidence?.supportingSources || 0;
 
       // Also check entailment results
-      const entailment = entailmentResults.find((er) => er.claim.id === claim.id);
-      const hasEntailmentSupport = entailment && entailment.supportingSources.length > 0;
+      const entailment = entailmentResults.find(
+        (er) => er.claim.id === claim.id,
+      );
+      const hasEntailmentSupport =
+        entailment && entailment.supportingSources.length > 0;
 
       if (supportingSourcesCount === 0 && !hasEntailmentSupport) {
         const gap: Gap = {
@@ -351,16 +354,12 @@ If no gaps exist, output: []`;
         gaps.push(gap);
 
         if (logId) {
-          await this.eventCoordinator.emit(
-            logId,
-            'gap_detected',
-            {
-              gapId: gap.id,
-              type: gap.type,
-              severity: gap.severity,
-              claimId: claim.id,
-            },
-          );
+          await this.eventCoordinator.emit(logId, 'gap_detected', {
+            gapId: gap.id,
+            type: gap.type,
+            severity: gap.severity,
+            claimId: claim.id,
+          });
         }
       }
     }
@@ -399,17 +398,13 @@ If no gaps exist, output: []`;
         gaps.push(gap);
 
         if (logId) {
-          await this.eventCoordinator.emit(
-            logId,
-            'gap_detected',
-            {
-              gapId: gap.id,
-              type: gap.type,
-              severity: gap.severity,
-              claimId: entailment.claim.id,
-              contradictingSources: entailment.contradictingSources.length,
-            },
-          );
+          await this.eventCoordinator.emit(logId, 'gap_detected', {
+            gapId: gap.id,
+            type: gap.type,
+            severity: gap.severity,
+            claimId: entailment.claim.id,
+            contradictingSources: entailment.contradictingSources.length,
+          });
         }
       }
     }

@@ -135,7 +135,10 @@ describe('ReflectionService', () => {
       providers: [
         ReflectionService,
         { provide: GapDetectorService, useValue: mockGapDetector },
-        { provide: SelfCritiqueEngineService, useValue: mockSelfCritiqueEngine },
+        {
+          provide: SelfCritiqueEngineService,
+          useValue: mockSelfCritiqueEngine,
+        },
         { provide: RefinementEngineService, useValue: mockRefinementEngine },
         { provide: ConfidenceScoringService, useValue: mockConfidenceScoring },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
@@ -157,14 +160,19 @@ describe('ReflectionService', () => {
 
   describe('reflect()', () => {
     const taskId = 'test-task-id';
-    const initialAnswer = 'This is the initial research answer about quantum computing.';
+    const initialAnswer =
+      'This is the initial research answer about quantum computing.';
 
     describe('Happy Path - Normal Execution', () => {
       it('should execute full reflection loop with expected iterations', async () => {
         // Arrange - Mock improving confidence scores across iterations
         mockConfidenceScoring.scoreConfidence
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.6 }))
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.75 }));
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.6 }),
+          )
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.75 }),
+          );
 
         mockGapDetector.detectGaps
           .mockResolvedValueOnce([createMockGap({ severity: 'major' })])
@@ -172,7 +180,9 @@ describe('ReflectionService', () => {
 
         mockSelfCritiqueEngine.critiqueSynthesis
           .mockResolvedValueOnce(createMockSelfCritique())
-          .mockResolvedValueOnce(createMockSelfCritique({ criticalIssues: [] }));
+          .mockResolvedValueOnce(
+            createMockSelfCritique({ criticalIssues: [] }),
+          );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -199,15 +209,27 @@ describe('ReflectionService', () => {
       it('should track improvements between iterations', async () => {
         // Arrange
         mockConfidenceScoring.scoreConfidence
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.5 }))
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.65 }))
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.78 }));
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.5 }),
+          )
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.65 }),
+          )
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.78 }),
+          );
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         // Act
-        const result = await service.reflect(taskId, initialAnswer, defaultConfig);
+        const result = await service.reflect(
+          taskId,
+          initialAnswer,
+          defaultConfig,
+        );
 
         // Assert
         expect(result.improvements).toBeDefined();
@@ -224,14 +246,17 @@ describe('ReflectionService', () => {
         const gap2 = createMockGap({ id: 'gap-2', type: 'missing_info' });
         const gap3 = createMockGap({ id: 'gap-3', type: 'contradiction' });
 
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.7 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.7 }),
+        );
 
         mockGapDetector.detectGaps
           .mockResolvedValueOnce([gap1])
           .mockResolvedValueOnce([gap2, gap3]);
 
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -251,11 +276,17 @@ describe('ReflectionService', () => {
       it('should terminate early when quality target is reached', async () => {
         // Arrange - Mock confidence reaching 0.9 on second iteration
         mockConfidenceScoring.scoreConfidence
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.7 }))
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.92 }));
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.7 }),
+          )
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.92 }),
+          );
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -275,11 +306,17 @@ describe('ReflectionService', () => {
       it('should include quality target reached in reflection trace', async () => {
         // Arrange
         mockConfidenceScoring.scoreConfidence
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.85 }))
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.95 }));
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.85 }),
+          )
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.95 }),
+          );
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -291,7 +328,8 @@ describe('ReflectionService', () => {
 
         // Assert
         expect(result.reflectionTrace).toBeDefined();
-        const lastStep = result.reflectionTrace[result.reflectionTrace.length - 1];
+        const lastStep =
+          result.reflectionTrace[result.reflectionTrace.length - 1];
         expect(lastStep.confidenceAfter).toBeGreaterThanOrEqual(0.9);
       });
     });
@@ -300,12 +338,20 @@ describe('ReflectionService', () => {
       it('should terminate when improvement is below threshold', async () => {
         // Arrange - Mock improvements that diminish below 5%
         mockConfidenceScoring.scoreConfidence
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.70 }))
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.75 })) // 5% improvement
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.77 })); // 2% improvement - below threshold
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.7 }),
+          )
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.75 }),
+          ) // 5% improvement
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.77 }),
+          ); // 2% improvement - below threshold
 
         mockGapDetector.detectGaps.mockResolvedValue([createMockGap()]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -325,11 +371,17 @@ describe('ReflectionService', () => {
       it('should still return valid result with diminishing returns message', async () => {
         // Arrange
         mockConfidenceScoring.scoreConfidence
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.80 }))
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.81 })); // Only 1% improvement
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.8 }),
+          )
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.81 }),
+          ); // Only 1% improvement
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -349,12 +401,15 @@ describe('ReflectionService', () => {
     describe('Max Iterations Limit', () => {
       it('should respect max iterations limit', async () => {
         // Arrange - Mock dependencies to never reach quality target
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.6 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.6 }),
+        );
 
         mockGapDetector.detectGaps.mockResolvedValue([createMockGap()]);
         mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
-          createMockSelfCritique({ criticalIssues: ['Issue that never resolves'] }),
+          createMockSelfCritique({
+            criticalIssues: ['Issue that never resolves'],
+          }),
         );
 
         const config: ReflectionConfig = {
@@ -376,11 +431,17 @@ describe('ReflectionService', () => {
       it('should return best answer after max iterations', async () => {
         // Arrange
         mockConfidenceScoring.scoreConfidence
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.5 }))
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.55 }));
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.5 }),
+          )
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.55 }),
+          );
 
         mockGapDetector.detectGaps.mockResolvedValue([createMockGap()]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -401,14 +462,23 @@ describe('ReflectionService', () => {
     describe('Error Handling', () => {
       it('should handle GapDetector errors gracefully', async () => {
         // Arrange
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.7 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.7 }),
+        );
 
-        mockGapDetector.detectGaps.mockRejectedValue(new Error('Gap detection failed'));
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockGapDetector.detectGaps.mockRejectedValue(
+          new Error('Gap detection failed'),
+        );
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         // Act
-        const result = await service.reflect(taskId, initialAnswer, defaultConfig);
+        const result = await service.reflect(
+          taskId,
+          initialAnswer,
+          defaultConfig,
+        );
 
         // Assert - Should return original answer without crashing
         expect(result).toBeDefined();
@@ -418,14 +488,21 @@ describe('ReflectionService', () => {
 
       it('should handle ConfidenceScoring errors gracefully', async () => {
         // Arrange
-        mockConfidenceScoring.scoreConfidence
-          .mockRejectedValue(new Error('Confidence scoring failed'));
+        mockConfidenceScoring.scoreConfidence.mockRejectedValue(
+          new Error('Confidence scoring failed'),
+        );
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         // Act
-        const result = await service.reflect(taskId, initialAnswer, defaultConfig);
+        const result = await service.reflect(
+          taskId,
+          initialAnswer,
+          defaultConfig,
+        );
 
         // Assert
         expect(result).toBeDefined();
@@ -434,15 +511,21 @@ describe('ReflectionService', () => {
 
       it('should handle SelfCritiqueEngine errors gracefully', async () => {
         // Arrange
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.7 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.7 }),
+        );
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis
-          .mockRejectedValue(new Error('Self-critique failed'));
+        mockSelfCritiqueEngine.critiqueSynthesis.mockRejectedValue(
+          new Error('Self-critique failed'),
+        );
 
         // Act
-        const result = await service.reflect(taskId, initialAnswer, defaultConfig);
+        const result = await service.reflect(
+          taskId,
+          initialAnswer,
+          defaultConfig,
+        );
 
         // Assert
         expect(result).toBeDefined();
@@ -466,15 +549,20 @@ describe('ReflectionService', () => {
       it('should build complete reflection trace with all steps', async () => {
         // Arrange
         mockConfidenceScoring.scoreConfidence
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.6 }))
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.75 }));
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.6 }),
+          )
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.75 }),
+          );
 
         mockGapDetector.detectGaps
           .mockResolvedValueOnce([createMockGap({ id: 'gap-1' })])
           .mockResolvedValueOnce([]);
 
-        mockSelfCritiqueEngine.critiqueSynthesis
-          .mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -504,11 +592,17 @@ describe('ReflectionService', () => {
       it('should calculate improvement correctly in each step', async () => {
         // Arrange
         mockConfidenceScoring.scoreConfidence
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.5 }))
-          .mockResolvedValueOnce(createMockConfidenceResult({ overallConfidence: 0.7 }));
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.5 }),
+          )
+          .mockResolvedValueOnce(
+            createMockConfidenceResult({ overallConfidence: 0.7 }),
+          );
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -528,11 +622,14 @@ describe('ReflectionService', () => {
     describe('Event Coordination', () => {
       it('should emit reflection events through EventCoordinator', async () => {
         // Arrange
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.9 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.9 }),
+        );
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -551,11 +648,14 @@ describe('ReflectionService', () => {
     describe('Working Memory Integration', () => {
       it('should update working memory with reflection progress', async () => {
         // Arrange
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.8 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.8 }),
+        );
 
         mockGapDetector.detectGaps.mockResolvedValue([createMockGap()]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -574,8 +674,9 @@ describe('ReflectionService', () => {
     describe('Edge Cases', () => {
       it('should handle empty initial answer', async () => {
         // Arrange
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.1 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.1 }),
+        );
 
         mockGapDetector.detectGaps.mockResolvedValue([
           createMockGap({ type: 'missing_info', severity: 'critical' }),
@@ -610,11 +711,14 @@ describe('ReflectionService', () => {
 
       it('should handle very high quality target threshold', async () => {
         // Arrange
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.99 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.99 }),
+        );
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -633,13 +737,26 @@ describe('ReflectionService', () => {
       it('should handle multiple critical gaps', async () => {
         // Arrange
         const criticalGaps: Gap[] = [
-          createMockGap({ id: 'gap-1', severity: 'critical', type: 'contradiction' }),
-          createMockGap({ id: 'gap-2', severity: 'critical', type: 'missing_info' }),
-          createMockGap({ id: 'gap-3', severity: 'critical', type: 'weak_claim' }),
+          createMockGap({
+            id: 'gap-1',
+            severity: 'critical',
+            type: 'contradiction',
+          }),
+          createMockGap({
+            id: 'gap-2',
+            severity: 'critical',
+            type: 'missing_info',
+          }),
+          createMockGap({
+            id: 'gap-3',
+            severity: 'critical',
+            type: 'weak_claim',
+          }),
         ];
 
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.4 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.4 }),
+        );
 
         mockGapDetector.detectGaps.mockResolvedValue(criticalGaps);
         mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
@@ -649,7 +766,11 @@ describe('ReflectionService', () => {
         );
 
         // Act
-        const result = await service.reflect(taskId, initialAnswer, defaultConfig);
+        const result = await service.reflect(
+          taskId,
+          initialAnswer,
+          defaultConfig,
+        );
 
         // Assert
         expect(result).toBeDefined();
@@ -660,11 +781,14 @@ describe('ReflectionService', () => {
     describe('Performance Considerations', () => {
       it('should complete within reasonable time for single iteration', async () => {
         // Arrange
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.95 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.95 }),
+        );
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         const config: ReflectionConfig = {
           ...defaultConfig,
@@ -684,11 +808,14 @@ describe('ReflectionService', () => {
     describe('Logging', () => {
       it('should log reflection initialization', async () => {
         // Arrange
-        mockConfidenceScoring.scoreConfidence
-          .mockResolvedValue(createMockConfidenceResult({ overallConfidence: 0.9 }));
+        mockConfidenceScoring.scoreConfidence.mockResolvedValue(
+          createMockConfidenceResult({ overallConfidence: 0.9 }),
+        );
 
         mockGapDetector.detectGaps.mockResolvedValue([]);
-        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(createMockSelfCritique());
+        mockSelfCritiqueEngine.critiqueSynthesis.mockResolvedValue(
+          createMockSelfCritique(),
+        );
 
         // Act
         await service.reflect(taskId, initialAnswer, defaultConfig);

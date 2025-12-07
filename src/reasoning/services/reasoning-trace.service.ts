@@ -23,10 +23,14 @@ export class ReasoningTraceService {
     content: string,
     context: ThoughtContext,
   ): Promise<string> {
-    console.log(`[ReasoningTraceService] emitThought: Starting - ${JSON.stringify({ logId, contentLength: content.length, context })}`);
+    console.log(
+      `[ReasoningTraceService] emitThought: Starting - ${JSON.stringify({ logId, contentLength: content.length, context })}`,
+    );
 
     const thoughtId = randomUUID();
-    console.log(`[ReasoningTraceService] emitThought: Generated thoughtId: ${thoughtId}`);
+    console.log(
+      `[ReasoningTraceService] emitThought: Generated thoughtId: ${thoughtId}`,
+    );
 
     const event: ThoughtEvent = {
       type: ReasoningEventType.THOUGHT,
@@ -38,28 +42,41 @@ export class ReasoningTraceService {
     };
     console.log(`[ReasoningTraceService] emitThought: Event object created`);
 
-    console.log(`[ReasoningTraceService] emitThought: Before eventCoordinator.emit`);
+    console.log(
+      `[ReasoningTraceService] emitThought: Before eventCoordinator.emit`,
+    );
     try {
       await this.eventCoordinator.emit(logId, 'reasoning_thought', {
         thoughtId,
         content,
         context,
       });
-      console.log(`[ReasoningTraceService] emitThought: After eventCoordinator.emit - success`);
+      console.log(
+        `[ReasoningTraceService] emitThought: After eventCoordinator.emit - success`,
+      );
     } catch (error) {
-      console.error(`[ReasoningTraceService] emitThought: eventCoordinator.emit FAILED - ${error.message}`, error.stack);
+      console.error(
+        `[ReasoningTraceService] emitThought: eventCoordinator.emit FAILED - ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
 
-    console.log(`[ReasoningTraceService] emitThought: Before researchLogger.log`);
+    console.log(
+      `[ReasoningTraceService] emitThought: Before researchLogger.log`,
+    );
     this.researchLogger.log(logId, 'reasoning', 'thought', {
       thoughtId,
       content,
       stage: context.stage,
     });
-    console.log(`[ReasoningTraceService] emitThought: After researchLogger.log`);
+    console.log(
+      `[ReasoningTraceService] emitThought: After researchLogger.log`,
+    );
 
-    console.log(`[ReasoningTraceService] emitThought: Completed - returning thoughtId: ${thoughtId}`);
+    console.log(
+      `[ReasoningTraceService] emitThought: Completed - returning thoughtId: ${thoughtId}`,
+    );
     return thoughtId;
   }
 
@@ -105,10 +122,14 @@ export class ReasoningTraceService {
     analysis: string,
     implications: string[],
   ): Promise<string> {
-    console.log(`[ReasoningTraceService] emitObservation: Starting - ${JSON.stringify({ logId, actionId, resultLength: result.length, analysisLength: analysis.length })}`);
+    console.log(
+      `[ReasoningTraceService] emitObservation: Starting - ${JSON.stringify({ logId, actionId, resultLength: result.length, analysisLength: analysis.length })}`,
+    );
 
     const observationId = randomUUID();
-    console.log(`[ReasoningTraceService] emitObservation: Generated observationId: ${observationId}`);
+    console.log(
+      `[ReasoningTraceService] emitObservation: Generated observationId: ${observationId}`,
+    );
 
     const event: ObservationEvent = {
       type: ReasoningEventType.OBSERVATION,
@@ -120,9 +141,13 @@ export class ReasoningTraceService {
       analysis,
       implications,
     };
-    console.log(`[ReasoningTraceService] emitObservation: Event object created`);
+    console.log(
+      `[ReasoningTraceService] emitObservation: Event object created`,
+    );
 
-    console.log(`[ReasoningTraceService] emitObservation: Before eventCoordinator.emit`);
+    console.log(
+      `[ReasoningTraceService] emitObservation: Before eventCoordinator.emit`,
+    );
     try {
       await this.eventCoordinator.emit(logId, 'reasoning_observation', {
         observationId,
@@ -131,21 +156,32 @@ export class ReasoningTraceService {
         analysis,
         implications,
       });
-      console.log(`[ReasoningTraceService] emitObservation: After eventCoordinator.emit - success`);
+      console.log(
+        `[ReasoningTraceService] emitObservation: After eventCoordinator.emit - success`,
+      );
     } catch (error) {
-      console.error(`[ReasoningTraceService] emitObservation: eventCoordinator.emit FAILED - ${error.message}`, error.stack);
+      console.error(
+        `[ReasoningTraceService] emitObservation: eventCoordinator.emit FAILED - ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
 
-    console.log(`[ReasoningTraceService] emitObservation: Before researchLogger.log`);
+    console.log(
+      `[ReasoningTraceService] emitObservation: Before researchLogger.log`,
+    );
     this.researchLogger.log(logId, 'reasoning', 'observation', {
       observationId,
       actionId,
       analysis,
     });
-    console.log(`[ReasoningTraceService] emitObservation: After researchLogger.log`);
+    console.log(
+      `[ReasoningTraceService] emitObservation: After researchLogger.log`,
+    );
 
-    console.log(`[ReasoningTraceService] emitObservation: Completed - returning observationId: ${observationId}`);
+    console.log(
+      `[ReasoningTraceService] emitObservation: Completed - returning observationId: ${observationId}`,
+    );
     return observationId;
   }
 

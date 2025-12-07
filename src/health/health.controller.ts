@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 
 interface HealthResponse {
   status: 'healthy' | 'degraded';
@@ -13,7 +13,7 @@ interface HealthResponse {
 @Controller('api/health')
 export class HealthController {
   constructor(
-    private ollamaService: OllamaService,
+    private llmService: LLMService,
     private configService: ConfigService,
   ) {}
 
@@ -33,9 +33,7 @@ export class HealthController {
 
   private async checkOllama(): Promise<boolean> {
     try {
-      await this.ollamaService.chat([
-        { role: 'user', content: 'health check' },
-      ]);
+      await this.llmService.chat([{ role: 'user', content: 'health check' }]);
       return true;
     } catch {
       return false;

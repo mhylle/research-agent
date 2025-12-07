@@ -58,11 +58,13 @@ export class OllamaService {
 
         // The final chunk has done: true and contains the full response metadata
         if (chunk.done) {
-          finalResponse = chunk as OllamaChatResponse;
+          finalResponse = chunk;
         }
       }
 
-      this.logger.debug(`Streaming completed: ${chunkCount} chunks received, ${content.length} chars`);
+      this.logger.debug(
+        `Streaming completed: ${chunkCount} chunks received, ${content.length} chars`,
+      );
 
       if (!finalResponse) {
         throw new Error('Stream ended without final response');
@@ -78,7 +80,9 @@ export class OllamaService {
           role: 'assistant',
           content: content || '',
           tool_calls: toolCalls?.map((tc: any) => ({
-            id: tc.id || `ollama-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id:
+              tc.id ||
+              `ollama-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             function: tc.function,
           })),
         },
@@ -89,7 +93,8 @@ export class OllamaService {
         },
       } as ChatResponse;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`Chat streaming failed: ${errorMessage}`);
       throw new Error(`Ollama chat failed: ${errorMessage}`);
     }

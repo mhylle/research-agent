@@ -10,7 +10,7 @@ import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry
 import { WorkingMemoryService } from './services/working-memory.service';
 import { QueryDecomposerService } from './services/query-decomposer.service';
 import { CoverageAnalyzerService } from './services/coverage-analyzer.service';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ReflectionService } from '../reflection/services/reflection.service';
 import { ResearchResultService } from '../research/research-result.service';
 import { Plan } from './interfaces/plan.interface';
@@ -27,7 +27,7 @@ describe('Orchestrator', () => {
   let mockWorkingMemory: jest.Mocked<WorkingMemoryService>;
   let mockQueryDecomposer: jest.Mocked<QueryDecomposerService>;
   let mockCoverageAnalyzer: jest.Mocked<CoverageAnalyzerService>;
-  let mockLlmService: jest.Mocked<OllamaService>;
+  let mockLlmService: jest.Mocked<LLMService>;
   let mockReflectionService: jest.Mocked<ReflectionService>;
   let mockResultService: jest.Mocked<ResearchResultService>;
 
@@ -166,7 +166,7 @@ describe('Orchestrator', () => {
       chat: jest.fn().mockResolvedValue({
         message: { content: 'Test response' },
       }),
-    } as unknown as jest.Mocked<OllamaService>;
+    } as unknown as jest.Mocked<LLMService>;
 
     mockReflectionService = {
       reflect: jest.fn().mockResolvedValue({
@@ -254,7 +254,7 @@ describe('Orchestrator', () => {
         { provide: WorkingMemoryService, useValue: mockWorkingMemory },
         { provide: QueryDecomposerService, useValue: mockQueryDecomposer },
         { provide: CoverageAnalyzerService, useValue: mockCoverageAnalyzer },
-        { provide: OllamaService, useValue: mockLlmService },
+        { provide: LLMService, useValue: mockLlmService },
         { provide: ReflectionService, useValue: mockReflectionService },
         { provide: ResearchResultService, useValue: mockResultService },
       ],
@@ -311,7 +311,9 @@ describe('Orchestrator', () => {
         'test query',
       );
       // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(mockWorkingMemory.cleanup).toHaveBeenCalledWith(expect.any(String));
+      expect(mockWorkingMemory.cleanup).toHaveBeenCalledWith(
+        expect.any(String),
+      );
     });
 
     it('should store decomposition in working memory', async () => {
@@ -377,9 +379,13 @@ describe('Orchestrator', () => {
         reasoning: 'Complex comparison query',
       };
 
-      mockQueryDecomposer.decomposeQuery.mockResolvedValue(complexDecomposition);
+      mockQueryDecomposer.decomposeQuery.mockResolvedValue(
+        complexDecomposition,
+      );
 
-      const result = await orchestrator.executeResearch('Compare AI and blockchain impacts');
+      const result = await orchestrator.executeResearch(
+        'Compare AI and blockchain impacts',
+      );
 
       expect(result).toBeDefined();
       // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -422,7 +428,11 @@ describe('Orchestrator', () => {
       mockWorkingMemory.getScratchPadValue.mockReturnValue(completeCoverage);
 
       // Coverage is complete on first check (default mock behavior)
-      const result = await orchestrator.executeWithIterativeRetrieval('test query', 'log-123', 2);
+      const result = await orchestrator.executeWithIterativeRetrieval(
+        'test query',
+        'log-123',
+        2,
+      );
 
       expect(result).toBeDefined();
       expect(result.logId).toBe('log-123');
@@ -530,7 +540,11 @@ describe('Orchestrator', () => {
         return undefined;
       });
 
-      const result = await orchestrator.executeWithIterativeRetrieval('test query', 'log-123', 3);
+      const result = await orchestrator.executeWithIterativeRetrieval(
+        'test query',
+        'log-123',
+        3,
+      );
 
       expect(result.metadata.retrievalCycles).toBe(2);
       expect(result.metadata.finalCoverage).toBe(0.9);
@@ -565,7 +579,11 @@ describe('Orchestrator', () => {
         isComplete: false,
       });
 
-      const result = await orchestrator.executeWithIterativeRetrieval('test query', 'log-123', 2);
+      const result = await orchestrator.executeWithIterativeRetrieval(
+        'test query',
+        'log-123',
+        2,
+      );
 
       expect(result.metadata.retrievalCycles).toBe(2);
 
@@ -590,7 +608,11 @@ describe('Orchestrator', () => {
         isComplete: false,
       });
 
-      const result = await orchestrator.executeWithIterativeRetrieval('test query', 'log-123', 3);
+      const result = await orchestrator.executeWithIterativeRetrieval(
+        'test query',
+        'log-123',
+        3,
+      );
 
       expect(result.metadata.retrievalCycles).toBe(1);
 
@@ -606,7 +628,11 @@ describe('Orchestrator', () => {
     });
 
     it('should emit correct SSE events during iterative retrieval', async () => {
-      await orchestrator.executeWithIterativeRetrieval('test query', 'log-123', 2);
+      await orchestrator.executeWithIterativeRetrieval(
+        'test query',
+        'log-123',
+        2,
+      );
 
       // Check for all expected event types
       // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -646,7 +672,11 @@ describe('Orchestrator', () => {
     });
 
     it('should track coverage in working memory', async () => {
-      await orchestrator.executeWithIterativeRetrieval('test query', 'log-123', 2);
+      await orchestrator.executeWithIterativeRetrieval(
+        'test query',
+        'log-123',
+        2,
+      );
 
       // Should store coverage for cycle 1
       // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -670,7 +700,8 @@ describe('Orchestrator', () => {
 
   describe('orchestrateAgenticResearch', () => {
     it('should execute full agentic pipeline for simple query', async () => {
-      const result = await orchestrator.orchestrateAgenticResearch('test query');
+      const result =
+        await orchestrator.orchestrateAgenticResearch('test query');
 
       expect(result).toBeDefined();
       expect(result.answer).toBe('Refined answer through reflection');
@@ -770,7 +801,8 @@ describe('Orchestrator', () => {
         reasoning: 'Complex query requires decomposition',
       });
 
-      const result = await orchestrator.orchestrateAgenticResearch('complex test query');
+      const result =
+        await orchestrator.orchestrateAgenticResearch('complex test query');
 
       expect(result).toBeDefined();
       expect(result.metadata.usedAgenticPipeline).toBe(true);
@@ -794,7 +826,8 @@ describe('Orchestrator', () => {
     });
 
     it('should include reflection results in agentic response', async () => {
-      const result = await orchestrator.orchestrateAgenticResearch('test query');
+      const result =
+        await orchestrator.orchestrateAgenticResearch('test query');
 
       expect(result.reflection).toBeDefined();
       expect(result.reflection?.iterationCount).toBe(2);

@@ -11,7 +11,7 @@ import { PhaseExecutorRegistry } from './phase-executors/phase-executor-registry
 import { WorkingMemoryService } from './services/working-memory.service';
 import { QueryDecomposerService } from './services/query-decomposer.service';
 import { CoverageAnalyzerService } from './services/coverage-analyzer.service';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ReflectionService } from '../reflection/services/reflection.service';
 import { ResearchResultService } from '../research/research-result.service';
 import { ReflectionConfig, ReflectionResult } from '../reflection/interfaces';
@@ -35,9 +35,15 @@ export interface ResearchResult {
     totalExecutionTime: number;
     phases: Array<{ phase: string; executionTime: number }>;
     decomposition?: DecompositionResult;
-    subQueryResults?: Map<string, SubQueryResult>;
+    subQueryResults?: Record<string, SubQueryResult>;
     retrievalCycles?: number;
     finalCoverage?: number;
+    pipelineType?:
+      | 'decomposed'
+      | 'iterative'
+      | 'agentic-decomposed'
+      | 'agentic-simple'
+      | 'simple';
   };
   confidence?: ConfidenceResult;
 }
@@ -75,7 +81,7 @@ export class Orchestrator {
     private workingMemory: WorkingMemoryService,
     private queryDecomposer: QueryDecomposerService,
     private coverageAnalyzer: CoverageAnalyzerService,
-    private llmService: OllamaService,
+    private llmService: LLMService,
     private reflectionService: ReflectionService,
     private resultService: ResearchResultService,
   ) {}
@@ -99,21 +105,36 @@ export class Orchestrator {
       await this.eventCoordinator.emit(logId, 'session_started', { query });
 
       // Step 1: Decompose query to determine complexity
-      const decomposition = await this.queryDecomposer.decomposeQuery(query, logId);
+      const decomposition = await this.queryDecomposer.decomposeQuery(
+        query,
+        logId,
+      );
 
       // Store decomposition in working memory
-      this.workingMemory.setScratchPadValue(logId, 'decomposition', decomposition);
+      this.workingMemory.setScratchPadValue(
+        logId,
+        'decomposition',
+        decomposition,
+      );
 
       let result: ResearchResult;
 
       if (!decomposition.isComplex) {
         // Simple query - execute normal flow
-        console.log('[Orchestrator] Simple query detected, executing normal flow');
+        console.log(
+          '[Orchestrator] Simple query detected, executing normal flow',
+        );
         result = await this.executeSimpleQuery(query, logId, startTime);
       } else {
         // Complex query - execute sub-queries according to plan
-        console.log(`[Orchestrator] Complex query detected with ${decomposition.subQueries.length} sub-queries`);
-        result = await this.executeDecomposedQuery(decomposition, logId, startTime);
+        console.log(
+          `[Orchestrator] Complex query detected with ${decomposition.subQueries.length} sub-queries`,
+        );
+        result = await this.executeDecomposedQuery(
+          decomposition,
+          logId,
+          startTime,
+        );
       }
 
       // Add decomposition to metadata
@@ -241,7 +262,9 @@ export class Orchestrator {
     const totalExecutionTime = Date.now() - startTime;
 
     // Persist result to database BEFORE emitting session_completed
-    console.log(`[Orchestrator] Persisting research result for logId: ${logId}`);
+    console.log(
+      `[Orchestrator] Persisting research result for logId: ${logId}`,
+    );
     try {
       await this.resultService.save({
         logId,
@@ -255,9 +278,14 @@ export class Orchestrator {
         },
         confidence,
       });
-      console.log(`[Orchestrator] Research result persisted successfully for logId: ${logId}`);
+      console.log(
+        `[Orchestrator] Research result persisted successfully for logId: ${logId}`,
+      );
     } catch (error) {
-      console.error(`[Orchestrator] Failed to persist research result for logId: ${logId}`, error);
+      console.error(
+        `[Orchestrator] Failed to persist research result for logId: ${logId}`,
+        error,
+      );
       // Don't throw - still emit completion but log the error
     }
 
@@ -289,25 +317,36 @@ export class Orchestrator {
     logId: string,
     startTime: number,
   ): Promise<ResearchResult> {
+    // Generate a proper UUID for planId (required by database schema)
+    const planId = randomUUID();
     const subQueryResults = new Map<string, SubQueryResult>();
-    const allSources: Array<{ url: string; title: string; relevance: string }> = [];
+    const allSources: Array<{ url: string; title: string; relevance: string }> =
+      [];
     const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
 
-    console.log(`[Orchestrator] Executing ${decomposition.executionPlan.length} phases of sub-queries`);
+    console.log(
+      `[Orchestrator] Executing ${decomposition.executionPlan.length} phases of sub-queries`,
+    );
 
     // Execute each phase of sub-queries
-    for (let phaseIndex = 0; phaseIndex < decomposition.executionPlan.length; phaseIndex++) {
+    for (
+      let phaseIndex = 0;
+      phaseIndex < decomposition.executionPlan.length;
+      phaseIndex++
+    ) {
       const phase = decomposition.executionPlan[phaseIndex];
       const phaseStartTime = Date.now();
 
-      console.log(`[Orchestrator] Executing phase ${phaseIndex + 1} with ${phase.length} sub-queries in parallel`);
+      console.log(
+        `[Orchestrator] Executing phase ${phaseIndex + 1} with ${phase.length} sub-queries in parallel`,
+      );
 
       // Execute all sub-queries in this phase in parallel
       await Promise.all(
         phase.map(async (subQuery) => {
           // Gather dependency results for context
           const dependencyResults = subQuery.dependencies
-            .map(depId => subQueryResults.get(depId))
+            .map((depId) => subQueryResults.get(depId))
             .filter((r): r is SubQueryResult => r !== undefined);
 
           // Execute sub-query
@@ -318,8 +357,14 @@ export class Orchestrator {
           );
 
           subQueryResults.set(subQuery.id, result);
+          console.log(
+            `[Orchestrator] Sub-query ${subQuery.id} returned ${result.sources.length} sources, adding to allSources`,
+          );
           allSources.push(...result.sources);
-        })
+          console.log(
+            `[Orchestrator] allSources now has ${allSources.length} sources`,
+          );
+        }),
       );
 
       phaseMetrics.push({
@@ -349,23 +394,31 @@ export class Orchestrator {
     const uniqueSources = this.deduplicateSources(allSources);
 
     // Persist result to database BEFORE emitting session_completed
-    console.log(`[Orchestrator] Persisting decomposed research result for logId: ${logId}`);
+    console.log(
+      `[Orchestrator] Persisting decomposed research result for logId: ${logId}`,
+    );
     try {
       await this.resultService.save({
         logId,
-        planId: `decomposed-${logId}`,
+        planId,
         query: decomposition.originalQuery,
         answer: finalAnswer,
         sources: uniqueSources,
         metadata: {
           totalExecutionTime,
           phases: phaseMetrics,
-          subQueryResults,
+          subQueryResults: Object.fromEntries(subQueryResults),
+          pipelineType: 'decomposed',
         },
       });
-      console.log(`[Orchestrator] Decomposed research result persisted successfully for logId: ${logId}`);
+      console.log(
+        `[Orchestrator] Decomposed research result persisted successfully for logId: ${logId}`,
+      );
     } catch (error) {
-      console.error(`[Orchestrator] Failed to persist decomposed research result for logId: ${logId}`, error);
+      console.error(
+        `[Orchestrator] Failed to persist decomposed research result for logId: ${logId}`,
+        error,
+      );
       // Don't throw - still emit completion but log the error
     }
 
@@ -378,13 +431,14 @@ export class Orchestrator {
 
     return {
       logId,
-      planId: `decomposed-${logId}`,
+      planId,
       answer: finalAnswer,
       sources: uniqueSources,
       metadata: {
         totalExecutionTime,
         phases: phaseMetrics,
-        subQueryResults,
+        subQueryResults: Object.fromEntries(subQueryResults),
+        pipelineType: 'decomposed',
       },
     };
   }
@@ -397,7 +451,9 @@ export class Orchestrator {
     dependencyResults: SubQueryResult[],
     logId: string,
   ): Promise<SubQueryResult> {
-    const subLogId = `${logId}-${subQuery.id}`;
+    // Use a memory key for working memory isolation (can be any string)
+    // but use the parent logId for database operations (must be valid UUID)
+    const memoryKey = `${logId}-${subQuery.id}`;
 
     await this.eventCoordinator.emit(logId, 'sub_query_execution_started', {
       subQueryId: subQuery.id,
@@ -411,27 +467,32 @@ export class Orchestrator {
       let enrichedQuery = subQuery.text;
       if (dependencyResults.length > 0) {
         const contextSummary = dependencyResults
-          .map(r => `Previous finding: ${r.answer.substring(0, 500)}`)
+          .map((r) => `Previous finding: ${r.answer.substring(0, 500)}`)
           .join('\n\n');
         enrichedQuery = `${subQuery.text}\n\nContext from previous research:\n${contextSummary}`;
       }
 
       // Execute a simplified research flow for the sub-query
-      // Initialize working memory for sub-query
-      this.workingMemory.initialize(subLogId, enrichedQuery);
+      // Initialize working memory for sub-query (memoryKey can be any string)
+      this.workingMemory.initialize(memoryKey, enrichedQuery);
 
       try {
         // Create plan for sub-query (with reduced complexity)
-        const plan = await this.plannerService.createPlan(enrichedQuery, subLogId);
+        // Use parent logId for database operations (must be valid UUID)
+        const plan = await this.plannerService.createPlan(enrichedQuery, logId);
 
-        // Execute plan
-        const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
+        // Execute plan with parent logId for database operations
+        const phaseMetrics: Array<{ phase: string; executionTime: number }> =
+          [];
         const { finalOutput, sources, confidence } = await this.executePlan(
           plan,
-          subLogId,
+          logId,
           phaseMetrics,
         );
 
+        console.log(
+          `[Orchestrator] Sub-query ${subQuery.id} completed with ${sources.length} sources`,
+        );
         const result: SubQueryResult = {
           subQueryId: subQuery.id,
           answer: finalOutput,
@@ -439,16 +500,20 @@ export class Orchestrator {
           confidence: confidence?.overallConfidence,
         };
 
-        await this.eventCoordinator.emit(logId, 'sub_query_execution_completed', {
-          subQueryId: subQuery.id,
-          success: true,
-          answerLength: finalOutput.length,
-          sourceCount: sources.length,
-        });
+        await this.eventCoordinator.emit(
+          logId,
+          'sub_query_execution_completed',
+          {
+            subQueryId: subQuery.id,
+            success: true,
+            answerLength: finalOutput.length,
+            sourceCount: sources.length,
+          },
+        );
 
         return result;
       } finally {
-        this.workingMemory.cleanup(subLogId);
+        this.workingMemory.cleanup(memoryKey);
       }
     } catch (error) {
       console.error(`[Orchestrator] Sub-query ${subQuery.id} failed:`, error);
@@ -512,7 +577,8 @@ Write a thorough, professional response that fully answers the original question
       const response = await this.llmService.chat([
         {
           role: 'system',
-          content: 'You are an expert research synthesizer. Create comprehensive, well-structured answers that integrate multiple research findings.',
+          content:
+            'You are an expert research synthesizer. Create comprehensive, well-structured answers that integrate multiple research findings.',
         },
         {
           role: 'user',
@@ -563,7 +629,8 @@ Write a thorough, professional response that fully answers the original question
     confidence?: ConfidenceResult;
   }> {
     let finalOutput = '';
-    const sources: Array<{ url: string; title: string; relevance: string }> = [];
+    const sources: Array<{ url: string; title: string; relevance: string }> =
+      [];
     const allStepResults: StepResult[] = [];
     let retrievalEvaluationComplete = false;
     let confidence: ConfidenceResult | undefined;
@@ -574,7 +641,10 @@ Write a thorough, professional response that fully answers the original question
 
     // Set up listener for confidence scoring completion
     const confidenceListener = (entry: any) => {
-      if (entry.logId === logId && entry.eventType === 'confidence_scoring_completed') {
+      if (
+        entry.logId === logId &&
+        entry.eventType === 'confidence_scoring_completed'
+      ) {
         confidence = entry.data.confidence;
       }
     };
@@ -610,12 +680,18 @@ Write a thorough, professional response that fully answers the original question
         allStepResults.push(...phaseResult.stepResults);
 
         // Store phase results for potential re-planning
-        this.plannerService.setPhaseResults(phase.id, phaseResult);
+        this.plannerService.setPhaseResults(plan.id, phase.id, phaseResult);
 
         // Extract sources and final output
         const { sources: phaseSources, output: phaseOutput } =
           this.resultExtractor.extractAllResults(phaseResult);
+        console.log(
+          `[Orchestrator] Phase "${phase.name}" extracted ${phaseSources.length} sources`,
+        );
         sources.push(...phaseSources);
+        console.log(
+          `[Orchestrator] Total accumulated sources: ${sources.length}`,
+        );
         if (phaseOutput) {
           finalOutput = phaseOutput;
         }
@@ -698,7 +774,11 @@ Write a thorough, professional response that fully answers the original question
               }
 
               if (replanResult.status !== 'failed') {
-                this.plannerService.setPhaseResults(phase.id, phaseResult);
+                this.plannerService.setPhaseResults(
+                  plan.id,
+                  phase.id,
+                  phaseResult,
+                );
 
                 const { sources: phaseSources, output: phaseOutput } =
                   this.resultExtractor.extractAllResults(phaseResult);
@@ -763,6 +843,9 @@ Write a thorough, professional response that fully answers the original question
       this.eventEmitter.off(`log.${logId}`, confidenceListener);
     }
 
+    console.log(
+      `[Orchestrator] executePlan returning ${sources.length} sources, output length=${finalOutput.length}`,
+    );
     return { finalOutput, sources, confidence };
   }
 
@@ -1057,7 +1140,13 @@ Write a thorough, professional response that fully answers the original question
     logId: string,
     maxRetrievalCycles: number = 2,
   ): Promise<ResearchResult> {
-    let currentSources: Array<{ url: string; title: string; relevance: string }> = [];
+    // Generate a proper UUID for planId (required by database schema)
+    const planId = randomUUID();
+    let currentSources: Array<{
+      url: string;
+      title: string;
+      relevance: string;
+    }> = [];
     let currentAnswer = '';
     let cycle = 0;
     const startTime = Date.now();
@@ -1067,7 +1156,10 @@ Write a thorough, professional response that fully answers the original question
     this.workingMemory.initialize(logId, query);
 
     try {
-      await this.eventCoordinator.emit(logId, 'session_started', { query, iterativeMode: true });
+      await this.eventCoordinator.emit(logId, 'session_started', {
+        query,
+        iterativeMode: true,
+      });
 
       while (cycle < maxRetrievalCycles) {
         cycle++;
@@ -1086,7 +1178,10 @@ Write a thorough, professional response that fully answers the original question
           cycle,
           logId,
         );
-        currentSources = this.deduplicateSources([...currentSources, ...newSources]);
+        currentSources = this.deduplicateSources([
+          ...currentSources,
+          ...newSources,
+        ]);
 
         // Synthesis phase - generate/update answer
         currentAnswer = await this.executeSynthesisForRetrieval(
@@ -1104,13 +1199,21 @@ Write a thorough, professional response that fully answers the original question
         const coverage = await this.coverageAnalyzer.analyzeCoverage(
           query,
           currentAnswer,
-          currentSources.map(s => ({ url: s.url, title: s.title, relevance: s.relevance })),
+          currentSources.map((s) => ({
+            url: s.url,
+            title: s.title,
+            relevance: s.relevance,
+          })),
           undefined, // subQueries
           logId,
         );
 
         // Store coverage in working memory
-        this.workingMemory.setScratchPadValue(logId, `coverage_cycle_${cycle}`, coverage);
+        this.workingMemory.setScratchPadValue(
+          logId,
+          `coverage_cycle_${cycle}`,
+          coverage,
+        );
 
         await this.eventCoordinator.emit(logId, 'coverage_checked', {
           cycle,
@@ -1123,7 +1226,9 @@ Write a thorough, professional response that fully answers the original question
 
         // Check termination conditions
         if (coverage.isComplete) {
-          console.log(`[Orchestrator] Cycle ${cycle}: Coverage threshold met (${coverage.overallCoverage.toFixed(2)}), terminating`);
+          console.log(
+            `[Orchestrator] Cycle ${cycle}: Coverage threshold met (${coverage.overallCoverage.toFixed(2)}), terminating`,
+          );
           await this.eventCoordinator.emit(logId, 'retrieval_cycle_completed', {
             cycle,
             terminationReason: 'coverage_threshold_met',
@@ -1133,7 +1238,9 @@ Write a thorough, professional response that fully answers the original question
         }
 
         if (coverage.suggestedRetrievals.length === 0) {
-          console.log(`[Orchestrator] Cycle ${cycle}: No additional retrieval suggestions, terminating`);
+          console.log(
+            `[Orchestrator] Cycle ${cycle}: No additional retrieval suggestions, terminating`,
+          );
           await this.eventCoordinator.emit(logId, 'retrieval_cycle_completed', {
             cycle,
             terminationReason: 'no_more_suggestions',
@@ -1143,7 +1250,9 @@ Write a thorough, professional response that fully answers the original question
         }
 
         if (cycle >= maxRetrievalCycles) {
-          console.log(`[Orchestrator] Cycle ${cycle}: Max cycles reached, terminating`);
+          console.log(
+            `[Orchestrator] Cycle ${cycle}: Max cycles reached, terminating`,
+          );
           await this.eventCoordinator.emit(logId, 'retrieval_cycle_completed', {
             cycle,
             terminationReason: 'max_cycles_reached',
@@ -1152,18 +1261,26 @@ Write a thorough, professional response that fully answers the original question
           break;
         }
 
-        console.log(`[Orchestrator] Cycle ${cycle}: Coverage ${coverage.overallCoverage.toFixed(2)}, continuing with ${coverage.suggestedRetrievals.length} additional retrievals`);
+        console.log(
+          `[Orchestrator] Cycle ${cycle}: Coverage ${coverage.overallCoverage.toFixed(2)}, continuing with ${coverage.suggestedRetrievals.length} additional retrievals`,
+        );
       }
 
       const totalExecutionTime = Date.now() - startTime;
-      const finalCoverage = this.workingMemory.getScratchPadValue<CoverageResult>(logId, `coverage_cycle_${cycle}`);
+      const finalCoverage =
+        this.workingMemory.getScratchPadValue<CoverageResult>(
+          logId,
+          `coverage_cycle_${cycle}`,
+        );
 
       // Persist result to database BEFORE emitting session_completed
-      console.log(`[Orchestrator] Persisting iterative research result for logId: ${logId}`);
+      console.log(
+        `[Orchestrator] Persisting iterative research result for logId: ${logId}`,
+      );
       try {
         await this.resultService.save({
           logId,
-          planId: `iterative-${logId}`,
+          planId,
           query,
           answer: currentAnswer,
           sources: currentSources,
@@ -1172,11 +1289,17 @@ Write a thorough, professional response that fully answers the original question
             phases: phaseMetrics,
             retrievalCycles: cycle,
             finalCoverage: finalCoverage?.overallCoverage,
+            pipelineType: 'iterative',
           },
         });
-        console.log(`[Orchestrator] Iterative research result persisted successfully for logId: ${logId}`);
+        console.log(
+          `[Orchestrator] Iterative research result persisted successfully for logId: ${logId}`,
+        );
       } catch (error) {
-        console.error(`[Orchestrator] Failed to persist iterative research result for logId: ${logId}`, error);
+        console.error(
+          `[Orchestrator] Failed to persist iterative research result for logId: ${logId}`,
+          error,
+        );
         // Don't throw - still emit completion but log the error
       }
 
@@ -1190,7 +1313,7 @@ Write a thorough, professional response that fully answers the original question
 
       return {
         logId,
-        planId: `iterative-${logId}`,
+        planId,
         answer: currentAnswer,
         sources: currentSources,
         metadata: {
@@ -1198,6 +1321,7 @@ Write a thorough, professional response that fully answers the original question
           phases: phaseMetrics,
           retrievalCycles: cycle,
           finalCoverage: finalCoverage?.overallCoverage,
+          pipelineType: 'iterative',
         },
       };
     } finally {
@@ -1218,10 +1342,12 @@ Write a thorough, professional response that fully answers the original question
     if (cycle === 1) {
       // First cycle: normal search based on query
       const plan = await this.plannerService.createPlan(query, logId);
-      const searchPhase = plan.phases.find(p => this.isRetrievalPhase(p));
+      const searchPhase = plan.phases.find((p) => this.isRetrievalPhase(p));
 
       if (!searchPhase) {
-        console.log('[Orchestrator] No search phase in plan, returning empty sources');
+        console.log(
+          '[Orchestrator] No search phase in plan, returning empty sources',
+        );
         return [];
       }
 
@@ -1246,15 +1372,21 @@ Write a thorough, professional response that fully answers the original question
       return [];
     }
 
-    console.log(`[Orchestrator] Cycle ${cycle}: Executing ${coverage.suggestedRetrievals.length} gap-filling searches`);
+    console.log(
+      `[Orchestrator] Cycle ${cycle}: Executing ${coverage.suggestedRetrievals.length} gap-filling searches`,
+    );
 
     // Execute suggested retrieval queries
-    const allSources: Array<{ url: string; title: string; relevance: string }> = [];
+    const allSources: Array<{ url: string; title: string; relevance: string }> =
+      [];
 
     for (const suggestion of coverage.suggestedRetrievals) {
       try {
-        const plan = await this.plannerService.createPlan(suggestion.searchQuery, logId);
-        const searchPhase = plan.phases.find(p => this.isRetrievalPhase(p));
+        const plan = await this.plannerService.createPlan(
+          suggestion.searchQuery,
+          logId,
+        );
+        const searchPhase = plan.phases.find((p) => this.isRetrievalPhase(p));
 
         if (!searchPhase) continue;
 
@@ -1268,7 +1400,10 @@ Write a thorough, professional response that fully answers the original question
         const { sources } = this.resultExtractor.extractAllResults(phaseResult);
         allSources.push(...sources);
       } catch (error) {
-        console.error(`[Orchestrator] Gap-filling search failed for "${suggestion.searchQuery}":`, error);
+        console.error(
+          `[Orchestrator] Gap-filling search failed for "${suggestion.searchQuery}":`,
+          error,
+        );
       }
     }
 
@@ -1304,7 +1439,8 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
       const response = await this.llmService.chat([
         {
           role: 'system',
-          content: 'You are a research assistant that provides accurate, well-cited answers based on given sources.',
+          content:
+            'You are a research assistant that provides accurate, well-cited answers based on given sources.',
         },
         {
           role: 'user',
@@ -1417,7 +1553,9 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
       };
 
       // Persist result to database BEFORE emitting session_completed
-      console.log(`[Orchestrator] Persisting agentic research result for logId: ${logId}`);
+      console.log(
+        `[Orchestrator] Persisting agentic research result for logId: ${logId}`,
+      );
       try {
         await this.resultService.save({
           logId,
@@ -1428,9 +1566,14 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
           metadata: agenticResult.metadata,
           confidence: researchResult.confidence,
         });
-        console.log(`[Orchestrator] Agentic research result persisted successfully for logId: ${logId}`);
+        console.log(
+          `[Orchestrator] Agentic research result persisted successfully for logId: ${logId}`,
+        );
       } catch (error) {
-        console.error(`[Orchestrator] Failed to persist agentic research result for logId: ${logId}`, error);
+        console.error(
+          `[Orchestrator] Failed to persist agentic research result for logId: ${logId}`,
+          error,
+        );
         // Don't throw - still emit completion but log the error
       }
 
@@ -1457,6 +1600,8 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
     logId: string,
     startTime: number,
   ): Promise<ResearchResult> {
+    // Generate a proper UUID for planId (required by database schema)
+    const planId = randomUUID();
     const subQueryResults = new Map<string, SubQueryResult>();
     const allSources: Array<{ url: string; title: string; relevance: string }> =
       [];
@@ -1482,7 +1627,8 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
       // Execute sub-queries in parallel with reduced retrieval cycles
       await Promise.all(
         phase.map(async (subQuery) => {
-          const subLogId = `${logId}-${subQuery.id}`;
+          // Use parent logId for database operations (must be valid UUID)
+          // subQuery.id is tracked separately in event data
 
           await this.eventCoordinator.emit(
             logId,
@@ -1496,9 +1642,10 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
 
           try {
             // Use iterative retrieval with max 1 additional cycle for sub-queries
+            // Use parent logId (valid UUID) instead of concatenated string
             const result = await this.executeWithIterativeRetrieval(
               subQuery.text,
-              subLogId,
+              logId,
               1, // Max 1 additional cycle for sub-queries
             );
 
@@ -1571,14 +1718,15 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
 
     return {
       logId,
-      planId: `agentic-decomposed-${logId}`,
+      planId,
       answer: finalAnswer,
       sources: uniqueSources,
       metadata: {
         totalExecutionTime: Date.now() - startTime,
         phases: phaseMetrics,
         decomposition,
-        subQueryResults,
+        subQueryResults: Object.fromEntries(subQueryResults),
+        pipelineType: 'agentic-decomposed',
       },
     };
   }
@@ -1594,12 +1742,13 @@ Provide a well-structured, comprehensive answer that synthesizes information fro
     // Use iterative retrieval for simple queries too (max 2 cycles)
     const result = await this.executeWithIterativeRetrieval(query, logId, 2);
 
+    // Keep the valid UUID planId from executeWithIterativeRetrieval, just add pipelineType
     return {
       ...result,
-      planId: `agentic-simple-${logId}`,
       metadata: {
         ...result.metadata,
         totalExecutionTime: Date.now() - startTime,
+        pipelineType: 'agentic-simple',
       },
     };
   }

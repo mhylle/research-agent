@@ -192,6 +192,16 @@ export class LogsService {
         planningPhase.duration = endTime - startTime;
       }
 
+      // Also handle planning_completed event (emitted after plan finalization)
+      if (entry.eventType === 'planning_completed' && planningPhase) {
+        planningPhase.status = 'completed';
+        if (!planningPhase.duration || planningPhase.duration === 0) {
+          const startTime = new Date(planningPhase.timestamp).getTime();
+          const endTime = new Date(entry.timestamp).getTime();
+          planningPhase.duration = endTime - startTime;
+        }
+      }
+
       // Handle plan regeneration events
       if (entry.eventType === 'plan_regeneration_started') {
         const regenerationNode: TimelineNode = {

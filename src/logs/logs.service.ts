@@ -446,6 +446,18 @@ export class LogsService {
       }
     });
 
+    // Mark abandoned phases as "skipped" when session is completed
+    // Phases that were added but never started (no phase_started event) should be marked as skipped
+    if (sessionNode.status === 'completed') {
+      for (const phaseNode of phaseNodes.values()) {
+        if (phaseNode.status === 'pending') {
+          phaseNode.status = 'skipped';
+          // Use session end time as the skip time
+          phaseNode.endTime = sessionNode.endTime;
+        }
+      }
+    }
+
     // Update session node end time
     if (detail.entries.length > 0) {
       const lastEntry = detail.entries[detail.entries.length - 1];

@@ -6,7 +6,8 @@ export type NodeStatus =
   | 'running'
   | 'completed'
   | 'error'
-  | 'retrying';
+  | 'retrying'
+  | 'skipped';
 
 export interface EnhancedLogEntry extends LogEntry {
   // Node lifecycle tracking

@@ -4,7 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomUUID } from 'crypto';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ToolExecutor } from '../executors/tool.executor';
 import { LogService } from '../logging/log.service';
 import { ReasoningTraceService } from '../reasoning/services/reasoning-trace.service';
@@ -29,7 +29,7 @@ export class PlannerService {
   private planCreationCount: number = 0;
 
   constructor(
-    private llmService: OllamaService,
+    private llmService: LLMService,
     private toolExecutor: ToolExecutor,
     private logService: LogService,
     private eventEmitter: EventEmitter2,
@@ -37,7 +37,9 @@ export class PlannerService {
   ) {}
 
   async createPlan(query: string, logId: string): Promise<Plan> {
-    console.log(`[PlannerService] createPlan: Starting - ${JSON.stringify({ query, logId })}`);
+    console.log(
+      `[PlannerService] createPlan: Starting - ${JSON.stringify({ query, logId })}`,
+    );
 
     this.currentPlan = null;
     this.phaseResults.clear();
@@ -55,11 +57,15 @@ export class PlannerService {
 
     console.log(`[PlannerService] createPlan: Getting available tools`);
     const availableTools = this.toolExecutor.getAvailableTools();
-    console.log(`[PlannerService] createPlan: Got ${availableTools.length} available tools`);
+    console.log(
+      `[PlannerService] createPlan: Got ${availableTools.length} available tools`,
+    );
 
     console.log(`[PlannerService] createPlan: Building planner system prompt`);
     const systemPrompt = this.buildPlannerSystemPrompt(availableTools);
-    console.log(`[PlannerService] createPlan: System prompt built (length: ${systemPrompt.length})`);
+    console.log(
+      `[PlannerService] createPlan: System prompt built (length: ${systemPrompt.length})`,
+    );
 
     // Emit thought about available tools and planning strategy
     console.log(`[PlannerService] createPlan: Before emitThought #2`);
@@ -68,10 +74,14 @@ export class PlannerService {
       `Planning strategy: Will use LLM to generate multi-phase research plan. Available tools: ${availableTools.map((t) => t.function.name).join(', ')}. Assessing query complexity to determine optimal approach.`,
       { stage: 'planning', step: 2 },
     );
-    console.log(`[PlannerService] createPlan: After emitThought #2 - thoughtId: ${planningThoughtId}`);
+    console.log(
+      `[PlannerService] createPlan: After emitThought #2 - thoughtId: ${planningThoughtId}`,
+    );
 
     // Emit planning_started event so UI shows "Planning..." indicator
-    console.log(`[PlannerService] createPlan: Before logService.append (planning_started)`);
+    console.log(
+      `[PlannerService] createPlan: Before logService.append (planning_started)`,
+    );
     const planningStartEntry = await this.logService.append({
       logId,
       eventType: 'planning_started',
@@ -82,7 +92,9 @@ export class PlannerService {
         message: 'LLM is generating research plan...',
       },
     });
-    console.log(`[PlannerService] createPlan: After logService.append - entry: ${JSON.stringify({ id: planningStartEntry.id, eventType: planningStartEntry.eventType })}`);
+    console.log(
+      `[PlannerService] createPlan: After logService.append - entry: ${JSON.stringify({ id: planningStartEntry.id, eventType: planningStartEntry.eventType })}`,
+    );
 
     console.log(`[PlannerService] createPlan: Before eventEmitter.emit`);
     this.eventEmitter.emit(`log.${logId}`, planningStartEntry);
@@ -93,19 +105,27 @@ export class PlannerService {
       { role: 'system', content: systemPrompt },
       { role: 'user', content: this.buildPlanningPrompt(query) },
     ];
-    console.log(`[PlannerService] createPlan: Chat messages built - ${messages.length} messages`);
+    console.log(
+      `[PlannerService] createPlan: Chat messages built - ${messages.length} messages`,
+    );
 
     let planningComplete = false;
     const maxIterations = 20;
     let iteration = 0;
 
-    console.log(`[PlannerService] createPlan: Entering planning loop (max ${maxIterations} iterations)`);
+    console.log(
+      `[PlannerService] createPlan: Entering planning loop (max ${maxIterations} iterations)`,
+    );
     while (!planningComplete && iteration < maxIterations) {
       iteration++;
-      console.log(`[PlannerService] createPlan: === Iteration ${iteration}/${maxIterations} ===`);
+      console.log(
+        `[PlannerService] createPlan: === Iteration ${iteration}/${maxIterations} ===`,
+      );
 
       // Log each planning iteration
-      console.log(`[PlannerService] createPlan: Before logService.append (planning_iteration)`);
+      console.log(
+        `[PlannerService] createPlan: Before logService.append (planning_iteration)`,
+      );
       const iterationEntry = await this.logService.append({
         logId,
         eventType: 'planning_iteration',
@@ -116,50 +136,99 @@ export class PlannerService {
           message: `Planning iteration ${iteration}/${maxIterations}`,
         },
       });
-      console.log(`[PlannerService] createPlan: After logService.append (planning_iteration)`);
+      console.log(
+        `[PlannerService] createPlan: After logService.append (planning_iteration)`,
+      );
 
       console.log(`[PlannerService] createPlan: Emitting iteration entry`);
       this.eventEmitter.emit(`log.${logId}`, iterationEntry);
       console.log(`[PlannerService] createPlan: Iteration entry emitted`);
 
-      console.log(`[PlannerService] createPlan: Before llmService.chat (iteration ${iteration})`);
+      console.log(
+        `[PlannerService] createPlan: Before llmService.chat (iteration ${iteration})`,
+      );
       const response = await this.llmService.chat(messages, planningTools);
-      console.log(`[PlannerService] createPlan: After llmService.chat - response: ${JSON.stringify({ hasMessage: !!response.message, hasToolCalls: !!response.message?.tool_calls?.length })}`);
+      console.log(
+        `[PlannerService] createPlan: After llmService.chat - response: ${JSON.stringify({ hasMessage: !!response.message, hasToolCalls: !!response.message?.tool_calls?.length })}`,
+      );
 
       if (response.message.tool_calls?.length > 0) {
-        console.log(`[PlannerService] createPlan: Processing ${response.message.tool_calls.length} tool calls`);
+        console.log(
+          `[PlannerService] createPlan: Processing ${response.message.tool_calls.length} tool calls`,
+        );
+
+        // IMPORTANT: Push assistant message ONCE before processing tool calls
+        // Azure Mistral requires exactly one tool response per tool call in the assistant message.
+        // Previously this was inside the loop, causing duplicate assistant messages.
+        messages.push(response.message);
+        console.log(
+          `[PlannerService] createPlan: Pushed assistant message with ${response.message.tool_calls.length} tool calls`,
+        );
+
+        // Collect all tool results first, then push all tool responses
+        const toolResults: Array<{
+          toolCall: (typeof response.message.tool_calls)[0];
+          result: Record<string, unknown>;
+        }> = [];
+
         for (const toolCall of response.message.tool_calls) {
-          console.log(`[PlannerService] createPlan: Before executePlanningTool - tool: ${toolCall.function.name}`);
+          console.log(
+            `[PlannerService] createPlan: Before executePlanningTool - tool: ${toolCall.function.name}`,
+          );
           const result = await this.executePlanningTool(toolCall, logId);
-          console.log(`[PlannerService] createPlan: After executePlanningTool - result: ${JSON.stringify({ hasError: !!result.error })}`);
+          console.log(
+            `[PlannerService] createPlan: After executePlanningTool - result: ${JSON.stringify({ hasError: !!result.error })}`,
+          );
+
+          toolResults.push({ toolCall, result });
 
           if (toolCall.function.name === 'finalize_plan') {
             // Only mark as complete if finalize_plan succeeded (no error)
             if (!result.error) {
-              console.log(`[PlannerService] createPlan: finalize_plan succeeded - marking planning complete`);
+              console.log(
+                `[PlannerService] createPlan: finalize_plan succeeded - marking planning complete`,
+              );
               planningComplete = true;
             } else {
-              console.log(`[PlannerService] createPlan: finalize_plan failed - error: ${result.error}`);
+              console.log(
+                `[PlannerService] createPlan: finalize_plan failed - error: ${result.error}`,
+              );
             }
           }
-
-          console.log(`[PlannerService] createPlan: Pushing messages to chat history`);
-          messages.push(response.message);
-          messages.push({ role: 'tool', content: JSON.stringify(result) });
-          console.log(`[PlannerService] createPlan: Messages pushed - total messages: ${messages.length}`);
         }
+
+        // Push all tool responses in sequence after the assistant message
+        console.log(
+          `[PlannerService] createPlan: Pushing ${toolResults.length} tool responses to chat history`,
+        );
+        for (const { toolCall, result } of toolResults) {
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: JSON.stringify(result),
+          });
+        }
+        console.log(
+          `[PlannerService] createPlan: All tool responses pushed - total messages: ${messages.length}`,
+        );
       } else {
-        console.log(`[PlannerService] createPlan: No tool calls - prompting to continue`);
+        console.log(
+          `[PlannerService] createPlan: No tool calls - prompting to continue`,
+        );
         messages.push(response.message);
         messages.push({
           role: 'user',
           content:
             'Continue building the plan or call finalize_plan when complete.',
         });
-        console.log(`[PlannerService] createPlan: Continue messages pushed - total messages: ${messages.length}`);
+        console.log(
+          `[PlannerService] createPlan: Continue messages pushed - total messages: ${messages.length}`,
+        );
       }
     }
-    console.log(`[PlannerService] createPlan: Exited planning loop - planningComplete: ${planningComplete}, iterations: ${iteration}`);
+    console.log(
+      `[PlannerService] createPlan: Exited planning loop - planningComplete: ${planningComplete}, iterations: ${iteration}`,
+    );
 
     if (!this.currentPlan) {
       throw new Error('Planning failed: no plan created');
@@ -171,7 +240,9 @@ export class PlannerService {
       (sum, p) => sum + p.steps.length,
       0,
     );
-    console.log(`[PlannerService] createPlan: Plan stats - phases: ${this.currentPlan.phases.length}, totalSteps: ${totalSteps}`);
+    console.log(
+      `[PlannerService] createPlan: Plan stats - phases: ${this.currentPlan.phases.length}, totalSteps: ${totalSteps}`,
+    );
 
     console.log(`[PlannerService] createPlan: Before emitObservation`);
     await this.reasoningTrace.emitObservation(
@@ -220,9 +291,14 @@ export class PlannerService {
     console.log(`[PlannerService] createPlan: Before ensureSynthesisPhase`);
     try {
       await this.ensureSynthesisPhase(this.currentPlan, logId);
-      console.log(`[PlannerService] createPlan: After ensureSynthesisPhase - success`);
+      console.log(
+        `[PlannerService] createPlan: After ensureSynthesisPhase - success`,
+      );
     } catch (error) {
-      console.error(`[PlannerService] createPlan: ensureSynthesisPhase FAILED - ${error.message}`, error.stack);
+      console.error(
+        `[PlannerService] createPlan: ensureSynthesisPhase FAILED - ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
 
@@ -451,17 +527,35 @@ export class PlannerService {
       const response = await this.llmService.chat(messages, planningTools);
 
       if (response.message.tool_calls?.length > 0) {
+        // IMPORTANT: Push assistant message ONCE before processing tool calls
+        // Azure Mistral requires exactly one tool response per tool call in the assistant message.
+        messages.push(response.message);
+
+        // Collect all tool results first
+        const toolResults: Array<{
+          toolCall: (typeof response.message.tool_calls)[0];
+          result: Record<string, unknown>;
+        }> = [];
+
         for (const toolCall of response.message.tool_calls) {
           const result = await this.executePlanningTool(toolCall, logId);
+
+          toolResults.push({ toolCall, result });
 
           if (toolCall.function.name === 'finalize_plan') {
             if (!result.error) {
               planningComplete = true;
             }
           }
+        }
 
-          messages.push(response.message);
-          messages.push({ role: 'tool', content: JSON.stringify(result) });
+        // Push all tool responses in sequence after the assistant message
+        for (const { toolCall, result } of toolResults) {
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: JSON.stringify(result),
+          });
         }
       } else {
         messages.push(response.message);
@@ -567,10 +661,14 @@ Your plan MUST directly address this query, not some other topic.`;
    * This is CRITICAL - every research plan MUST produce a final answer.
    */
   private async ensureSynthesisPhase(plan: Plan, logId: string): Promise<void> {
-    console.log(`[PlannerService] ensureSynthesisPhase: Starting - planId: ${plan.id}, phaseCount: ${plan.phases.length}`);
+    console.log(
+      `[PlannerService] ensureSynthesisPhase: Starting - planId: ${plan.id}, phaseCount: ${plan.phases.length}`,
+    );
 
     // Check if plan already has a synthesis phase
-    console.log(`[PlannerService] ensureSynthesisPhase: Checking for existing synthesis phase`);
+    console.log(
+      `[PlannerService] ensureSynthesisPhase: Checking for existing synthesis phase`,
+    );
     const hasSynthesis = plan.phases.some((phase) => {
       const phaseName = (phase.name || '').toLowerCase();
       const hasNameMatch =
@@ -590,12 +688,16 @@ Your plan MUST directly address this query, not some other topic.`;
         );
       });
 
-      console.log(`[PlannerService] ensureSynthesisPhase: Checking phase "${phase.name}" - hasNameMatch: ${hasNameMatch}, hasSynthesisStep: ${hasSynthesisStep}`);
+      console.log(
+        `[PlannerService] ensureSynthesisPhase: Checking phase "${phase.name}" - hasNameMatch: ${hasNameMatch}, hasSynthesisStep: ${hasSynthesisStep}`,
+      );
       return hasNameMatch || hasSynthesisStep;
     });
 
     if (hasSynthesis) {
-      console.log('[PlannerService] ensureSynthesisPhase: Plan already has synthesis phase - exiting');
+      console.log(
+        '[PlannerService] ensureSynthesisPhase: Plan already has synthesis phase - exiting',
+      );
       return; // Plan already has synthesis
     }
 
@@ -604,7 +706,9 @@ Your plan MUST directly address this query, not some other topic.`;
       '[PlannerService] ensureSynthesisPhase: No synthesis phase found - adding default synthesis phase',
     );
 
-    console.log(`[PlannerService] ensureSynthesisPhase: Creating synthesis phase object`);
+    console.log(
+      `[PlannerService] ensureSynthesisPhase: Creating synthesis phase object`,
+    );
     const synthesisPhase: Phase = {
       id: randomUUID(),
       planId: plan.id,
@@ -616,10 +720,14 @@ Your plan MUST directly address this query, not some other topic.`;
       replanCheckpoint: false,
       order: plan.phases.length,
     };
-    console.log(`[PlannerService] ensureSynthesisPhase: Synthesis phase created - id: ${synthesisPhase.id}`);
+    console.log(
+      `[PlannerService] ensureSynthesisPhase: Synthesis phase created - id: ${synthesisPhase.id}`,
+    );
 
     // Add synthesis step to the phase
-    console.log(`[PlannerService] ensureSynthesisPhase: Creating synthesis step`);
+    console.log(
+      `[PlannerService] ensureSynthesisPhase: Creating synthesis step`,
+    );
     const synthesisStep: PlanStep = {
       id: randomUUID(),
       phaseId: synthesisPhase.id,
@@ -634,16 +742,22 @@ Your plan MUST directly address this query, not some other topic.`;
       status: 'pending',
       order: 0,
     };
-    console.log(`[PlannerService] ensureSynthesisPhase: Synthesis step created - id: ${synthesisStep.id}`);
+    console.log(
+      `[PlannerService] ensureSynthesisPhase: Synthesis step created - id: ${synthesisStep.id}`,
+    );
 
     console.log(`[PlannerService] ensureSynthesisPhase: Adding step to phase`);
     synthesisPhase.steps.push(synthesisStep);
     console.log(`[PlannerService] ensureSynthesisPhase: Adding phase to plan`);
     plan.phases.push(synthesisPhase);
-    console.log(`[PlannerService] ensureSynthesisPhase: Phase added - total phases: ${plan.phases.length}`);
+    console.log(
+      `[PlannerService] ensureSynthesisPhase: Phase added - total phases: ${plan.phases.length}`,
+    );
 
     // Log this critical auto-recovery
-    console.log(`[PlannerService] ensureSynthesisPhase: Before logService.append (synthesis_phase_auto_added)`);
+    console.log(
+      `[PlannerService] ensureSynthesisPhase: Before logService.append (synthesis_phase_auto_added)`,
+    );
     await this.logService.append({
       logId,
       eventType: 'synthesis_phase_auto_added',
@@ -658,11 +772,18 @@ Your plan MUST directly address this query, not some other topic.`;
           'CRITICAL: Automatically added synthesis phase to ensure research produces a final answer',
       },
     });
-    console.log(`[PlannerService] ensureSynthesisPhase: After logService.append - synthesis phase logged`);
-    console.log(`[PlannerService] ensureSynthesisPhase: Completed successfully`);
+    console.log(
+      `[PlannerService] ensureSynthesisPhase: After logService.append - synthesis phase logged`,
+    );
+    console.log(
+      `[PlannerService] ensureSynthesisPhase: Completed successfully`,
+    );
   }
 
-  private autoAddDefaultSteps(phase: Phase, logId: string): void {
+  private async autoAddDefaultSteps(
+    phase: Phase,
+    logId: string,
+  ): Promise<void> {
     const phaseName = (phase.name || '').toLowerCase();
     let toolName: string = 'tavily_search'; // Initialize with default
     let stepType: string = 'search';
@@ -701,7 +822,7 @@ Your plan MUST directly address this query, not some other topic.`;
 
     phase.steps.push(step);
 
-    this.logService.append({
+    await this.logService.append({
       logId,
       eventType: 'step_auto_added',
       timestamp: new Date(),
@@ -1020,7 +1141,7 @@ Your plan MUST directly address this query, not some other topic.`;
             });
 
             for (const phase of emptyPhases) {
-              this.autoAddDefaultSteps(phase, logId);
+              await this.autoAddDefaultSteps(phase, logId);
             }
 
             result = {

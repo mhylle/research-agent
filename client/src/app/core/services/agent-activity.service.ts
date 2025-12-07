@@ -225,14 +225,22 @@ export class AgentActivityService {
   }
 
   disconnect(): void {
+    this.closeConnection();
+    // Reset state to ensure clean slate when navigating away
+    this.resetState();
+  }
+
+  /**
+   * Close the SSE connection without resetting state.
+   * Use this when session completes/fails to preserve the result for display.
+   */
+  private closeConnection(): void {
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = null;
       this.isConnected.set(false);
     }
     this.currentLogId = null;
-    // Reset state to ensure clean slate when navigating away
-    this.resetState();
   }
 
   /**
@@ -576,13 +584,22 @@ export class AgentActivityService {
 
   private async handleSessionCompleted(event: any): Promise<void> {
     console.log('Session completed:', event);
+
+    // Store logId before closing connection (closeConnection clears it)
+    const logId = this.currentLogId;
+
+    // Close SSE connection first to prevent reconnection attempts
+    // Use closeConnection() instead of disconnect() to preserve state for display
+    this.closeConnection();
+
+    // Now set completion state (after connection is closed)
     this.isComplete.set(true);
 
     // Fetch the final result from the API
-    if (this.currentLogId) {
+    if (logId) {
       try {
         const result = await firstValueFrom(
-          this.http.get<ResearchResult>(`${environment.apiUrl}/research/results/${this.currentLogId}`)
+          this.http.get<ResearchResult>(`${environment.apiUrl}/research/results/${logId}`)
         );
         if (result) {
           this.researchResult.set(result);
@@ -591,17 +608,15 @@ export class AgentActivityService {
         console.error('Failed to fetch research result:', error);
       }
     }
-
-    // Disconnect SSE to prevent reconnection attempts after completion
-    this.disconnect();
   }
 
   private handleSessionFailed(event: any): void {
     console.log('Session failed:', event);
     const { error } = event;
     this.connectionError.set(error || 'Research failed');
-    // Disconnect SSE to prevent reconnection attempts after failure
-    this.disconnect();
+    // Close SSE connection to prevent reconnection attempts after failure
+    // Use closeConnection() instead of disconnect() to preserve error state for display
+    this.closeConnection();
   }
 
   private formatDescription(template: string, data: Record<string, unknown>): string {

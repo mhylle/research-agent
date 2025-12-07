@@ -227,8 +227,8 @@
               Research Complete
             </h3>
             <div class="answer-content">
-              @if (researchResult()?.answer) {
-                <div class="answer-text" [innerHTML]="researchResult()!.answer"></div>
+              @if (parsedAnswerHtml()) {
+                <div class="answer-text markdown-content" [innerHTML]="parsedAnswerHtml()"></div>
               } @else {
                 <p class="answer-text">The research has been completed successfully.</p>
               }

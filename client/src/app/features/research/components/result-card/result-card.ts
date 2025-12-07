@@ -1,9 +1,10 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import type { ResearchResult } from '../../../../models';
 import { SourcesListComponent } from '../sources-list/sources-list';
 import { ConfidenceDisplayComponent } from '../../../../shared/components/confidence-display/confidence-display.component';
+import { MarkdownService } from '../../../../core/services/markdown.service';
 
 @Component({
   selector: 'app-result-card',
@@ -14,6 +15,15 @@ import { ConfidenceDisplayComponent } from '../../../../shared/components/confid
 })
 export class ResultCardComponent {
   @Input() result!: ResearchResult;
+
+  private markdownService = inject(MarkdownService);
+
+  get parsedAnswerHtml() {
+    if (this.result?.answer) {
+      return this.markdownService.parseToSafeHtml(this.result.answer);
+    }
+    return null;
+  }
 
   copyAnswer(): void {
     navigator.clipboard.writeText(this.result.answer).then(() => {

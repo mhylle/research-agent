@@ -5,6 +5,7 @@
 
 @use '../../../../../styles/variables' as *;
 @use '../../../../../styles/mixins' as *;
+@use '../../../../../styles/markdown' as *;
 
 .result-card {
   @include card;

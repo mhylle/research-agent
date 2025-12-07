@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { LogsService } from '../../../../core/services/logs.service';
+import { MarkdownService } from '../../../../core/services/markdown.service';
 import { LogSession, LogDetail } from '../../../../models';
 import { environment } from '../../../../../environments/environment';
 
@@ -35,6 +36,7 @@ export class ResearchHistoryComponent implements OnInit {
   logsService = inject(LogsService);
   private router = inject(Router);
   private http = inject(HttpClient);
+  private markdownService = inject(MarkdownService);
 
   // Inputs
   maxItems = input<number>(20);
@@ -114,6 +116,15 @@ export class ResearchHistoryComponent implements OnInit {
 
   getSessionDetail(logId: string): SessionDetail | undefined {
     return this.sessionDetailsCache().get(logId);
+  }
+
+  getSessionAnswerHtml(logId: string, fallbackAnswer: string) {
+    const detail = this.sessionDetailsCache().get(logId);
+    const answer = detail?.answer || fallbackAnswer;
+    if (answer) {
+      return this.markdownService.parseToSafeHtml(answer);
+    }
+    return null;
   }
 
   isLoadingDetail(logId: string): boolean {

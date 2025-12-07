@@ -1,6 +1,7 @@
-import { Component, input, output, OnInit, OnDestroy, signal, effect, viewChild, ElementRef, computed } from '@angular/core';
+import { Component, input, output, OnInit, OnDestroy, signal, effect, viewChild, ElementRef, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AgentActivityService, PlannedPhase } from '../../../../core/services/agent-activity.service';
+import { MarkdownService } from '../../../../core/services/markdown.service';
 import { StageProgressHeaderComponent } from '../stage-progress-header/stage-progress-header';
 import { TaskCardComponent } from '../task-card/task-card.component';
 import { EvaluationDisplayComponent } from '../evaluation-display/evaluation-display.component';
@@ -56,8 +57,20 @@ export class AgentActivityViewComponent implements OnInit, OnDestroy {
   // Reasoning events signal
   readonly reasoningEvents = computed(() => this.activityService.reasoningEvents());
 
+  // Parsed answer HTML (markdown to HTML conversion)
+  readonly parsedAnswerHtml = computed(() => {
+    const result = this.researchResult();
+    if (result?.answer) {
+      return this.markdownService.parseToSafeHtml(result.answer);
+    }
+    return null;
+  });
+
   // Local state for planned phases section
   showPlannedPhases = signal<boolean>(true);
+
+  // Inject services
+  private markdownService = inject(MarkdownService);
 
   // Inject the AgentActivityService
   constructor(private activityService: AgentActivityService) {

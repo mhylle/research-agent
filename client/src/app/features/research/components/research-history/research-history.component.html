@@ -69,7 +69,7 @@
                   </div>
                 } @else {
                   <div class="answer-content">
-                    <p class="answer-text">{{ getSessionDetail(item.logId)?.answer || item.answer }}</p>
+                    <div class="answer-text markdown-content" [innerHTML]="getSessionAnswerHtml(item.logId, item.answer)"></div>
 
                     @if (getSessionDetail(item.logId)?.sources?.length) {
                       <div class="answer-sources">

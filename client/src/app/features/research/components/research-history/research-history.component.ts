@@ -1,8 +1,11 @@
 import { Component, OnInit, input, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { LogsService } from '../../../../core/services/logs.service';
-import { LogSession } from '../../../../models';
+import { LogSession, LogDetail } from '../../../../models';
+import { environment } from '../../../../../environments/environment';
 
 interface HistoryItem {
   id: string;
@@ -11,6 +14,13 @@ interface HistoryItem {
   timestamp: Date;
   logId: string;
   status: 'completed' | 'error' | 'incomplete';
+}
+
+interface SessionDetail {
+  answer: string;
+  sources: Array<{ title: string; url: string }>;
+  isLoading: boolean;
+  error?: string;
 }
 
 @Component({
@@ -24,12 +34,14 @@ export class ResearchHistoryComponent implements OnInit {
   // Services
   logsService = inject(LogsService);
   private router = inject(Router);
+  private http = inject(HttpClient);
 
   // Inputs
   maxItems = input<number>(20);
 
   // State
   private expandedItemsSet = signal<Set<string>>(new Set());
+  private sessionDetailsCache = signal<Map<string, SessionDetail>>(new Map());
 
   // Computed signals
   sessions = computed(() => this.logsService.sessions());
@@ -51,7 +63,7 @@ export class ResearchHistoryComponent implements OnInit {
     }
   }
 
-  toggleItem(sessionId: string): void {
+  async toggleItem(sessionId: string): Promise<void> {
     const expanded = this.expandedItemsSet();
     const newSet = new Set(expanded);
 
@@ -59,9 +71,53 @@ export class ResearchHistoryComponent implements OnInit {
       newSet.delete(sessionId);
     } else {
       newSet.add(sessionId);
+      // Fetch detail if not already cached
+      if (!this.sessionDetailsCache().has(sessionId)) {
+        await this.fetchSessionDetail(sessionId);
+      }
     }
 
     this.expandedItemsSet.set(newSet);
+  }
+
+  private async fetchSessionDetail(logId: string): Promise<void> {
+    // Set loading state
+    const cache = new Map(this.sessionDetailsCache());
+    cache.set(logId, { answer: '', sources: [], isLoading: true });
+    this.sessionDetailsCache.set(cache);
+
+    try {
+      const detail = await firstValueFrom(
+        this.http.get<{ logId: string; result?: { answer: string; sources: Array<{ title: string; url: string }> } }>(
+          `${environment.apiUrl}/logs/sessions/${logId}`
+        )
+      );
+
+      const updatedCache = new Map(this.sessionDetailsCache());
+      updatedCache.set(logId, {
+        answer: detail.result?.answer || 'No answer available',
+        sources: detail.result?.sources || [],
+        isLoading: false
+      });
+      this.sessionDetailsCache.set(updatedCache);
+    } catch (error) {
+      const updatedCache = new Map(this.sessionDetailsCache());
+      updatedCache.set(logId, {
+        answer: '',
+        sources: [],
+        isLoading: false,
+        error: 'Failed to load details'
+      });
+      this.sessionDetailsCache.set(updatedCache);
+    }
+  }
+
+  getSessionDetail(logId: string): SessionDetail | undefined {
+    return this.sessionDetailsCache().get(logId);
+  }
+
+  isLoadingDetail(logId: string): boolean {
+    return this.sessionDetailsCache().get(logId)?.isLoading ?? false;
   }
 
   isExpanded(sessionId: string): boolean {

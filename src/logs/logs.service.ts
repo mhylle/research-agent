@@ -199,14 +199,23 @@ export class LogsService {
     const planningStartedEntry = detail.entries.find(
       (e) => e.eventType === 'planning_started',
     );
+    const planningCompletedEntry = detail.entries.find(
+      (e) => e.eventType === 'planning_completed',
+    );
 
     if (planCreatedEntry || planningStartedEntry) {
       const startTime = planningStartedEntry
         ? new Date(planningStartedEntry.timestamp)
         : new Date(detail.timestamp);
-      const endTime = planCreatedEntry
-        ? new Date(planCreatedEntry.timestamp)
-        : startTime;
+      // Use planning_completed timestamp if available, otherwise fall back to plan_created
+      const endTime = planningCompletedEntry
+        ? new Date(planningCompletedEntry.timestamp)
+        : planCreatedEntry
+          ? new Date(planCreatedEntry.timestamp)
+          : startTime;
+
+      // Planning is complete if either planning_completed or plan_created event exists
+      const isCompleted = !!(planningCompletedEntry || planCreatedEntry);
 
       const planningNode: GraphNode = {
         id: `planning-${logId}`,
@@ -218,12 +227,12 @@ export class LogsService {
         startTime,
         endTime,
         duration: endTime.getTime() - startTime.getTime(),
-        status: planCreatedEntry ? 'completed' : 'running',
+        status: isCompleted ? 'completed' : 'running',
         parentId: sessionNode.id,
         childrenIds: [],
         dependsOn: [],
         input: planningStartedEntry?.data || {},
-        output: planCreatedEntry?.data || {},
+        output: planningCompletedEntry?.data || planCreatedEntry?.data || {},
       };
 
       nodes.push(planningNode);

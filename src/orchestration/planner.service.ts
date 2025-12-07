@@ -21,12 +21,22 @@ import { recoveryTools } from './tools/recovery-tools';
 import { ToolDefinition } from '../tools/interfaces/tool-definition.interface';
 import { analyzeQuery, QueryEnhancementMetadata } from './utils/query-enhancer';
 
+/**
+ * Context object to hold plan state during creation/modification.
+ * This eliminates race conditions by avoiding shared instance variables.
+ */
+interface PlanContext {
+  currentPlan: Plan | null;
+  phaseResults: Map<string, any>;
+  finalizeFailureCount: number;
+  planCreationCount: number;
+}
+
 @Injectable()
 export class PlannerService {
-  private currentPlan: Plan | null = null;
-  private phaseResults: Map<string, any> = new Map();
-  private finalizeFailureCount: number = 0;
-  private planCreationCount: number = 0;
+  // Nested map: planId -> (phaseId -> results)
+  // This allows multiple plans to execute in parallel without collision
+  private phaseResultsMap: Map<string, Map<string, any>> = new Map();
 
   constructor(
     private llmService: LLMService,
@@ -41,10 +51,13 @@ export class PlannerService {
       `[PlannerService] createPlan: Starting - ${JSON.stringify({ query, logId })}`,
     );
 
-    this.currentPlan = null;
-    this.phaseResults.clear();
-    this.finalizeFailureCount = 0;
-    this.planCreationCount = 0;
+    // Create local context to avoid race conditions with parallel requests
+    const context: PlanContext = {
+      currentPlan: null,
+      phaseResults: new Map(),
+      finalizeFailureCount: 0,
+      planCreationCount: 0,
+    };
 
     // Emit initial thought about analyzing the query
     console.log(`[PlannerService] createPlan: Before emitThought #1`);
@@ -175,7 +188,11 @@ export class PlannerService {
           console.log(
             `[PlannerService] createPlan: Before executePlanningTool - tool: ${toolCall.function.name}`,
           );
-          const result = await this.executePlanningTool(toolCall, logId);
+          const result = await this.executePlanningTool(
+            toolCall,
+            logId,
+            context,
+          );
           console.log(
             `[PlannerService] createPlan: After executePlanningTool - result: ${JSON.stringify({ hasError: !!result.error })}`,
           );
@@ -230,25 +247,25 @@ export class PlannerService {
       `[PlannerService] createPlan: Exited planning loop - planningComplete: ${planningComplete}, iterations: ${iteration}`,
     );
 
-    if (!this.currentPlan) {
+    if (!context.currentPlan) {
       throw new Error('Planning failed: no plan created');
     }
 
     // Emit observation about plan generation completion
     console.log(`[PlannerService] createPlan: Calculating plan stats`);
-    const totalSteps = this.currentPlan.phases.reduce(
+    const totalSteps = context.currentPlan.phases.reduce(
       (sum, p) => sum + p.steps.length,
       0,
     );
     console.log(
-      `[PlannerService] createPlan: Plan stats - phases: ${this.currentPlan.phases.length}, totalSteps: ${totalSteps}`,
+      `[PlannerService] createPlan: Plan stats - phases: ${context.currentPlan.phases.length}, totalSteps: ${totalSteps}`,
     );
 
     console.log(`[PlannerService] createPlan: Before emitObservation`);
     await this.reasoningTrace.emitObservation(
       logId,
       planningThoughtId,
-      `Generated plan with ${this.currentPlan.phases.length} phases and ${totalSteps} total steps.`,
+      `Generated plan with ${context.currentPlan.phases.length} phases and ${totalSteps} total steps.`,
       `Plan structure created successfully. Now validating completeness and adding any missing components.`,
       [
         'Plan phases defined',
@@ -259,7 +276,7 @@ export class PlannerService {
     console.log(`[PlannerService] createPlan: After emitObservation`);
 
     // Auto-recovery: If any phases are empty, add default steps automatically
-    const emptyPhases = this.currentPlan.phases.filter(
+    const emptyPhases = context.currentPlan.phases.filter(
       (p) => p.steps.length === 0,
     );
     if (emptyPhases.length > 0) {
@@ -272,7 +289,7 @@ export class PlannerService {
         logId,
         eventType: 'auto_recovery',
         timestamp: new Date(),
-        planId: this.currentPlan.id,
+        planId: context.currentPlan.id,
         data: {
           reason:
             'LLM created phases without steps - auto-adding default steps',
@@ -283,14 +300,14 @@ export class PlannerService {
 
       // Auto-add default steps to all empty phases
       for (const phase of emptyPhases) {
-        this.autoAddDefaultSteps(phase, logId);
+        await this.autoAddDefaultSteps(phase, logId, context);
       }
     }
 
     // CRITICAL VALIDATION: Ensure plan has a synthesis/answer generation phase
     console.log(`[PlannerService] createPlan: Before ensureSynthesisPhase`);
     try {
-      await this.ensureSynthesisPhase(this.currentPlan, logId);
+      await this.ensureSynthesisPhase(context.currentPlan, logId);
       console.log(
         `[PlannerService] createPlan: After ensureSynthesisPhase - success`,
       );
@@ -304,12 +321,12 @@ export class PlannerService {
 
     // Emit final conclusion about completed plan
     console.log(`[PlannerService] createPlan: Before final conclusion`);
-    const finalTotalSteps = this.currentPlan.phases.reduce(
+    const finalTotalSteps = context.currentPlan.phases.reduce(
       (sum, p) => sum + p.steps.length,
       0,
     );
-    const phaseNames = this.currentPlan.phases.map((p) => p.name);
-    const hasSynthesis = this.currentPlan.phases.some(
+    const phaseNames = context.currentPlan.phases.map((p) => p.name);
+    const hasSynthesis = context.currentPlan.phases.some(
       (p) =>
         p.name.toLowerCase().includes('synth') ||
         p.name.toLowerCase().includes('answer') ||
@@ -318,14 +335,36 @@ export class PlannerService {
 
     await this.reasoningTrace.emitConclusion(
       logId,
-      `Research plan finalized with ${this.currentPlan.phases.length} phases and ${finalTotalSteps} steps. Plan includes ${hasSynthesis ? 'synthesis phase' : 'all required phases'} to produce comprehensive answer.`,
+      `Research plan finalized with ${context.currentPlan.phases.length} phases and ${finalTotalSteps} steps. Plan includes ${hasSynthesis ? 'synthesis phase' : 'all required phases'} to produce comprehensive answer.`,
       [planningThoughtId],
       hasSynthesis ? 0.9 : 0.8,
       phaseNames,
     );
 
-    this.currentPlan.status = 'executing';
-    return this.currentPlan;
+    // Emit planning_completed event to signal UI that planning phase is done
+    const planningCompletedEntry = await this.logService.append({
+      logId,
+      eventType: 'planning_completed',
+      timestamp: new Date(),
+      planId: context.currentPlan.id,
+      data: {
+        phaseCount: context.currentPlan.phases.length,
+        totalSteps: finalTotalSteps,
+        hasSynthesis,
+        message: `Planning completed with ${context.currentPlan.phases.length} phases and ${finalTotalSteps} steps`,
+      },
+    });
+    this.eventEmitter.emit(`log.${logId}`, planningCompletedEntry);
+    console.log(
+      `[PlannerService] createPlan: Emitted planning_completed event`,
+    );
+
+    context.currentPlan.status = 'executing';
+
+    // Store phase results in the nested map for this plan
+    this.phaseResultsMap.set(context.currentPlan.id, context.phaseResults);
+
+    return context.currentPlan;
   }
 
   async replan(
@@ -335,7 +374,13 @@ export class PlannerService {
     logId: string,
     failureInfo?: { message: string; code?: string; stack?: string },
   ): Promise<{ modified: boolean; plan: Plan }> {
-    this.currentPlan = plan;
+    // Create local context for this replan operation
+    const planContext: PlanContext = {
+      currentPlan: plan,
+      phaseResults: this.phaseResultsMap.get(plan.id) || new Map(),
+      finalizeFailureCount: 0,
+      planCreationCount: 0,
+    };
 
     await this.logService.append({
       logId,
@@ -378,7 +423,7 @@ export class PlannerService {
         if (modifyingTools.includes(toolCall.function.name)) {
           modified = true;
         }
-        await this.executePlanningTool(toolCall, logId);
+        await this.executePlanningTool(toolCall, logId, planContext);
       }
     }
 
@@ -390,7 +435,15 @@ export class PlannerService {
       data: { modified },
     });
 
-    return { modified, plan: this.currentPlan };
+    // Update the stored phase results for this plan
+    if (planContext.currentPlan) {
+      this.phaseResultsMap.set(
+        planContext.currentPlan.id,
+        planContext.phaseResults,
+      );
+    }
+
+    return { modified, plan: planContext.currentPlan! };
   }
 
   async decideRecovery(
@@ -446,8 +499,11 @@ export class PlannerService {
     return { action: 'abort', reason: 'No recovery decision made by planner' };
   }
 
-  setPhaseResults(phaseId: string, results: any): void {
-    this.phaseResults.set(phaseId, results);
+  setPhaseResults(planId: string, phaseId: string, results: any): void {
+    if (!this.phaseResultsMap.has(planId)) {
+      this.phaseResultsMap.set(planId, new Map());
+    }
+    this.phaseResultsMap.get(planId)!.set(phaseId, results);
   }
 
   /**
@@ -466,10 +522,13 @@ export class PlannerService {
       attemptNumber: number;
     },
   ): Promise<Plan> {
-    this.currentPlan = null;
-    this.phaseResults.clear();
-    this.finalizeFailureCount = 0;
-    this.planCreationCount = 0;
+    // Create local context to avoid race conditions
+    const context: PlanContext = {
+      currentPlan: null,
+      phaseResults: new Map(),
+      finalizeFailureCount: 0,
+      planCreationCount: 0,
+    };
 
     const availableTools = this.toolExecutor.getAvailableTools();
     const systemPrompt = this.buildPlannerSystemPrompt(availableTools);
@@ -538,7 +597,11 @@ export class PlannerService {
         }> = [];
 
         for (const toolCall of response.message.tool_calls) {
-          const result = await this.executePlanningTool(toolCall, logId);
+          const result = await this.executePlanningTool(
+            toolCall,
+            logId,
+            context,
+          );
 
           toolResults.push({ toolCall, result });
 
@@ -567,12 +630,12 @@ export class PlannerService {
       }
     }
 
-    if (!this.currentPlan) {
+    if (!context.currentPlan) {
       throw new Error('Plan regeneration failed: no plan created');
     }
 
     // Auto-recovery for empty phases
-    const emptyPhases = this.currentPlan.phases.filter(
+    const emptyPhases = context.currentPlan.phases.filter(
       (p) => p.steps.length === 0,
     );
     if (emptyPhases.length > 0) {
@@ -584,7 +647,7 @@ export class PlannerService {
         logId,
         eventType: 'auto_recovery',
         timestamp: new Date(),
-        planId: this.currentPlan.id,
+        planId: context.currentPlan.id,
         data: {
           reason:
             'LLM created phases without steps during regeneration - auto-adding default steps',
@@ -594,15 +657,19 @@ export class PlannerService {
       });
 
       for (const phase of emptyPhases) {
-        this.autoAddDefaultSteps(phase, logId);
+        await this.autoAddDefaultSteps(phase, logId, context);
       }
     }
 
     // Ensure synthesis phase exists
-    await this.ensureSynthesisPhase(this.currentPlan, logId);
+    await this.ensureSynthesisPhase(context.currentPlan, logId);
 
-    this.currentPlan.status = 'executing';
-    return this.currentPlan;
+    context.currentPlan.status = 'executing';
+
+    // Store phase results in the nested map for this plan
+    this.phaseResultsMap.set(context.currentPlan.id, context.phaseResults);
+
+    return context.currentPlan;
   }
 
   /**
@@ -783,6 +850,7 @@ Your plan MUST directly address this query, not some other topic.`;
   private async autoAddDefaultSteps(
     phase: Phase,
     logId: string,
+    context: PlanContext,
   ): Promise<void> {
     const phaseName = (phase.name || '').toLowerCase();
     let toolName: string = 'tavily_search'; // Initialize with default
@@ -826,7 +894,7 @@ Your plan MUST directly address this query, not some other topic.`;
       logId,
       eventType: 'step_auto_added',
       timestamp: new Date(),
-      planId: this.currentPlan!.id,
+      planId: context.currentPlan!.id,
       phaseId: phase.id,
       stepId: step.id,
       data: {
@@ -840,12 +908,13 @@ Your plan MUST directly address this query, not some other topic.`;
   private async executePlanningTool(
     toolCall: any,
     logId: string,
+    context: PlanContext,
   ): Promise<any> {
     const { name, arguments: args } = toolCall.function;
     let result: any;
 
     // Null safety check: prevent calling tools before create_plan
-    if (name !== 'create_plan' && !this.currentPlan) {
+    if (name !== 'create_plan' && !context.currentPlan) {
       return {
         error: `Cannot call ${name} before create_plan. You must call create_plan first to initialize a plan.`,
         requiredAction: 'create_plan',
@@ -854,41 +923,41 @@ Your plan MUST directly address this query, not some other topic.`;
 
     switch (name) {
       case 'create_plan':
-        this.planCreationCount++;
-        if (this.planCreationCount > 3) {
+        context.planCreationCount++;
+        if (context.planCreationCount > 3) {
           throw new Error(
             'Planning failed: Maximum plan creation attempts (3) exceeded. The LLM is unable to create a valid plan.',
           );
         }
-        this.currentPlan = {
+        context.currentPlan = {
           id: randomUUID(),
           query: args.query,
           status: 'planning',
           phases: [],
           createdAt: new Date(),
         };
-        result = { planId: this.currentPlan.id, status: 'created' };
+        result = { planId: context.currentPlan.id, status: 'created' };
         break;
 
       case 'add_phase': {
         const phase: Phase = {
           id: randomUUID(),
-          planId: this.currentPlan!.id,
+          planId: context.currentPlan!.id,
           name: args.name,
           description: args.description,
           status: 'pending',
           steps: [],
           replanCheckpoint: args.replanCheckpoint ?? false,
-          order: this.currentPlan!.phases.length,
+          order: context.currentPlan!.phases.length,
         };
-        this.currentPlan!.phases.push(phase);
+        context.currentPlan!.phases.push(phase);
         result = { phaseId: phase.id, status: 'added' };
 
         const phaseEntry = await this.logService.append({
           logId,
           eventType: 'phase_added',
           timestamp: new Date(),
-          planId: this.currentPlan!.id,
+          planId: context.currentPlan!.id,
           phaseId: phase.id,
           data: {
             name: phase.name,
@@ -901,7 +970,7 @@ Your plan MUST directly address this query, not some other topic.`;
       }
 
       case 'add_step': {
-        const targetPhase = this.currentPlan!.phases.find(
+        const targetPhase = context.currentPlan!.phases.find(
           (p) => p.id === args.phaseId,
         );
         if (!targetPhase) {
@@ -1000,7 +1069,7 @@ Your plan MUST directly address this query, not some other topic.`;
           logId,
           eventType: 'step_added',
           timestamp: new Date(),
-          planId: this.currentPlan!.id,
+          planId: context.currentPlan!.id,
           phaseId: args.phaseId,
           stepId: step.id,
           data: {
@@ -1014,7 +1083,7 @@ Your plan MUST directly address this query, not some other topic.`;
       }
 
       case 'modify_step': {
-        const step = this.findStep(args.stepId);
+        const step = this.findStep(args.stepId, context.currentPlan!);
         if (step) {
           Object.assign(step, args.changes);
           result = { stepId: args.stepId, status: 'modified' };
@@ -1023,7 +1092,7 @@ Your plan MUST directly address this query, not some other topic.`;
             logId,
             eventType: 'step_modified',
             timestamp: new Date(),
-            planId: this.currentPlan!.id,
+            planId: context.currentPlan!.id,
             stepId: args.stepId,
             data: { changes: args.changes },
           });
@@ -1034,7 +1103,7 @@ Your plan MUST directly address this query, not some other topic.`;
       }
 
       case 'remove_step': {
-        const removed = this.removeStep(args.stepId);
+        const removed = this.removeStep(args.stepId, context.currentPlan!);
         result = {
           stepId: args.stepId,
           status: removed ? 'removed' : 'not_found',
@@ -1045,7 +1114,7 @@ Your plan MUST directly address this query, not some other topic.`;
             logId,
             eventType: 'step_removed',
             timestamp: new Date(),
-            planId: this.currentPlan!.id,
+            planId: context.currentPlan!.id,
             stepId: args.stepId,
             data: { reason: args.reason },
           });
@@ -1054,7 +1123,7 @@ Your plan MUST directly address this query, not some other topic.`;
       }
 
       case 'skip_phase': {
-        const phase = this.currentPlan!.phases.find(
+        const phase = context.currentPlan!.phases.find(
           (p) => p.id === args.phaseId,
         );
         if (phase) {
@@ -1067,13 +1136,13 @@ Your plan MUST directly address this query, not some other topic.`;
       }
 
       case 'insert_phase_after': {
-        const afterIndex = this.currentPlan!.phases.findIndex(
+        const afterIndex = context.currentPlan!.phases.findIndex(
           (p) => p.id === args.afterPhaseId,
         );
         if (afterIndex >= 0) {
           const newPhase: Phase = {
             id: randomUUID(),
-            planId: this.currentPlan!.id,
+            planId: context.currentPlan!.id,
             name: args.name,
             description: args.description,
             status: 'pending',
@@ -1081,14 +1150,14 @@ Your plan MUST directly address this query, not some other topic.`;
             replanCheckpoint: args.replanCheckpoint ?? false,
             order: afterIndex + 1,
           };
-          this.currentPlan!.phases.splice(afterIndex + 1, 0, newPhase);
+          context.currentPlan!.phases.splice(afterIndex + 1, 0, newPhase);
           // Reorder subsequent phases
           for (
             let i = afterIndex + 2;
-            i < this.currentPlan!.phases.length;
+            i < context.currentPlan!.phases.length;
             i++
           ) {
-            this.currentPlan!.phases[i].order = i;
+            context.currentPlan!.phases[i].order = i;
           }
           result = { phaseId: newPhase.id, status: 'inserted' };
 
@@ -1096,7 +1165,7 @@ Your plan MUST directly address this query, not some other topic.`;
             logId,
             eventType: 'phase_added',
             timestamp: new Date(),
-            planId: this.currentPlan!.id,
+            planId: context.currentPlan!.id,
             phaseId: newPhase.id,
             data: { name: newPhase.name, insertedAfter: args.afterPhaseId },
           });
@@ -1107,47 +1176,47 @@ Your plan MUST directly address this query, not some other topic.`;
       }
 
       case 'get_plan_status':
-        result = this.getPlanSummary();
+        result = this.getPlanSummary(context.currentPlan!);
         break;
 
       case 'get_phase_results':
-        result = this.phaseResults.get(args.phaseId) || {
+        result = context.phaseResults.get(args.phaseId) || {
           error: 'No results for phase',
         };
         break;
 
       case 'finalize_plan': {
         // Validate that all phases have at least one step
-        const emptyPhases = this.currentPlan!.phases.filter(
+        const emptyPhases = context.currentPlan!.phases.filter(
           (p) => p.steps.length === 0,
         );
 
         if (emptyPhases.length > 0) {
-          this.finalizeFailureCount++;
+          context.finalizeFailureCount++;
 
           // After 2 failures, auto-add default steps
-          if (this.finalizeFailureCount >= 2) {
+          if (context.finalizeFailureCount >= 2) {
             await this.logService.append({
               logId,
               eventType: 'auto_recovery',
               timestamp: new Date(),
-              planId: this.currentPlan!.id,
+              planId: context.currentPlan!.id,
               data: {
                 reason:
                   'Auto-adding default steps after multiple finalize failures',
                 emptyPhaseCount: emptyPhases.length,
-                failureCount: this.finalizeFailureCount,
+                failureCount: context.finalizeFailureCount,
               },
             });
 
             for (const phase of emptyPhases) {
-              await this.autoAddDefaultSteps(phase, logId);
+              await this.autoAddDefaultSteps(phase, logId, context);
             }
 
             result = {
               status: 'finalized',
-              totalPhases: this.currentPlan!.phases.length,
-              totalSteps: this.currentPlan!.phases.reduce(
+              totalPhases: context.currentPlan!.phases.length,
+              totalSteps: context.currentPlan!.phases.reduce(
                 (sum, p) => sum + p.steps.length,
                 0,
               ),
@@ -1160,7 +1229,7 @@ Your plan MUST directly address this query, not some other topic.`;
               .map((p) => `"${p.name}" (${p.id})`)
               .join(', ');
             result = {
-              error: `Cannot finalize plan: The following phases have no steps: ${phaseList}. Each phase MUST have at least one step. DO NOT create a new plan - use add_step to add steps to the EXISTING phases with the provided phase IDs before calling finalize_plan again. Failure count: ${this.finalizeFailureCount}/2`,
+              error: `Cannot finalize plan: The following phases have no steps: ${phaseList}. Each phase MUST have at least one step. DO NOT create a new plan - use add_step to add steps to the EXISTING phases with the provided phase IDs before calling finalize_plan again. Failure count: ${context.finalizeFailureCount}/2`,
               emptyPhases: emptyPhases.map((p) => ({
                 id: p.id,
                 name: p.name,
@@ -1172,8 +1241,8 @@ Your plan MUST directly address this query, not some other topic.`;
         } else {
           result = {
             status: 'finalized',
-            totalPhases: this.currentPlan!.phases.length,
-            totalSteps: this.currentPlan!.phases.reduce(
+            totalPhases: context.currentPlan!.phases.length,
+            totalSteps: context.currentPlan!.phases.reduce(
               (sum, p) => sum + p.steps.length,
               0,
             ),
@@ -1189,16 +1258,16 @@ Your plan MUST directly address this query, not some other topic.`;
     return result;
   }
 
-  private findStep(stepId: string): PlanStep | undefined {
-    for (const phase of this.currentPlan!.phases) {
+  private findStep(stepId: string, plan: Plan): PlanStep | undefined {
+    for (const phase of plan.phases) {
       const step = phase.steps.find((s) => s.id === stepId);
       if (step) return step;
     }
     return undefined;
   }
 
-  private removeStep(stepId: string): boolean {
-    for (const phase of this.currentPlan!.phases) {
+  private removeStep(stepId: string, plan: Plan): boolean {
+    for (const phase of plan.phases) {
       const index = phase.steps.findIndex((s) => s.id === stepId);
       if (index >= 0) {
         phase.steps.splice(index, 1);
@@ -1208,14 +1277,14 @@ Your plan MUST directly address this query, not some other topic.`;
     return false;
   }
 
-  private getPlanSummary(): any {
-    if (!this.currentPlan) return { error: 'No plan created' };
+  private getPlanSummary(plan: Plan): any {
+    if (!plan) return { error: 'No plan created' };
 
     return {
-      planId: this.currentPlan.id,
-      query: this.currentPlan.query,
-      status: this.currentPlan.status,
-      phases: this.currentPlan.phases.map((p) => ({
+      planId: plan.id,
+      query: plan.query,
+      status: plan.status,
+      phases: plan.phases.map((p) => ({
         id: p.id,
         name: p.name,
         status: p.status,
@@ -1230,7 +1299,24 @@ Your plan MUST directly address this query, not some other topic.`;
       .map((t) => `- ${t.function.name}: ${t.function.description}`)
       .join('\n');
 
+    // Add current date context for temporal queries
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const isoDate = now.toISOString().split('T')[0];
+
     return `You are a research planning agent. Your job is to analyze a user's research query and create a detailed execution plan.
+
+## Current Date Context
+**Today is ${currentDate} (${isoDate}).**
+When users ask about "today", "tomorrow", "this weekend", "next week", etc., interpret these relative to today's date.
+- "This weekend" means the upcoming Saturday/Sunday from today
+- "Next weekend" means the Saturday/Sunday of the following week
+- Always use specific dates in search queries (e.g., "events Aarhus December 14 2025")
 
 ## Available Execution Tools
 ${toolList}

@@ -1,6 +1,7 @@
 export type LogEventType =
   // Planning phase events
   | 'planning_started'
+  | 'planning_completed'
   | 'planning_iteration'
   | 'plan_created'
   | 'phase_added'

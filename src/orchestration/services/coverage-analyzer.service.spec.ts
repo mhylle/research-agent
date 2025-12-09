@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CoverageAnalyzerService } from './coverage-analyzer.service';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from './event-coordinator.service';
 import { Source } from './result-extractor.service';
 import { SubQuery } from '../interfaces/sub-query.interface';
@@ -8,12 +8,14 @@ import { QueryAspect } from '../interfaces/query-aspect.interface';
 
 describe('CoverageAnalyzerService', () => {
   let service: CoverageAnalyzerService;
-  let ollamaService: jest.Mocked<OllamaService>;
+  let llmService: jest.Mocked<LLMService>;
   let eventCoordinator: jest.Mocked<EventCoordinatorService>;
 
   beforeEach(async () => {
-    const mockOllamaService = {
+    const mockLLMService = {
       chat: jest.fn(),
+      getProviderName: jest.fn().mockReturnValue('ollama'),
+      getProviderInfo: jest.fn().mockReturnValue({ name: 'ollama', model: 'qwen2.5', supportedFeatures: ['chat'] }),
     };
 
     const mockEventCoordinator = {
@@ -23,13 +25,13 @@ describe('CoverageAnalyzerService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CoverageAnalyzerService,
-        { provide: OllamaService, useValue: mockOllamaService },
+        { provide: LLMService, useValue: mockLLMService },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
       ],
     }).compile();
 
     service = module.get<CoverageAnalyzerService>(CoverageAnalyzerService);
-    ollamaService = module.get(OllamaService);
+    llmService = module.get(LLMService);
     eventCoordinator = module.get(EventCoordinatorService);
   });
 
@@ -68,7 +70,7 @@ describe('CoverageAnalyzerService', () => {
         },
       };
 
-      ollamaService.chat.mockResolvedValue(llmResponse as any);
+      llmService.chat.mockResolvedValue(llmResponse as any);
 
       const result = await service.analyzeCoverage(
         query,
@@ -151,7 +153,7 @@ describe('CoverageAnalyzerService', () => {
         },
       };
 
-      ollamaService.chat.mockResolvedValue(llmResponse as any);
+      llmService.chat.mockResolvedValue(llmResponse as any);
 
       const result = await service.analyzeCoverage(
         query,
@@ -230,7 +232,7 @@ describe('CoverageAnalyzerService', () => {
         },
       };
 
-      ollamaService.chat.mockResolvedValue(llmResponse as any);
+      llmService.chat.mockResolvedValue(llmResponse as any);
 
       const result = await service.analyzeCoverage(query, answer, sources);
 
@@ -308,7 +310,7 @@ describe('CoverageAnalyzerService', () => {
         },
       };
 
-      ollamaService.chat.mockResolvedValue(llmResponse as any);
+      llmService.chat.mockResolvedValue(llmResponse as any);
 
       const result = await service.analyzeCoverage(
         query,
@@ -350,7 +352,7 @@ describe('CoverageAnalyzerService', () => {
         },
       };
 
-      ollamaService.chat.mockResolvedValue(llmResponse as any);
+      llmService.chat.mockResolvedValue(llmResponse as any);
 
       const result = await service.analyzeCoverage(query, answer, sources);
 
@@ -370,7 +372,7 @@ describe('CoverageAnalyzerService', () => {
         },
       };
 
-      ollamaService.chat.mockResolvedValue(llmResponse as any);
+      llmService.chat.mockResolvedValue(llmResponse as any);
 
       const result = await service.analyzeCoverage(query, answer, sources);
 
@@ -386,7 +388,7 @@ describe('CoverageAnalyzerService', () => {
       const answer = 'Test answer';
       const sources: Source[] = [];
 
-      ollamaService.chat.mockRejectedValue(
+      llmService.chat.mockRejectedValue(
         new Error('LLM service unavailable'),
       );
 

@@ -29,6 +29,7 @@ type EvaluatorRole =
 export class PanelEvaluatorService {
   private readonly logger = new Logger(PanelEvaluatorService.name);
   private readonly config = DEFAULT_EVALUATION_CONFIG;
+  private readonly useProviderDefaultModel: boolean;
 
   private readonly prompts: Record<EvaluatorRole, string> = {
     intentAnalyst: INTENT_ANALYST_PROMPT,
@@ -44,7 +45,18 @@ export class PanelEvaluatorService {
     answerCompleteness: ANSWER_COMPLETENESS_PROMPT,
   };
 
-  constructor(private readonly llmService: LLMService) {}
+  constructor(private readonly llmService: LLMService) {
+    // When using Azure Mistral, don't override the model - use the provider's default
+    // Azure only has one model (Mistral-Large-3), so model overrides would fail
+    const providerName = this.llmService.getProviderName();
+    this.useProviderDefaultModel = providerName === 'azure-mistral';
+
+    if (this.useProviderDefaultModel) {
+      this.logger.log(
+        `[PanelEvaluatorService] Using provider default model (${providerName})`,
+      );
+    }
+  }
 
   async evaluateWithRole(
     role: EvaluatorRole,
@@ -58,7 +70,9 @@ export class PanelEvaluatorService {
   ): Promise<EvaluatorResult> {
     const startTime = Date.now();
     const roleConfig = this.config.evaluators[role];
-    const model = roleConfig.model;
+    // Use provider's default model when on Azure, otherwise use the role-specific model
+    const model = this.useProviderDefaultModel ? undefined : roleConfig.model;
+    const modelName = model || this.llmService.getProviderInfo().model;
 
     try {
       const prompt = this.buildPrompt(role, context);
@@ -74,7 +88,7 @@ export class PanelEvaluatorService {
 
       const result = {
         role,
-        model,
+        model: modelName,
         dimensions: roleConfig.dimensions,
         scores: parsed.scores || {},
         confidence: parsed.confidence || 0.5,
@@ -95,7 +109,7 @@ export class PanelEvaluatorService {
       this.logger.error(`Evaluator ${role} failed: ${error.message}`);
       return {
         role,
-        model,
+        model: modelName,
         dimensions: roleConfig.dimensions,
         scores: {},
         confidence: 0.1,

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { GapDetectorService } from './gap-detector.service';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
 import { Claim } from '../../evaluation/interfaces/claim.interface';
@@ -10,7 +10,7 @@ import { Gap } from '../interfaces/gap.interface';
 
 describe('GapDetectorService', () => {
   let service: GapDetectorService;
-  let ollamaService: jest.Mocked<OllamaService>;
+  let llmService: jest.Mocked<LLMService>;
   let eventCoordinator: jest.Mocked<EventCoordinatorService>;
   let researchLogger: jest.Mocked<ResearchLogger>;
 
@@ -72,9 +72,11 @@ describe('GapDetectorService', () => {
       providers: [
         GapDetectorService,
         {
-          provide: OllamaService,
+          provide: LLMService,
           useValue: {
             chat: jest.fn(),
+            getProviderName: jest.fn().mockReturnValue('ollama'),
+            getProviderInfo: jest.fn().mockReturnValue({ name: 'ollama', model: 'qwen2.5', supportedFeatures: ['chat'] }),
           },
         },
         {
@@ -94,7 +96,7 @@ describe('GapDetectorService', () => {
     }).compile();
 
     service = module.get<GapDetectorService>(GapDetectorService);
-    ollamaService = module.get(OllamaService);
+    llmService = module.get(LLMService);
     eventCoordinator = module.get(EventCoordinatorService);
     researchLogger = module.get(ResearchLogger);
   });
@@ -110,7 +112,7 @@ describe('GapDetectorService', () => {
   describe('detectGaps', () => {
     describe('SSE Events', () => {
       it('should emit gap_detection_started event when logId is provided', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -136,7 +138,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should emit gap_detection_completed event with gap summary', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -163,7 +165,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should NOT emit events when logId is not provided', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -186,7 +188,7 @@ describe('GapDetectorService', () => {
           level: 'low',
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -226,7 +228,7 @@ describe('GapDetectorService', () => {
           level: 'low',
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -259,7 +261,7 @@ describe('GapDetectorService', () => {
           level: 'medium',
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -292,7 +294,7 @@ describe('GapDetectorService', () => {
           }),
         ];
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -319,7 +321,7 @@ describe('GapDetectorService', () => {
           confidence: 0.25,
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -348,7 +350,7 @@ describe('GapDetectorService', () => {
           },
         ]);
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: llmResponse },
         } as any);
 
@@ -376,7 +378,7 @@ describe('GapDetectorService', () => {
         const llmResponse =
           '```json\n[{"description": "Missing data sources", "severity": "critical", "suggestedAction": "Include primary research"}]\n```';
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: llmResponse },
         } as any);
 
@@ -413,7 +415,7 @@ describe('GapDetectorService', () => {
           },
         ]);
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: llmResponse },
         } as any);
 
@@ -441,7 +443,7 @@ describe('GapDetectorService', () => {
           { description: 'Gap 3', severity: 'low', suggestedAction: 'Action' },
         ]);
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: llmResponse },
         } as any);
 
@@ -472,7 +474,7 @@ describe('GapDetectorService', () => {
           },
         ]);
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: llmResponse },
         } as any);
 
@@ -502,7 +504,7 @@ describe('GapDetectorService', () => {
           supportingSources: [],
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -543,7 +545,7 @@ describe('GapDetectorService', () => {
           ],
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -568,7 +570,7 @@ describe('GapDetectorService', () => {
           supportingSources: 0,
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -613,7 +615,7 @@ describe('GapDetectorService', () => {
           ],
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -650,7 +652,7 @@ describe('GapDetectorService', () => {
           verdict: 'neutral',
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -692,7 +694,7 @@ describe('GapDetectorService', () => {
           ],
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -717,7 +719,7 @@ describe('GapDetectorService', () => {
 
     describe('Error Handling', () => {
       it('should continue gap detection when LLM fails', async () => {
-        ollamaService.chat.mockRejectedValue(
+        llmService.chat.mockRejectedValue(
           new Error('LLM service unavailable'),
         );
 
@@ -745,7 +747,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should log error when LLM fails', async () => {
-        ollamaService.chat.mockRejectedValue(new Error('Connection timeout'));
+        llmService.chat.mockRejectedValue(new Error('Connection timeout'));
 
         await service.detectGaps(
           'Test answer',
@@ -768,7 +770,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should handle invalid JSON from LLM gracefully', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: 'This is not valid JSON' },
         } as any);
 
@@ -787,7 +789,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should handle LLM returning non-array JSON', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: {
             role: 'assistant',
             content: '{"description": "Not an array"}',
@@ -820,7 +822,7 @@ describe('GapDetectorService', () => {
           'invalid string item',
         ]);
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: llmResponse },
         } as any);
 
@@ -875,7 +877,7 @@ describe('GapDetectorService', () => {
 
     describe('Empty Inputs', () => {
       it('should handle empty claims array', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -894,7 +896,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should handle empty sources array', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -911,7 +913,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should handle empty claimConfidences array', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -930,7 +932,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should handle empty entailmentResults array', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -951,7 +953,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should handle all empty arrays', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -968,7 +970,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should handle empty answer string', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -1009,7 +1011,7 @@ describe('GapDetectorService', () => {
           supportingSources: 0,
         });
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: {
             role: 'assistant',
             content: JSON.stringify([
@@ -1057,7 +1059,7 @@ describe('GapDetectorService', () => {
 
     describe('Logging', () => {
       it('should log start of gap detection', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -1084,7 +1086,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should log completion of gap detection', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -1111,7 +1113,7 @@ describe('GapDetectorService', () => {
       });
 
       it('should use "unknown" logId when not provided', async () => {
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -1146,7 +1148,7 @@ describe('GapDetectorService', () => {
           }),
         ];
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -1235,7 +1237,7 @@ describe('GapDetectorService', () => {
           }),
         ];
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: {
             role: 'assistant',
             content: JSON.stringify([
@@ -1280,7 +1282,7 @@ describe('GapDetectorService', () => {
           }),
         ];
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -1293,14 +1295,14 @@ describe('GapDetectorService', () => {
           'test query',
         );
 
-        expect(ollamaService.chat).toHaveBeenCalledWith([
+        expect(llmService.chat).toHaveBeenCalledWith([
           expect.objectContaining({ role: 'system' }),
           expect.objectContaining({
             role: 'user',
             content: expect.stringContaining('AI Research Paper'),
           }),
         ]);
-        expect(ollamaService.chat).toHaveBeenCalledWith([
+        expect(llmService.chat).toHaveBeenCalledWith([
           expect.any(Object),
           expect.objectContaining({
             content: expect.stringContaining('Productivity Study'),
@@ -1313,7 +1315,7 @@ describe('GapDetectorService', () => {
           createMockSource({ id: `source-${i}`, title: `Source ${i}` }),
         );
 
-        ollamaService.chat.mockResolvedValue({
+        llmService.chat.mockResolvedValue({
           message: { role: 'assistant', content: '[]' },
         } as any);
 
@@ -1326,7 +1328,7 @@ describe('GapDetectorService', () => {
           'test query',
         );
 
-        const chatCall = ollamaService.chat.mock.calls[0][0];
+        const chatCall = llmService.chat.mock.calls[0][0];
         const userMessage = chatCall.find((m: any) => m.role === 'user');
 
         // Should contain first 10 sources but not source 10+

@@ -1,20 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthController } from './health.controller';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('HealthController', () => {
   let controller: HealthController;
-  let ollamaService: jest.Mocked<OllamaService>;
+  let llmService: jest.Mocked<LLMService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HealthController],
       providers: [
         {
-          provide: OllamaService,
+          provide: LLMService,
           useValue: {
             chat: jest.fn(),
+            getProviderName: jest.fn().mockReturnValue('ollama'),
+            getProviderInfo: jest.fn().mockReturnValue({ name: 'ollama', model: 'qwen2.5', supportedFeatures: ['chat'] }),
           },
         },
         {
@@ -27,7 +29,7 @@ describe('HealthController', () => {
     }).compile();
 
     controller = module.get<HealthController>(HealthController);
-    ollamaService = module.get(OllamaService);
+    llmService = module.get(LLMService);
   });
 
   it('should be defined', () => {
@@ -35,7 +37,7 @@ describe('HealthController', () => {
   });
 
   it('should return healthy status when services are up', async () => {
-    ollamaService.chat.mockResolvedValue({
+    llmService.chat.mockResolvedValue({
       message: { role: 'assistant', content: 'test' },
     } as any);
 
@@ -47,7 +49,7 @@ describe('HealthController', () => {
   });
 
   it('should return degraded when Ollama is down', async () => {
-    ollamaService.chat.mockRejectedValue(new Error('Connection failed'));
+    llmService.chat.mockRejectedValue(new Error('Connection failed'));
 
     const result = await controller.check();
 

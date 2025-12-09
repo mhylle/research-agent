@@ -4,6 +4,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   validateSync,
 } from 'class-validator';
 
@@ -44,6 +46,13 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   AZURE_MISTRAL_MODEL?: string;
+
+  // LLM Concurrency Control
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(10)
+  LLM_MAX_CONCURRENT_CALLS?: number;
 
   @IsString()
   TAVILY_API_KEY: string;

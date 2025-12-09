@@ -1,22 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PanelEvaluatorService } from './panel-evaluator.service';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 
 describe('PanelEvaluatorService', () => {
   let service: PanelEvaluatorService;
-  let mockOllamaService: any;
+  let mockLLMService: any;
 
   beforeEach(async () => {
-    mockOllamaService = {
+    mockLLMService = {
       chat: jest.fn(),
+      getProviderName: jest.fn().mockReturnValue('ollama'),
+      getProviderInfo: jest.fn().mockReturnValue({
+        name: 'ollama',
+        model: 'qwen2.5',
+        supportedFeatures: ['chat'],
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PanelEvaluatorService,
         {
-          provide: OllamaService,
-          useValue: mockOllamaService,
+          provide: LLMService,
+          useValue: mockLLMService,
         },
       ],
     }).compile();
@@ -35,7 +41,7 @@ describe('PanelEvaluatorService', () => {
           }),
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test query',
@@ -48,7 +54,7 @@ describe('PanelEvaluatorService', () => {
     });
 
     it('should return low confidence on parse error', async () => {
-      mockOllamaService.chat.mockResolvedValue({
+      mockLLMService.chat.mockResolvedValue({
         message: { content: 'not valid json' },
       });
 
@@ -74,7 +80,7 @@ and tabs\there",
           }`,
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test query',
@@ -95,7 +101,7 @@ and tabs\there",
             '{"scores": {"test": 0.8}, "confidence": 0.9, "critique": "Line1\nLine2\rLine3\tTabbed"}',
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -114,7 +120,7 @@ and tabs\there",
             '{"scores": {"test": 0.7}, "confidence": 0.8, "critique": "Text\bwith\fspecial"}',
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -135,7 +141,7 @@ and tabs\there",
           }`,
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -158,7 +164,7 @@ and tabs\there",
           }`,
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -181,7 +187,7 @@ and tabs\there",
           }`,
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -207,7 +213,7 @@ and tabs\there",
           }`,
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -232,7 +238,7 @@ and tabs\there",
           }`,
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -257,7 +263,7 @@ and tabs\there",
           }`,
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -283,7 +289,7 @@ and tabs\there",
           }`,
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -307,7 +313,7 @@ and tabs\there",
           }`,
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -334,7 +340,7 @@ and tabs\there",
           }`,
         },
       };
-      mockOllamaService.chat.mockResolvedValue(mockResponse);
+      mockLLMService.chat.mockResolvedValue(mockResponse);
 
       const result = await service.evaluateWithRole('intentAnalyst', {
         query: 'test',
@@ -350,7 +356,7 @@ and tabs\there",
 
   describe('evaluateWithPanel', () => {
     it('should run multiple evaluators in parallel', async () => {
-      mockOllamaService.chat.mockResolvedValue({
+      mockLLMService.chat.mockResolvedValue({
         message: {
           content: JSON.stringify({
             scores: { test: 0.8 },
@@ -366,7 +372,7 @@ and tabs\there",
       );
 
       expect(results).toHaveLength(2);
-      expect(mockOllamaService.chat).toHaveBeenCalledTimes(2);
+      expect(mockLLMService.chat).toHaveBeenCalledTimes(2);
     });
   });
 });

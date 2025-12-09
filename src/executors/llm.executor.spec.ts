@@ -1,28 +1,34 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LLMExecutor } from './llm.executor';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ReasoningTraceService } from '../reasoning/services/reasoning-trace.service';
 import { PlanStep } from '../orchestration/interfaces/plan-step.interface';
 
 describe('LLMExecutor', () => {
   let executor: LLMExecutor;
-  let mockOllamaService: jest.Mocked<OllamaService>;
+  let mockLLMService: jest.Mocked<LLMService>;
 
   beforeEach(async () => {
-    mockOllamaService = {
+    mockLLMService = {
       chat: jest.fn().mockResolvedValue({
         message: { role: 'assistant', content: 'Synthesized response' },
         prompt_eval_count: 100,
         eval_count: 50,
       }),
-    } as jest.Mocked<OllamaService>;
+      getProviderName: jest.fn().mockReturnValue('ollama'),
+      getProviderInfo: jest.fn().mockReturnValue({
+        name: 'ollama',
+        model: 'qwen2.5',
+        supportedFeatures: ['chat'],
+      }),
+    } as unknown as jest.Mocked<LLMService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LLMExecutor,
         {
-          provide: OllamaService,
-          useValue: mockOllamaService,
+          provide: LLMService,
+          useValue: mockLLMService,
         },
         {
           provide: ReasoningTraceService,
@@ -66,7 +72,7 @@ describe('LLMExecutor', () => {
 
     it('should handle LLM errors gracefully', async () => {
       const testError = new Error('LLM service unavailable');
-      mockOllamaService.chat.mockRejectedValue(testError);
+      mockLLMService.chat.mockRejectedValue(testError);
 
       const step: PlanStep = {
         id: 'step-1',
@@ -102,7 +108,7 @@ describe('LLMExecutor', () => {
       expect(result.output).toBe('Synthesized response');
       // Should have called with just the user message
       // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(mockOllamaService.chat).toHaveBeenCalledWith([
+      expect(mockLLMService.chat).toHaveBeenCalledWith([
         { role: 'user', content: 'Simple prompt' },
       ]);
     });

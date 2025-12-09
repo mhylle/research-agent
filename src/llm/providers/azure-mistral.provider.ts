@@ -19,14 +19,24 @@ import { ToolDefinition } from '../../tools/interfaces/tool-definition.interface
  * - System messages must be paired with user messages
  * - Tool call IDs are REQUIRED for tool responses
  * - Arguments come as strings and must be parsed
+ *
+ * Retry behavior:
+ * - Retries on 503, 429, 500, 502, 504 and network errors
+ * - Uses exponential backoff with jitter
+ * - Configurable via AZURE_LLM_MAX_RETRIES and AZURE_LLM_INITIAL_RETRY_DELAY_MS
  */
 @Injectable()
 export class AzureMistralProvider implements ILLMProvider {
   private client: OpenAI;
   private model: string;
+  private maxRetries: number;
+  private initialRetryDelayMs: number;
 
   readonly name = 'azure-mistral';
   readonly supportsToolCalling = true;
+
+  // HTTP status codes that should trigger a retry
+  private readonly RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504];
 
   constructor(private configService: ConfigService) {
     const endpoint = this.configService.get<string>('AZURE_OPENAI_ENDPOINT');
@@ -35,6 +45,10 @@ export class AzureMistralProvider implements ILLMProvider {
       this.configService.get<string>('AZURE_MISTRAL_MODEL') ||
       'Mistral-Large-3';
 
+    // Retry configuration
+    this.maxRetries = this.configService.get<number>('AZURE_LLM_MAX_RETRIES') ?? 3;
+    this.initialRetryDelayMs = this.configService.get<number>('AZURE_LLM_INITIAL_RETRY_DELAY_MS') ?? 1000;
+
     if (!endpoint || !apiKey) {
       console.warn(
         '[AzureMistralProvider] Missing AZURE_OPENAI_ENDPOINT or AZURE_OPENAI_API_KEY. Provider will fail on chat requests.',
@@ -42,10 +56,16 @@ export class AzureMistralProvider implements ILLMProvider {
     }
 
     // Initialize OpenAI client with Azure endpoint
+    // Note: We disable the SDK's built-in retries to use our own retry logic
     this.client = new OpenAI({
       baseURL: endpoint,
       apiKey: apiKey || '',
+      maxRetries: 0, // Disable SDK retries, we handle retries ourselves
     });
+
+    console.log(
+      `[AzureMistralProvider] Initialized with maxRetries=${this.maxRetries}, initialRetryDelayMs=${this.initialRetryDelayMs}`,
+    );
   }
 
   async chat(
@@ -69,39 +89,145 @@ export class AzureMistralProvider implements ILLMProvider {
       model,
     );
 
-    try {
+    // Execute with retry logic
+    return this.executeWithRetry(async () => {
       const response = await this.client.chat.completions.create({
         ...requestBody,
         stream: false, // Ensure non-streaming response type
       });
       return this.normalizeResponse(response);
-    } catch (err) {
-      // Log full message sequence on Azure error for debugging
-      if ((err as Error).message?.includes('3230')) {
-        console.error(
-          `[AzureMistral] Azure returned 3230 error - logging message sequence:`,
-        );
-        for (let i = 0; i < validatedMessages.length; i++) {
-          const msg = validatedMessages[i];
-          if (msg.role === 'assistant') {
-            const assistantMsg = msg;
-            const tcCount = assistantMsg.tool_calls?.length || 0;
-            const tcIds =
-              assistantMsg.tool_calls?.map((tc) => tc.id).join(', ') || 'none';
-            console.error(
-              `  [${i}] ASSISTANT: tool_calls=${tcCount} [${tcIds}]`,
-            );
-          } else if (msg.role === 'tool') {
-            const toolMsg = msg;
-            console.error(
-              `  [${i}] TOOL: tool_call_id=${toolMsg.tool_call_id}`,
-            );
-          } else {
-            console.error(`  [${i}] ${msg.role.toUpperCase()}`);
+    }, validatedMessages);
+  }
+
+  /**
+   * Execute an async operation with exponential backoff retry.
+   * Retries on transient Azure errors (503, 429, 500, etc.).
+   */
+  private async executeWithRetry<T>(
+    operation: () => Promise<T>,
+    validatedMessages?: OpenAI.Chat.ChatCompletionMessageParam[],
+  ): Promise<T> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (err) {
+        lastError = err as Error;
+
+        // Check if error is retryable
+        if (!this.isRetryableError(err)) {
+          // Log full message sequence on Azure error for debugging
+          if ((err as Error).message?.includes('3230') && validatedMessages) {
+            this.logMessageSequence(validatedMessages, '3230 error');
           }
+          throw err;
         }
+
+        // Don't retry if we've exhausted attempts
+        if (attempt >= this.maxRetries) {
+          console.error(
+            `[AzureMistralProvider] All ${this.maxRetries + 1} attempts failed. Last error: ${lastError.message}`,
+          );
+          break;
+        }
+
+        // Calculate delay with exponential backoff and jitter
+        const delay = this.calculateRetryDelay(attempt);
+        console.warn(
+          `[AzureMistralProvider] Attempt ${attempt + 1}/${this.maxRetries + 1} failed with retryable error: ${lastError.message}. Retrying in ${delay}ms...`,
+        );
+
+        await this.sleep(delay);
       }
-      throw err;
+    }
+
+    throw lastError!;
+  }
+
+  /**
+   * Determine if an error is retryable based on status code or error type.
+   */
+  private isRetryableError(err: unknown): boolean {
+    if (!err || typeof err !== 'object') {
+      return false;
+    }
+
+    const error = err as any;
+
+    // Check for HTTP status code in various error formats
+    const statusCode = error.status || error.statusCode || error.response?.status;
+    if (statusCode && this.RETRYABLE_STATUS_CODES.includes(statusCode)) {
+      return true;
+    }
+
+    // Check error message for status codes (Azure errors often embed status in message)
+    const message = error.message || '';
+    for (const code of this.RETRYABLE_STATUS_CODES) {
+      if (message.includes(`${code}`) || message.includes(`"code":${code}`)) {
+        return true;
+      }
+    }
+
+    // Check for specific Azure error types
+    if (message.includes('engine_network_error') ||
+        message.includes('Model is not available') ||
+        message.includes('ECONNREFUSED') ||
+        message.includes('ETIMEDOUT') ||
+        message.includes('ENOTFOUND') ||
+        message.includes('socket hang up')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Calculate retry delay using exponential backoff with jitter.
+   * Formula: baseDelay * 2^attempt + random jitter (0-500ms)
+   */
+  private calculateRetryDelay(attempt: number): number {
+    const exponentialDelay = this.initialRetryDelayMs * Math.pow(2, attempt);
+    const jitter = Math.random() * 500; // Add 0-500ms of jitter
+    const maxDelay = 30000; // Cap at 30 seconds
+    return Math.min(exponentialDelay + jitter, maxDelay);
+  }
+
+  /**
+   * Sleep for a specified number of milliseconds.
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Log message sequence for debugging Azure errors.
+   */
+  private logMessageSequence(
+    messages: OpenAI.Chat.ChatCompletionMessageParam[],
+    errorContext: string,
+  ): void {
+    console.error(
+      `[AzureMistral] Azure returned ${errorContext} - logging message sequence:`,
+    );
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      if (msg.role === 'assistant') {
+        const assistantMsg = msg;
+        const tcCount = assistantMsg.tool_calls?.length || 0;
+        const tcIds =
+          assistantMsg.tool_calls?.map((tc) => tc.id).join(', ') || 'none';
+        console.error(
+          `  [${i}] ASSISTANT: tool_calls=${tcCount} [${tcIds}]`,
+        );
+      } else if (msg.role === 'tool') {
+        const toolMsg = msg;
+        console.error(
+          `  [${i}] TOOL: tool_call_id=${toolMsg.tool_call_id}`,
+        );
+      } else {
+        console.error(`  [${i}] ${msg.role.toUpperCase()}`);
+      }
     }
   }
 

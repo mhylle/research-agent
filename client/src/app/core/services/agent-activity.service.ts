@@ -592,6 +592,15 @@ export class AgentActivityService {
     // Use closeConnection() instead of disconnect() to preserve state for display
     this.closeConnection();
 
+    // Clean up any remaining active tasks - move them to completed since session finished
+    // This handles tasks that never received proper completion events (e.g., due to errors)
+    const remainingTasks = this.activeTasks();
+    if (remainingTasks.length > 0) {
+      console.log(`Session completed with ${remainingTasks.length} orphan tasks, cleaning up`);
+      this.activeTasks.set([]);
+      // Don't add orphan tasks to completed - they were likely partial/interrupted operations
+    }
+
     // Now set completion state (after connection is closed)
     this.isComplete.set(true);
 
@@ -614,6 +623,14 @@ export class AgentActivityService {
     console.log('Session failed:', event);
     const { error } = event;
     this.connectionError.set(error || 'Research failed');
+
+    // Clean up any remaining active tasks
+    const remainingTasks = this.activeTasks();
+    if (remainingTasks.length > 0) {
+      console.log(`Session failed with ${remainingTasks.length} orphan tasks, cleaning up`);
+      this.activeTasks.set([]);
+    }
+
     // Close SSE connection to prevent reconnection attempts after failure
     // Use closeConnection() instead of disconnect() to preserve error state for display
     this.closeConnection();
@@ -849,9 +866,12 @@ export class AgentActivityService {
    */
   private handleConfidenceScoringStarted(event: any): void {
     console.log('Confidence scoring started:', event);
+    // Use phaseId to create unique task ID, preventing collisions from multiple synthesis phases
+    const phaseId = event.phaseId || 'default';
+    const taskId = `confidence-scoring-${phaseId}`;
     // Create an activity task to show progress
     const task: ActivityTask = {
-      id: 'confidence-scoring',
+      id: taskId,
       nodeId: 'confidence',
       stage: (this.currentStage() || 1) as 1 | 2 | 3,
       type: 'milestone',
@@ -870,10 +890,14 @@ export class AgentActivityService {
     const { confidence } = event;
     this.confidenceResult.set(confidence);
 
+    // Use phaseId to match the correct task
+    const phaseId = event.phaseId || 'default';
+    const taskId = `confidence-scoring-${phaseId}`;
+
     // Move task to completed
-    this.activeTasks.update(tasks => tasks.filter(t => t.id !== 'confidence-scoring'));
+    this.activeTasks.update(tasks => tasks.filter(t => t.id !== taskId));
     const completedTask: ActivityTask = {
-      id: 'confidence-scoring',
+      id: taskId,
       nodeId: 'confidence',
       stage: (this.currentStage() || 1) as 1 | 2 | 3,
       type: 'milestone',
@@ -889,10 +913,15 @@ export class AgentActivityService {
 
   private handleConfidenceScoringFailed(event: any): void {
     console.log('Confidence scoring failed:', event);
+
+    // Use phaseId to match the correct task
+    const phaseId = event.phaseId || 'default';
+    const taskId = `confidence-scoring-${phaseId}`;
+
     // Move task to failed
-    this.activeTasks.update(tasks => tasks.filter(t => t.id !== 'confidence-scoring'));
+    this.activeTasks.update(tasks => tasks.filter(t => t.id !== taskId));
     const failedTask: ActivityTask = {
-      id: 'confidence-scoring',
+      id: taskId,
       nodeId: 'confidence',
       stage: (this.currentStage() || 1) as 1 | 2 | 3,
       type: 'milestone',

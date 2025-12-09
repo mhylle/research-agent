@@ -466,6 +466,189 @@ describe('AzureMistralProvider', () => {
     });
   });
 
+  describe('retry behavior', () => {
+    it('should retry on 503 error and succeed', async () => {
+      // First call fails with 503, second succeeds
+      mockCreate
+        .mockRejectedValueOnce({
+          status: 503,
+          message: '503 {"object":"Error","message":"Model is not available.","type":"engine_network_error","code":3803}',
+        })
+        .mockResolvedValueOnce({
+          id: 'resp-retry',
+          choices: [
+            {
+              message: { role: 'assistant', content: 'Success after retry' },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 20 },
+        });
+
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const result = await provider.chat([{ role: 'user', content: 'Test' }]);
+
+      expect(result.message.content).toBe('Success after retry');
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Attempt 1/4 failed with retryable error'),
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should retry on "Model is not available" error', async () => {
+      mockCreate
+        .mockRejectedValueOnce({
+          message: 'Model is not available',
+        })
+        .mockResolvedValueOnce({
+          id: 'resp-model-retry',
+          choices: [
+            {
+              message: { role: 'assistant', content: 'Model recovered' },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 20 },
+        });
+
+      jest.spyOn(console, 'warn').mockImplementation();
+
+      const result = await provider.chat([{ role: 'user', content: 'Test' }]);
+
+      expect(result.message.content).toBe('Model recovered');
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry on 429 rate limit error', async () => {
+      mockCreate
+        .mockRejectedValueOnce({
+          status: 429,
+          message: 'Rate limit exceeded',
+        })
+        .mockResolvedValueOnce({
+          id: 'resp-rate-retry',
+          choices: [
+            {
+              message: { role: 'assistant', content: 'After rate limit' },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 20 },
+        });
+
+      jest.spyOn(console, 'warn').mockImplementation();
+
+      const result = await provider.chat([{ role: 'user', content: 'Test' }]);
+
+      expect(result.message.content).toBe('After rate limit');
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    });
+
+    it('should exhaust retries and throw after max attempts', async () => {
+      const error = {
+        status: 503,
+        message: '503 Model is not available',
+      };
+      mockCreate.mockRejectedValue(error);
+
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      await expect(
+        provider.chat([{ role: 'user', content: 'Test' }]),
+      ).rejects.toEqual(error);
+
+      // Default is 3 retries = 4 total attempts
+      expect(mockCreate).toHaveBeenCalledTimes(4);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('All 4 attempts failed'),
+      );
+
+      consoleSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+    }, 15000); // Increase timeout for retry test with exponential backoff
+
+    it('should NOT retry on non-retryable errors (400 Bad Request)', async () => {
+      const error = {
+        status: 400,
+        message: 'Bad Request: Invalid parameters',
+      };
+      mockCreate.mockRejectedValue(error);
+
+      await expect(
+        provider.chat([{ role: 'user', content: 'Test' }]),
+      ).rejects.toEqual(error);
+
+      expect(mockCreate).toHaveBeenCalledTimes(1);
+    });
+
+    it('should NOT retry on non-retryable errors (401 Unauthorized)', async () => {
+      const error = {
+        status: 401,
+        message: 'Unauthorized: Invalid API key',
+      };
+      mockCreate.mockRejectedValue(error);
+
+      await expect(
+        provider.chat([{ role: 'user', content: 'Test' }]),
+      ).rejects.toEqual(error);
+
+      expect(mockCreate).toHaveBeenCalledTimes(1);
+    });
+
+    it('should retry on network errors (ECONNREFUSED)', async () => {
+      mockCreate
+        .mockRejectedValueOnce({
+          message: 'connect ECONNREFUSED 127.0.0.1:443',
+          code: 'ECONNREFUSED',
+        })
+        .mockResolvedValueOnce({
+          id: 'resp-net-retry',
+          choices: [
+            {
+              message: { role: 'assistant', content: 'Network recovered' },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 20 },
+        });
+
+      jest.spyOn(console, 'warn').mockImplementation();
+
+      const result = await provider.chat([{ role: 'user', content: 'Test' }]);
+
+      expect(result.message.content).toBe('Network recovered');
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry on engine_network_error', async () => {
+      mockCreate
+        .mockRejectedValueOnce({
+          message: '{"type":"engine_network_error","code":3803}',
+        })
+        .mockResolvedValueOnce({
+          id: 'resp-engine-retry',
+          choices: [
+            {
+              message: { role: 'assistant', content: 'Engine recovered' },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 20 },
+        });
+
+      jest.spyOn(console, 'warn').mockImplementation();
+
+      const result = await provider.chat([{ role: 'user', content: 'Test' }]);
+
+      expect(result.message.content).toBe('Engine recovered');
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('request configuration', () => {
     it('should always set stream to false', async () => {
       mockCreate.mockResolvedValue({

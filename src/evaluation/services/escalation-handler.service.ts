@@ -19,14 +19,33 @@ export interface EscalationInput {
 export class EscalationHandlerService {
   private readonly logger = new Logger(EscalationHandlerService.name);
   private readonly config = DEFAULT_EVALUATION_CONFIG;
+  private readonly useProviderDefaultModel: boolean;
+  private readonly actualModelName: string;
 
-  constructor(private readonly llmService: LLMService) {}
+  constructor(private readonly llmService: LLMService) {
+    // When using Azure Mistral, don't override the model - use the provider's default
+    // Azure only has one model (Mistral-Large-3), so model overrides would fail
+    const providerName = this.llmService.getProviderName();
+    this.useProviderDefaultModel = providerName === 'azure-mistral';
+    this.actualModelName = this.useProviderDefaultModel
+      ? this.llmService.getProviderInfo().model
+      : this.config.escalationModel;
+
+    if (this.useProviderDefaultModel) {
+      this.logger.log(
+        `[EscalationHandlerService] Using provider default model (${providerName})`,
+      );
+    }
+  }
 
   async escalate(input: EscalationInput): Promise<EscalationResult> {
     const startTime = Date.now();
-    this.logger.log(
-      `Escalating to ${this.config.escalationModel} due to: ${input.trigger}`,
-    );
+    // Use provider's default model when on Azure, otherwise use the config's escalation model
+    const modelToUse = this.useProviderDefaultModel
+      ? undefined
+      : this.config.escalationModel;
+
+    this.logger.log(`Escalating to ${this.actualModelName} due to: ${input.trigger}`);
 
     try {
       const prompt = this.buildPrompt(input);
@@ -34,14 +53,14 @@ export class EscalationHandlerService {
       const response = await this.llmService.chat(
         [{ role: 'user', content: prompt }],
         [],
-        this.config.escalationModel,
+        modelToUse,
       );
 
       const parsed = this.parseResponse(response.message.content);
 
       return {
         trigger: input.trigger,
-        model: this.config.escalationModel,
+        model: this.actualModelName,
         panelReview: parsed.synthesis || '',
         trustDecisions: this.flattenTrustDecisions(parsed.trustDecisions),
         finalVerdict: parsed.finalVerdict || 'fail',
@@ -53,7 +72,7 @@ export class EscalationHandlerService {
       this.logger.error(`Escalation failed: ${error.message}`);
       return {
         trigger: input.trigger,
-        model: this.config.escalationModel,
+        model: this.actualModelName,
         panelReview: `Escalation failed: ${error.message}`,
         trustDecisions: {},
         finalVerdict: 'fail',

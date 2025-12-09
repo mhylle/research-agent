@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PipelineExecutor } from './pipeline-executor.service';
-import { OllamaService } from '../llm/ollama.service';
+import { LLMService } from '../llm/llm.service';
 import { ToolRegistry } from '../tools/registry/tool-registry.service';
 import { ResearchLogger } from '../logging/research-logger.service';
 
 describe('PipelineExecutor', () => {
   let executor: PipelineExecutor;
-  let ollamaService: jest.Mocked<OllamaService>;
+  let llmService: jest.Mocked<LLMService>;
   let toolRegistry: jest.Mocked<ToolRegistry>;
   let logger: jest.Mocked<ResearchLogger>;
 
@@ -15,9 +15,11 @@ describe('PipelineExecutor', () => {
       providers: [
         PipelineExecutor,
         {
-          provide: OllamaService,
+          provide: LLMService,
           useValue: {
             chat: jest.fn(),
+            getProviderName: jest.fn().mockReturnValue('ollama'),
+            getProviderInfo: jest.fn().mockReturnValue({ name: 'ollama', model: 'qwen2.5', supportedFeatures: ['chat'] }),
           },
         },
         {
@@ -44,7 +46,7 @@ describe('PipelineExecutor', () => {
     }).compile();
 
     executor = module.get<PipelineExecutor>(PipelineExecutor);
-    ollamaService = module.get(OllamaService);
+    llmService = module.get(LLMService);
     toolRegistry = module.get(ToolRegistry);
     logger = module.get(ResearchLogger);
   });
@@ -57,7 +59,7 @@ describe('PipelineExecutor', () => {
     const mockResponse = {
       message: { role: 'assistant', content: 'Response' },
     };
-    ollamaService.chat.mockResolvedValue(mockResponse as any);
+    llmService.chat.mockResolvedValue(mockResponse as any);
 
     const context = {
       stageNumber: 1 as const,
@@ -93,7 +95,7 @@ describe('PipelineExecutor', () => {
   });
 
   it('should retry on failure with exponential backoff', async () => {
-    ollamaService.chat
+    llmService.chat
       .mockRejectedValueOnce(new Error('Temporary failure'))
       .mockResolvedValueOnce({
         message: { role: 'assistant', content: 'Success' },
@@ -110,11 +112,11 @@ describe('PipelineExecutor', () => {
     const result = await executor.executeStage(context);
 
     expect(result.message.content).toBe('Success');
-    expect(ollamaService.chat).toHaveBeenCalledTimes(2);
+    expect(llmService.chat).toHaveBeenCalledTimes(2);
   });
 
   it('should fail after max retries', async () => {
-    ollamaService.chat.mockRejectedValue(new Error('Persistent failure'));
+    llmService.chat.mockRejectedValue(new Error('Persistent failure'));
 
     const context = {
       stageNumber: 1 as const,
@@ -127,7 +129,7 @@ describe('PipelineExecutor', () => {
     await expect(executor.executeStage(context)).rejects.toThrow(
       'Persistent failure',
     );
-    expect(ollamaService.chat).toHaveBeenCalledTimes(3); // Initial + 2 retries
+    expect(llmService.chat).toHaveBeenCalledTimes(3); // Initial + 2 retries
   });
 
   it('should retry tool calls on failure', async () => {

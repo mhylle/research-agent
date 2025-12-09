@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RefinementEngineService } from './refinement-engine.service';
-import { OllamaService } from '../../llm/ollama.service';
+import { LLMService } from '../../llm/llm.service';
 import { EventCoordinatorService } from '../../orchestration/services/event-coordinator.service';
 import { ResearchLogger } from '../../logging/research-logger.service';
 import { SelfCritique } from '../interfaces/self-critique.interface';
@@ -9,7 +9,7 @@ import { Source } from '../interfaces/refinement-result.interface';
 
 describe('RefinementEngineService', () => {
   let service: RefinementEngineService;
-  let ollamaService: jest.Mocked<OllamaService>;
+  let llmService: jest.Mocked<LLMService>;
   let eventCoordinator: jest.Mocked<EventCoordinatorService>;
   let researchLogger: jest.Mocked<ResearchLogger>;
 
@@ -84,8 +84,14 @@ describe('RefinementEngineService', () => {
   ];
 
   beforeEach(async () => {
-    const mockOllamaService = {
+    const mockLLMService = {
       chat: jest.fn(),
+      getProviderName: jest.fn().mockReturnValue('ollama'),
+      getProviderInfo: jest.fn().mockReturnValue({
+        name: 'ollama',
+        model: 'qwen2.5',
+        supportedFeatures: ['chat'],
+      }),
     };
 
     const mockEventCoordinator = {
@@ -102,14 +108,14 @@ describe('RefinementEngineService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RefinementEngineService,
-        { provide: OllamaService, useValue: mockOllamaService },
+        { provide: LLMService, useValue: mockLLMService },
         { provide: EventCoordinatorService, useValue: mockEventCoordinator },
         { provide: ResearchLogger, useValue: mockResearchLogger },
       ],
     }).compile();
 
     service = module.get<RefinementEngineService>(RefinementEngineService);
-    ollamaService = module.get(OllamaService);
+    llmService = module.get(LLMService);
     eventCoordinator = module.get(EventCoordinatorService);
     researchLogger = module.get(ResearchLogger);
   });
@@ -120,7 +126,7 @@ describe('RefinementEngineService', () => {
 
   describe('refineAnswer', () => {
     it('should successfully refine an answer in a single pass', async () => {
-      ollamaService.chat.mockResolvedValue({
+      llmService.chat.mockResolvedValue({
         message: { content: mockRefinedAnswer },
         done: true,
         model: 'llama3',
@@ -146,10 +152,10 @@ describe('RefinementEngineService', () => {
 
     it('should perform multiple refinement passes when gaps remain', async () => {
       // Reset mock completely
-      ollamaService.chat.mockReset();
+      llmService.chat.mockReset();
 
       // First pass addresses some gaps
-      ollamaService.chat
+      llmService.chat
         .mockResolvedValueOnce({
           message: {
             content:
@@ -188,12 +194,12 @@ describe('RefinementEngineService', () => {
 
       expect(result.refinementHistory.length).toBeGreaterThan(0);
       expect(result.refinementHistory.length).toBeLessThanOrEqual(3);
-      expect(ollamaService.chat).toHaveBeenCalled();
+      expect(llmService.chat).toHaveBeenCalled();
     });
 
     it('should stop early if no significant improvement', async () => {
       // Return nearly identical answer
-      ollamaService.chat.mockResolvedValue({
+      llmService.chat.mockResolvedValue({
         message: { content: mockOriginalAnswer + ' Additional word.' },
         done: true,
         model: 'llama3',
@@ -214,7 +220,7 @@ describe('RefinementEngineService', () => {
 
     it('should stop early if all gaps are addressed', async () => {
       // Return answer that addresses all gaps
-      ollamaService.chat.mockResolvedValue({
+      llmService.chat.mockResolvedValue({
         message: {
           content:
             'TypeScript IDE tooling includes autocomplete and refactoring. Studies show 15% bug reduction. Type checking catches errors at compile-time.',
@@ -238,7 +244,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should emit appropriate events during refinement', async () => {
-      ollamaService.chat.mockResolvedValue({
+      llmService.chat.mockResolvedValue({
         message: { content: mockRefinedAnswer },
         done: true,
         model: 'llama3',
@@ -282,7 +288,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should log refinement progress', async () => {
-      ollamaService.chat.mockResolvedValue({
+      llmService.chat.mockResolvedValue({
         message: { content: mockRefinedAnswer },
         done: true,
         model: 'llama3',
@@ -317,7 +323,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should handle LLM errors gracefully and return fallback result', async () => {
-      ollamaService.chat.mockRejectedValue(
+      llmService.chat.mockRejectedValue(
         new Error('LLM service unavailable'),
       );
 
@@ -338,7 +344,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should handle empty gaps array', async () => {
-      ollamaService.chat.mockResolvedValue({
+      llmService.chat.mockResolvedValue({
         message: { content: mockOriginalAnswer },
         done: true,
         model: 'llama3',
@@ -360,7 +366,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should handle empty sources array', async () => {
-      ollamaService.chat.mockResolvedValue({
+      llmService.chat.mockResolvedValue({
         message: { content: mockRefinedAnswer },
         done: true,
         model: 'llama3',
@@ -381,7 +387,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should prioritize critical gaps over minor ones', async () => {
-      ollamaService.chat.mockImplementation(async (messages) => {
+      llmService.chat.mockImplementation(async (messages) => {
         const prompt = messages[1].content;
         // Check that critical gap appears before minor gaps in prompt
         const criticalIndex = prompt.indexOf('[CRITICAL]');
@@ -405,11 +411,11 @@ describe('RefinementEngineService', () => {
         mockQuery,
       );
 
-      expect(ollamaService.chat).toHaveBeenCalled();
+      expect(llmService.chat).toHaveBeenCalled();
     });
 
     it('should track improvement scores correctly', async () => {
-      ollamaService.chat.mockResolvedValue({
+      llmService.chat.mockResolvedValue({
         message: { content: mockRefinedAnswer },
         done: true,
         model: 'llama3',
@@ -434,7 +440,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should include source citations in refinement prompt', async () => {
-      ollamaService.chat.mockImplementation(async (messages) => {
+      llmService.chat.mockImplementation(async (messages) => {
         const prompt = messages[1].content;
         expect(prompt).toContain('TypeScript Impact Study');
         expect(prompt).toContain('TypeScript Tooling Guide');
@@ -459,7 +465,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should include critique in refinement prompt', async () => {
-      ollamaService.chat.mockImplementation(async (messages) => {
+      llmService.chat.mockImplementation(async (messages) => {
         const prompt = messages[1].content;
         expect(prompt).toContain('Strengths:');
         expect(prompt).toContain('Weaknesses:');
@@ -487,7 +493,7 @@ describe('RefinementEngineService', () => {
     it('should respect maximum refinement passes limit', async () => {
       // Mock LLM to always return slightly different answers
       let callCount = 0;
-      ollamaService.chat.mockImplementation(async () => {
+      llmService.chat.mockImplementation(async () => {
         callCount++;
         return {
           message: { content: `${mockOriginalAnswer} Pass ${callCount}` },
@@ -507,7 +513,7 @@ describe('RefinementEngineService', () => {
       );
 
       expect(result.refinementHistory.length).toBeLessThanOrEqual(3);
-      expect(ollamaService.chat).toHaveBeenCalledTimes(
+      expect(llmService.chat).toHaveBeenCalledTimes(
         Math.min(3, result.refinementHistory.length),
       );
     });
@@ -517,7 +523,7 @@ describe('RefinementEngineService', () => {
       const answerWithKeywords =
         'TypeScript IDE tooling support includes autocomplete and refactoring. Studies show 15% bug reduction in large projects.';
 
-      ollamaService.chat.mockResolvedValue({
+      llmService.chat.mockResolvedValue({
         message: { content: answerWithKeywords },
         done: true,
         model: 'llama3',
@@ -537,7 +543,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should emit events on error', async () => {
-      ollamaService.chat.mockRejectedValue(new Error('Network timeout'));
+      llmService.chat.mockRejectedValue(new Error('Network timeout'));
 
       await service.refineAnswer(
         mockOriginalAnswer,
@@ -558,7 +564,7 @@ describe('RefinementEngineService', () => {
 
     it('should log when refinement encounters errors', async () => {
       const error = new Error('LLM timeout');
-      ollamaService.chat.mockRejectedValue(error);
+      llmService.chat.mockRejectedValue(error);
 
       await service.refineAnswer(
         mockOriginalAnswer,
@@ -580,7 +586,7 @@ describe('RefinementEngineService', () => {
 
     it('should handle refinement pass failures gracefully', async () => {
       // First pass fails, should continue to try more passes
-      ollamaService.chat
+      llmService.chat
         .mockRejectedValueOnce(new Error('First pass failed'))
         .mockResolvedValueOnce({
           message: { content: mockRefinedAnswer },
@@ -603,7 +609,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should include previous attempts in context for later passes', async () => {
-      ollamaService.chat
+      llmService.chat
         .mockResolvedValueOnce({
           message: { content: 'First refinement attempt' },
           done: true,

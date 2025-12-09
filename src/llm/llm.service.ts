@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import pLimit, { LimitFunction } from 'p-limit';
 import { LLMProviderFactory } from './llm-provider.factory';
 import {
   ILLMProvider,
@@ -19,11 +21,22 @@ import { ToolDefinition } from '../tools/interfaces/tool-definition.interface';
 @Injectable()
 export class LLMService {
   private provider: ILLMProvider;
+  private concurrencyLimit: LimitFunction;
+  private maxConcurrent: number;
 
-  constructor(private factory: LLMProviderFactory) {
+  constructor(
+    private factory: LLMProviderFactory,
+    private configService: ConfigService,
+  ) {
     this.provider = factory.getProvider();
+
+    // Default 2 concurrent calls, configurable via env
+    this.maxConcurrent =
+      this.configService.get<number>('LLM_MAX_CONCURRENT_CALLS') || 2;
+    this.concurrencyLimit = pLimit(this.maxConcurrent);
+
     console.log(
-      `[LLMService] Initialized with provider: ${this.provider.name}`,
+      `[LLMService] Initialized with provider: ${this.provider.name}, max concurrent: ${this.maxConcurrent}`,
     );
   }
 
@@ -41,7 +54,21 @@ export class LLMService {
     model?: string,
   ): Promise<ChatResponse> {
     const options: ChatOptions | undefined = model ? { model } : undefined;
-    return this.provider.chat(messages, tools, options);
+
+    // Log queue status when calls are pending
+    const pending = this.concurrencyLimit.pendingCount;
+    const active = this.concurrencyLimit.activeCount;
+
+    if (pending > 0) {
+      console.log(
+        `[LLMService] Queued call (active: ${active}/${this.maxConcurrent}, pending: ${pending})`,
+      );
+    }
+
+    // Queue call through concurrency limiter
+    return this.concurrencyLimit(() =>
+      this.provider.chat(messages, tools, options),
+    );
   }
 
   /**

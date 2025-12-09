@@ -124,12 +124,30 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
         // Run confidence scoring if enabled
         let confidenceResult: ConfidenceResult | null = null;
         if (this.isConfidenceScoringEnabled()) {
-          confidenceResult = await this.runConfidenceScoring(
-            answerText,
-            sources,
-            phase,
-            context,
-          );
+          try {
+            confidenceResult = await this.runConfidenceScoring(
+              answerText,
+              sources,
+              phase,
+              context,
+            );
+          } catch (scoringError: unknown) {
+            const errorMessage =
+              scoringError instanceof Error ? scoringError.message : 'Unknown error';
+            this.logger.error(`Confidence scoring failed: ${errorMessage}`);
+            // Emit confidence_scoring_failed so frontend knows to remove the task
+            await this.eventCoordinator.emit(
+              context.logId,
+              'confidence_scoring_failed',
+              {
+                phaseName: phase.name,
+                phaseId: phase.id,
+                error: errorMessage,
+              },
+              phase.id,
+            );
+            // Continue without confidence result
+          }
         } else {
           this.logger.log('Confidence scoring disabled via CONFIDENCE_SCORING_ENABLED=false');
         }

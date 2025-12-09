@@ -604,6 +604,16 @@ export class AgentActivityService {
     // Now set completion state (after connection is closed)
     this.isComplete.set(true);
 
+    // Ensure planning indicator is hidden when session completes
+    // (in case plan_created event was missed or arrived out of order)
+    this.isPlanning.set(false);
+
+    // Update progress indicators to reflect completion state
+    // This fixes the bug where progress shows stale values like "Phase 8 of 3" and "13%"
+    this.stageProgress.set(100);
+    this.currentStage.set(this.totalPhases()); // Show final phase number (e.g., "Phase 3 of 3")
+    this.currentPhaseName.set('Research Complete');
+
     // Fetch the final result from the API
     if (logId) {
       try {
@@ -630,6 +640,12 @@ export class AgentActivityService {
       console.log(`Session failed with ${remainingTasks.length} orphan tasks, cleaning up`);
       this.activeTasks.set([]);
     }
+
+    // Ensure planning indicator is hidden when session fails
+    this.isPlanning.set(false);
+
+    // Update progress indicators to reflect failed state
+    this.currentPhaseName.set('Research Failed');
 
     // Close SSE connection to prevent reconnection attempts after failure
     // Use closeConnection() instead of disconnect() to preserve error state for display

@@ -14,7 +14,11 @@ describe('QueryDecomposerService', () => {
     const mockLLMService = {
       chat: jest.fn(),
       getProviderName: jest.fn().mockReturnValue('ollama'),
-      getProviderInfo: jest.fn().mockReturnValue({ name: 'ollama', model: 'qwen2.5', supportedFeatures: ['chat'] }),
+      getProviderInfo: jest.fn().mockReturnValue({
+        name: 'ollama',
+        model: 'qwen2.5',
+        supportedFeatures: ['chat'],
+      }),
     };
 
     const mockEventCoordinator = {

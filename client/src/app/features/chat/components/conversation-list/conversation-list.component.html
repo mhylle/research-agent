@@ -1,0 +1,110 @@
+<nav class="conversation-list" aria-label="Conversation navigation">
+  <!-- Header -->
+  <div class="conversation-list__header">
+    <h2 class="conversation-list__title" id="conversations-heading">Conversations</h2>
+    <button
+      class="conversation-list__new-btn"
+      (click)="onCreateConversation()"
+      [disabled]="isCreating()"
+      type="button"
+      [attr.aria-label]="isCreating() ? 'Creating new chat...' : 'Create new chat'"
+    >
+      @if (isCreating()) {
+        <span class="conversation-list__spinner" role="status" aria-hidden="true"></span>
+        <span class="visually-hidden">Creating...</span>
+      } @else {
+        <span class="conversation-list__icon" aria-hidden="true">+</span>
+      }
+      New Chat
+    </button>
+  </div>
+
+  <!-- Search -->
+  <div class="conversation-list__search" role="search">
+    <label for="conversation-search" class="visually-hidden">Search conversations</label>
+    <input
+      id="conversation-search"
+      type="search"
+      class="conversation-list__search-input"
+      placeholder="Search conversations..."
+      [ngModel]="searchQuery()"
+      (ngModelChange)="onSearch($event)"
+      aria-label="Search conversations"
+    />
+  </div>
+
+  <!-- Error state -->
+  @if (error()) {
+    <div class="conversation-list__error" role="alert">
+      <span class="conversation-list__error-icon" aria-hidden="true">⚠️</span>
+      <p>{{ error() }}</p>
+    </div>
+  }
+
+  <!-- Loading state -->
+  @if (isLoading() && conversations().length === 0) {
+    <div class="conversation-list__loading" role="status" aria-live="polite">
+      <div class="conversation-list__spinner" aria-hidden="true"></div>
+      <p>Loading conversations...</p>
+    </div>
+  }
+
+  <!-- Empty state -->
+  @if (!isLoading() && conversations().length === 0 && !error()) {
+    <div class="conversation-list__empty" role="status">
+      <span class="conversation-list__empty-icon" aria-hidden="true">💬</span>
+      @if (searchQuery()) {
+        <p>No conversations found matching "{{ searchQuery() }}"</p>
+      } @else {
+        <p>No conversations yet</p>
+        <p class="conversation-list__empty-hint">Click "New Chat" to start your first conversation</p>
+      }
+    </div>
+  }
+
+  <!-- Conversations list -->
+  @if (conversations().length > 0) {
+    <div class="conversation-list__items" role="list" aria-labelledby="conversations-heading">
+      @for (conversation of conversations(); track trackByConversationId($index, conversation)) {
+        <div
+          class="conversation-list__item"
+          (click)="onSelectConversation(conversation.id)"
+          (keydown.enter)="onSelectConversation(conversation.id)"
+          (keydown.space)="$event.preventDefault(); onSelectConversation(conversation.id)"
+          tabindex="0"
+          role="listitem"
+          [attr.aria-label]="'Open conversation: ' + conversation.title + ', updated ' + formatTimestamp(conversation.updatedAt) + ', ' + conversation.tokenCount + ' tokens'"
+        >
+          <div class="conversation-list__item-header">
+            <h3 class="conversation-list__item-title">
+              {{ truncateTitle(conversation.title) }}
+            </h3>
+            <button
+              class="conversation-list__delete-btn"
+              (click)="onDeleteConversation($event, conversation.id)"
+              [disabled]="isDeleting(conversation.id)"
+              type="button"
+              [attr.aria-label]="isDeleting(conversation.id) ? 'Deleting conversation...' : 'Delete conversation: ' + conversation.title"
+            >
+              @if (isDeleting(conversation.id)) {
+                <span class="conversation-list__spinner conversation-list__spinner--small" role="status" aria-hidden="true"></span>
+                <span class="visually-hidden">Deleting...</span>
+              } @else {
+                <span aria-hidden="true">×</span>
+                <span class="visually-hidden">Delete</span>
+              }
+            </button>
+          </div>
+          <div class="conversation-list__item-meta" aria-hidden="true">
+            <span class="conversation-list__timestamp">
+              {{ formatTimestamp(conversation.updatedAt) }}
+            </span>
+            <span class="conversation-list__token-badge">
+              {{ conversation.tokenCount }} tokens
+            </span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</nav>

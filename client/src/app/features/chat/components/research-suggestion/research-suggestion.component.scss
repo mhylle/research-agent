@@ -1,0 +1,53 @@
+@import '../../../../../styles/variables';
+
+.research-suggestion {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: $spacing-xs;
+
+  &__button {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    background-color: transparent;
+    border: 1px solid $border;
+    border-radius: $border-radius-full;
+    color: $moss;
+    font-size: $font-size-sm;
+    font-family: $font-family;
+    font-weight: $font-medium;
+    cursor: pointer;
+    transition: all $transition-base;
+    white-space: nowrap;
+
+    // Hover state
+    &:hover {
+      background-color: $moss-bg;
+      border-color: $moss;
+      transform: scale(1.02);
+    }
+
+    // Active state
+    &:active {
+      transform: scale(0.98);
+    }
+
+    // Focus state (accessibility)
+    &:focus-visible {
+      outline: 2px solid $border-focus;
+      outline-offset: 2px;
+    }
+  }
+
+  &__icon {
+    font-size: $font-size-base;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  &__text {
+    line-height: 1;
+  }
+}

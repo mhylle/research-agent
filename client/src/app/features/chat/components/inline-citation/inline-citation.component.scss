@@ -1,0 +1,97 @@
+.inline-citation {
+  display: inline-block;
+  position: relative;
+  vertical-align: super;
+  font-size: 0.75em;
+  line-height: 1;
+  margin: 0 0.1em;
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  background-color: #f0f0f0;
+  color: #2d6a4f; // Moss green
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+
+  &:hover,
+  &:focus {
+    background-color: #2d6a4f;
+    color: white;
+    outline: none;
+    box-shadow: 0 2px 4px rgba(45, 106, 79, 0.2);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2d6a4f;
+    outline-offset: 2px;
+  }
+
+  &--active {
+    background-color: #40916c;
+    color: white;
+    font-weight: 600;
+  }
+
+  &__tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background-color: #1b4332;
+    color: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+    max-width: 300px;
+    z-index: 1000;
+    pointer-events: none;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #1b4332;
+    }
+
+    // If tooltip would overflow top of viewport, show it below instead
+    @media (max-height: 400px) {
+      bottom: auto;
+      top: 100%;
+      margin-bottom: 0;
+      margin-top: 8px;
+
+      &::after {
+        top: auto;
+        bottom: 100%;
+        border-top-color: transparent;
+        border-bottom-color: #1b4332;
+      }
+    }
+  }
+
+  &__tooltip-title {
+    font-weight: 600;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__tooltip-url {
+    font-size: 0.9em;
+    opacity: 0.8;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

@@ -1,0 +1,61 @@
+<div class="chat-input">
+  <form class="chat-input__form" (submit)="$event.preventDefault(); onSend()" aria-label="Message input form">
+    <label for="message-input" class="visually-hidden">Type your message</label>
+    <textarea
+      id="message-input"
+      [(ngModel)]="messageContent"
+      name="message"
+      [disabled]="disabled || isLoading"
+      class="chat-input__textarea"
+      placeholder="Type a message..."
+      rows="1"
+      (keydown)="onKeyDown($event)"
+      (input)="autoResize($event)"
+      aria-label="Message input"
+      [attr.aria-disabled]="disabled || isLoading"
+    ></textarea>
+
+    <div class="chat-input__actions" role="group" aria-label="Message actions">
+      <button
+        type="button"
+        class="chat-input__research-toggle"
+        [class.chat-input__research-toggle--active]="researchEnabled()"
+        [disabled]="disabled || isLoading"
+        (click)="toggleResearch()"
+        [attr.aria-label]="researchEnabled() ? 'Research mode enabled, click to disable' : 'Enable research mode for web search'"
+        [attr.aria-pressed]="researchEnabled()"
+      >
+        <svg class="chat-input__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <span class="chat-input__research-label">Research</span>
+      </button>
+
+      <button
+        type="submit"
+        class="chat-input__send"
+        [disabled]="isButtonDisabled"
+        [attr.aria-label]="isLoading ? 'Sending message...' : 'Send message'"
+      >
+        @if (isLoading) {
+          <svg class="chat-input__icon chat-input__icon--spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+            <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span class="visually-hidden">Sending...</span>
+        } @else {
+          <svg class="chat-input__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+          <span class="visually-hidden">Send</span>
+        }
+      </button>
+    </div>
+  </form>
+
+  <p class="chat-input__hint" role="note" aria-label="Keyboard shortcuts">
+    <span class="chat-input__hint-text">Ctrl+Enter to send</span>
+    <span class="chat-input__hint-text">Shift+Enter for newline</span>
+  </p>
+</div>

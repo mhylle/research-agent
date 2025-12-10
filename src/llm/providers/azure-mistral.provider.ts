@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
@@ -8,6 +14,7 @@ import {
 } from '../interfaces/llm-provider.interface';
 import { ChatMessage } from '../interfaces/chat-message.interface';
 import { ChatResponse, ToolCall } from '../interfaces/chat-response.interface';
+import { ChatStreamChunk } from '../interfaces/chat-stream-chunk.interface';
 import { ToolDefinition } from '../../tools/interfaces/tool-definition.interface';
 
 /**
@@ -24,6 +31,9 @@ import { ToolDefinition } from '../../tools/interfaces/tool-definition.interface
  * - Retries on 503, 429, 500, 502, 504 and network errors
  * - Uses exponential backoff with jitter
  * - Configurable via AZURE_LLM_MAX_RETRIES and AZURE_LLM_INITIAL_RETRY_DELAY_MS
+ *
+ * Note: ESLint warnings for 'any' types are suppressed for error handling
+ * and JSON parsing where types cannot be known at compile time.
  */
 @Injectable()
 export class AzureMistralProvider implements ILLMProvider {
@@ -46,8 +56,11 @@ export class AzureMistralProvider implements ILLMProvider {
       'Mistral-Large-3';
 
     // Retry configuration
-    this.maxRetries = this.configService.get<number>('AZURE_LLM_MAX_RETRIES') ?? 3;
-    this.initialRetryDelayMs = this.configService.get<number>('AZURE_LLM_INITIAL_RETRY_DELAY_MS') ?? 1000;
+    this.maxRetries =
+      this.configService.get<number>('AZURE_LLM_MAX_RETRIES') ?? 3;
+    this.initialRetryDelayMs =
+      this.configService.get<number>('AZURE_LLM_INITIAL_RETRY_DELAY_MS') ??
+      1000;
 
     if (!endpoint || !apiKey) {
       console.warn(
@@ -99,6 +112,119 @@ export class AzureMistralProvider implements ILLMProvider {
     }, validatedMessages);
   }
 
+  async *chatStream(
+    messages: ChatMessage[],
+    tools?: ToolDefinition[],
+    options?: ChatOptions,
+  ): AsyncIterable<ChatStreamChunk> {
+    const model = options?.model || this.model;
+
+    // Validate and transform messages for Azure Mistral
+    const validatedMessages = this.validateMessages(messages);
+
+    // Strict validation: Trace tool call / response balance and THROW on mismatch
+    this.debugTraceToolCallBalance(validatedMessages);
+
+    // Build request body, sanitizing null values
+    const requestBody = this.buildRequestBody(
+      validatedMessages,
+      tools,
+      options,
+      model,
+    );
+
+    // Execute streaming request with retry logic
+    const stream = await this.executeWithRetry(async () => {
+      return await this.client.chat.completions.create({
+        ...requestBody,
+        stream: true, // Enable streaming
+      });
+    }, validatedMessages);
+
+    // Accumulate tool calls across chunks
+    const accumulatedToolCalls: Map<
+      number,
+      OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall
+    > = new Map();
+
+    // Process stream chunks
+    for await (const chunk of stream) {
+      const choice = chunk.choices[0];
+      if (!choice) continue;
+
+      const delta = choice.delta;
+      const content = delta?.content || '';
+
+      // Accumulate tool calls
+      if (delta?.tool_calls) {
+        for (const toolCall of delta.tool_calls) {
+          const index = toolCall.index;
+          const existing = accumulatedToolCalls.get(index);
+
+          if (existing) {
+            // Merge with existing tool call
+            if (toolCall.id) existing.id = toolCall.id;
+            if (toolCall.type) existing.type = toolCall.type;
+            if (toolCall.function) {
+              if (!existing.function) {
+                existing.function = { name: '', arguments: '' };
+              }
+              if (toolCall.function.name) {
+                existing.function.name += toolCall.function.name;
+              }
+              if (toolCall.function.arguments) {
+                existing.function.arguments += toolCall.function.arguments;
+              }
+            }
+          } else {
+            // Initialize new tool call
+            accumulatedToolCalls.set(index, {
+              index,
+              id: toolCall.id || '',
+              type: toolCall.type || 'function',
+              function: {
+                name: toolCall.function?.name || '',
+                arguments: toolCall.function?.arguments || '',
+              },
+            });
+          }
+        }
+      }
+
+      const isLast = choice.finish_reason !== null;
+
+      // Yield chunk
+      const streamChunk: ChatStreamChunk = {
+        content,
+        done: isLast,
+      };
+
+      // Add tool calls in the final chunk
+      if (isLast && accumulatedToolCalls.size > 0) {
+        streamChunk.toolCalls = Array.from(accumulatedToolCalls.values()).map(
+          (tc) => ({
+            id: tc.id || `call_${Date.now()}`,
+            function: {
+              name: tc.function?.name || '',
+              arguments: this.parseArguments(tc.function?.arguments || '{}'),
+            },
+          }),
+        );
+      }
+
+      // Add usage statistics in the final chunk
+      if (isLast && chunk.usage) {
+        streamChunk.usage = {
+          promptTokens: chunk.usage.prompt_tokens || 0,
+          completionTokens: chunk.usage.completion_tokens || 0,
+          totalTokens: chunk.usage.total_tokens || 0,
+        };
+      }
+
+      yield streamChunk;
+    }
+  }
+
   /**
    * Execute an async operation with exponential backoff retry.
    * Retries on transient Azure errors (503, 429, 500, etc.).
@@ -147,6 +273,7 @@ export class AzureMistralProvider implements ILLMProvider {
 
   /**
    * Determine if an error is retryable based on status code or error type.
+   * Note: Suppresses any-type errors for error object inspection since error types are unknown.
    */
   private isRetryableError(err: unknown): boolean {
     if (!err || typeof err !== 'object') {
@@ -156,7 +283,8 @@ export class AzureMistralProvider implements ILLMProvider {
     const error = err as any;
 
     // Check for HTTP status code in various error formats
-    const statusCode = error.status || error.statusCode || error.response?.status;
+    const statusCode =
+      error.status || error.statusCode || error.response?.status;
     if (statusCode && this.RETRYABLE_STATUS_CODES.includes(statusCode)) {
       return true;
     }
@@ -170,12 +298,14 @@ export class AzureMistralProvider implements ILLMProvider {
     }
 
     // Check for specific Azure error types
-    if (message.includes('engine_network_error') ||
-        message.includes('Model is not available') ||
-        message.includes('ECONNREFUSED') ||
-        message.includes('ETIMEDOUT') ||
-        message.includes('ENOTFOUND') ||
-        message.includes('socket hang up')) {
+    if (
+      message.includes('engine_network_error') ||
+      message.includes('Model is not available') ||
+      message.includes('ECONNREFUSED') ||
+      message.includes('ETIMEDOUT') ||
+      message.includes('ENOTFOUND') ||
+      message.includes('socket hang up')
+    ) {
       return true;
     }
 
@@ -217,14 +347,10 @@ export class AzureMistralProvider implements ILLMProvider {
         const tcCount = assistantMsg.tool_calls?.length || 0;
         const tcIds =
           assistantMsg.tool_calls?.map((tc) => tc.id).join(', ') || 'none';
-        console.error(
-          `  [${i}] ASSISTANT: tool_calls=${tcCount} [${tcIds}]`,
-        );
+        console.error(`  [${i}] ASSISTANT: tool_calls=${tcCount} [${tcIds}]`);
       } else if (msg.role === 'tool') {
         const toolMsg = msg;
-        console.error(
-          `  [${i}] TOOL: tool_call_id=${toolMsg.tool_call_id}`,
-        );
+        console.error(`  [${i}] TOOL: tool_call_id=${toolMsg.tool_call_id}`);
       } else {
         console.error(`  [${i}] ${msg.role.toUpperCase()}`);
       }

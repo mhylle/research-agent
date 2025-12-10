@@ -1,0 +1,268 @@
+// =============================================================================
+// Chat Input - Digital Hygge Style
+// Warm, inviting chat input area with research toggle
+// =============================================================================
+
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as *;
+
+.chat-input {
+  width: 100%;
+
+  &__form {
+    @include card;
+    padding: $spacing-md;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-family: $font-family;
+    font-size: $font-size-base; // 16px minimum to prevent zoom on iOS
+    line-height: $line-height;
+    color: $text-primary;
+    background: transparent;
+    resize: none;
+    min-height: 24px;
+    max-height: 200px;
+    overflow-y: auto;
+
+    &:focus {
+      outline: none;
+    }
+
+    &::placeholder {
+      color: $text-muted;
+    }
+
+    &:disabled {
+      color: $text-muted;
+      cursor: not-allowed;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-sm;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__research-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    min-height: 44px; // Touch target minimum
+    border: 1px solid $stone-300;
+    border-radius: $border-radius;
+    background: transparent;
+    color: $text-secondary;
+    font-family: $font-family;
+    font-size: $font-size-sm;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: $oatmeal;
+      border-color: $moss;
+      color: $moss;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $moss;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &--active {
+      background: $moss-bg;
+      border-color: $moss;
+      color: $moss;
+
+      &:hover:not(:disabled) {
+        background: lighten($moss-bg, 2%);
+      }
+    }
+  }
+
+  &__research-label {
+    font-weight: 500;
+  }
+
+  &__send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px; // Touch target minimum
+    min-height: 44px; // Touch target minimum
+    padding: 0;
+    border: none;
+    border-radius: $border-radius;
+    background: $moss;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: $moss-light;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba($moss, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:focus-visible {
+      outline: 2px solid $moss-light;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      background: $stone-300;
+      color: $stone-400;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  &__icon {
+    width: 20px;
+    height: 20px;
+
+    &--spinner {
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  &__hint {
+    display: flex;
+    gap: $spacing-md;
+    justify-content: center;
+    margin-top: $spacing-sm;
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+
+  &__hint-text {
+    &:not(:last-child)::after {
+      content: '•';
+      margin-left: $spacing-md;
+    }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: $breakpoint-lg) {
+  .chat-input {
+    &__actions {
+      gap: $spacing-xs;
+    }
+
+    &__research-toggle {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    &__send {
+      flex-shrink: 0;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-md) {
+  .chat-input {
+    &__form {
+      padding: $spacing-sm;
+      gap: $spacing-sm;
+    }
+
+    &__textarea {
+      font-size: $font-size-base; // Ensure 16px minimum
+      min-height: 44px;
+    }
+
+    &__actions {
+      gap: $spacing-sm;
+    }
+
+    &__research-toggle {
+      flex: 1;
+      min-height: 48px;
+      padding: $spacing-sm;
+    }
+
+    &__send {
+      min-width: 48px;
+      min-height: 48px;
+    }
+
+    &__hint {
+      gap: $spacing-sm;
+      font-size: $font-size-xs;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .chat-input {
+    &__form {
+      padding: $spacing-sm;
+      gap: $spacing-sm;
+    }
+
+    &__textarea {
+      min-height: 48px;
+    }
+
+    &__actions {
+      flex-wrap: wrap;
+      gap: $spacing-sm;
+    }
+
+    &__research-toggle {
+      flex: 1 1 100%;
+      justify-content: center;
+      width: 100%;
+      min-height: 48px;
+    }
+
+    &__send {
+      flex: 1 1 100%;
+      width: 100%;
+      min-height: 48px;
+    }
+
+    &__hint {
+      flex-direction: column;
+      gap: $spacing-xs;
+      align-items: center;
+    }
+
+    &__hint-text {
+      &:not(:last-child)::after {
+        content: none;
+      }
+    }
+  }
+}

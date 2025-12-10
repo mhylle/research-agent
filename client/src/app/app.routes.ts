@@ -10,6 +10,10 @@ export const routes: Routes = [
     component: ResearchComponent
   },
   {
+    path: 'chat',
+    loadChildren: () => import('./features/chat/chat.routes').then(m => m.chatRoutes)
+  },
+  {
     path: 'logs',
     component: LogsPageComponent
   },

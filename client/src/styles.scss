@@ -4,3 +4,8 @@
 @use 'styles/layout';
 @use 'styles/typography';
 @use 'styles/animations';
+
+// Accessibility utility class
+.visually-hidden {
+  @include visually-hidden;
+}

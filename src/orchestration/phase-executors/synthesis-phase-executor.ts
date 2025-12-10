@@ -133,7 +133,9 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
             );
           } catch (scoringError: unknown) {
             const errorMessage =
-              scoringError instanceof Error ? scoringError.message : 'Unknown error';
+              scoringError instanceof Error
+                ? scoringError.message
+                : 'Unknown error';
             this.logger.error(`Confidence scoring failed: ${errorMessage}`);
             // Emit confidence_scoring_failed so frontend knows to remove the task
             await this.eventCoordinator.emit(
@@ -149,7 +151,9 @@ export class SynthesisPhaseExecutor extends BasePhaseExecutor {
             // Continue without confidence result
           }
         } else {
-          this.logger.log('Confidence scoring disabled via CONFIDENCE_SCORING_ENABLED=false');
+          this.logger.log(
+            'Confidence scoring disabled via CONFIDENCE_SCORING_ENABLED=false',
+          );
         }
 
         // Run reflection if enabled (requires confidence scoring)

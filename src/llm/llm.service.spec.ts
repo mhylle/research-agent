@@ -106,7 +106,11 @@ describe('LLMService', () => {
 
       const result = await service.chat(messages);
 
-      expect(mockProvider.chat).toHaveBeenCalledWith(messages, undefined, undefined);
+      expect(mockProvider.chat).toHaveBeenCalledWith(
+        messages,
+        undefined,
+        undefined,
+      );
       expect(result).toEqual(mockChatResponse);
     });
 
@@ -125,7 +129,11 @@ describe('LLMService', () => {
 
       await service.chat(messages, tools);
 
-      expect(mockProvider.chat).toHaveBeenCalledWith(messages, tools, undefined);
+      expect(mockProvider.chat).toHaveBeenCalledWith(
+        messages,
+        tools,
+        undefined,
+      );
     });
 
     it('should pass model option to provider', async () => {
@@ -133,11 +141,9 @@ describe('LLMService', () => {
 
       await service.chat(messages, undefined, 'custom-model');
 
-      expect(mockProvider.chat).toHaveBeenCalledWith(
-        messages,
-        undefined,
-        { model: 'custom-model' },
-      );
+      expect(mockProvider.chat).toHaveBeenCalledWith(messages, undefined, {
+        model: 'custom-model',
+      });
     });
 
     it('should limit concurrent calls', async () => {

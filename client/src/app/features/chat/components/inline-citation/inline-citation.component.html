@@ -1,0 +1,21 @@
+<span
+  class="inline-citation"
+  [class.inline-citation--active]="isHighlighted()"
+  (click)="onClick($event)"
+  (mouseenter)="onMouseEnter()"
+  (mouseleave)="onMouseLeave()"
+  (keydown)="onKeyDown($event)"
+  [attr.aria-label]="'Citation ' + index + ': ' + citation.title + '. Press Enter to view source details.'"
+  [attr.aria-pressed]="isHighlighted()"
+  role="button"
+  tabindex="0"
+>
+  [{{ index }}]
+
+  @if (showTooltip()) {
+    <div class="inline-citation__tooltip" role="tooltip" [attr.aria-describedby]="'citation-' + index">
+      <span class="inline-citation__tooltip-title">{{ citation.title }}</span>
+      <span class="inline-citation__tooltip-url">{{ citation.url }}</span>
+    </div>
+  }
+</span>

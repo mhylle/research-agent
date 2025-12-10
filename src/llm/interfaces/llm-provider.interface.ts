@@ -1,5 +1,6 @@
 import { ChatMessage } from './chat-message.interface';
 import { ChatResponse } from './chat-response.interface';
+import { ChatStreamChunk } from './chat-stream-chunk.interface';
 import { ToolDefinition } from '../../tools/interfaces/tool-definition.interface';
 
 /**
@@ -19,7 +20,7 @@ export interface ChatOptions {
 export interface ProviderMetadata {
   name: string;
   model: string;
-  supportedFeatures: string[];
+  supportedFeatures: string[]; // e.g., ['tool-calling', 'streaming', 'vision']
 }
 
 /**
@@ -51,6 +52,20 @@ export interface ILLMProvider {
     tools?: ToolDefinition[],
     options?: ChatOptions,
   ): Promise<ChatResponse>;
+
+  /**
+   * Send a streaming chat completion request to the LLM.
+   *
+   * @param messages - The conversation messages
+   * @param tools - Optional tool definitions for function calling
+   * @param options - Optional request configuration
+   * @returns Async iterable of chat stream chunks
+   */
+  chatStream(
+    messages: ChatMessage[],
+    tools?: ToolDefinition[],
+    options?: ChatOptions,
+  ): AsyncIterable<ChatStreamChunk>;
 
   /**
    * Get metadata about this provider's configuration and capabilities.

@@ -1,0 +1,83 @@
+@if (isOpen()) {
+  <aside
+    class="research-side-panel"
+    [class.research-side-panel--open]="isOpen()"
+    role="complementary"
+    aria-labelledby="sources-heading"
+    aria-modal="false"
+  >
+    <div class="research-side-panel__header">
+      <h3 id="sources-heading">Sources</h3>
+      <button
+        class="research-side-panel__close"
+        (click)="close()"
+        aria-label="Close sources panel"
+        type="button"
+      >
+        <span aria-hidden="true">×</span>
+        <span class="visually-hidden">Close</span>
+      </button>
+    </div>
+
+    @if (isResearching()) {
+      <div class="research-side-panel__progress" role="region" aria-label="Research progress">
+        <div
+          class="research-side-panel__progress-bar"
+          [style.width.%]="researchProgress()"
+          role="progressbar"
+          [attr.aria-valuenow]="researchProgress()"
+          [attr.aria-label]="'Research progress: ' + researchProgress() + ' percent'"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        ></div>
+        <span class="research-side-panel__progress-stage" role="status" aria-live="polite">{{ researchStage() }}</span>
+      </div>
+    }
+
+    <div class="research-side-panel__sources" role="list" aria-label="Research sources">
+      @for (citation of citations(); track trackByCitationIndex($index, citation)) {
+        <div
+          class="research-side-panel__source"
+          [class.research-side-panel__source--highlighted]="citation.index === highlightedCitationIndex()"
+          [id]="'citation-' + citation.index"
+          role="listitem"
+          [attr.aria-label]="'Source ' + citation.index + ': ' + citation.title"
+        >
+          <div class="research-side-panel__source-index" aria-hidden="true">[{{ citation.index }}]</div>
+          <div class="research-side-panel__source-content">
+            <a
+              [href]="citation.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="research-side-panel__source-title"
+              [attr.aria-label]="'Open source ' + citation.index + ': ' + citation.title + ' in new tab'"
+            >
+              {{ citation.title }}
+            </a>
+            <p class="research-side-panel__source-snippet">{{ citation.snippet }}</p>
+            <span class="research-side-panel__source-url" aria-label="Source URL">{{ citation.url }}</span>
+          </div>
+        </div>
+      }
+
+      @if (citations().length === 0 && !isResearching()) {
+        <div class="research-side-panel__empty" role="status">
+          No sources available
+        </div>
+      }
+    </div>
+  </aside>
+}
+
+<!-- Overlay for mobile -->
+@if (isOpen()) {
+  <div
+    class="research-side-panel__overlay"
+    (click)="close()"
+    (keydown.enter)="close()"
+    (keydown.space)="$event.preventDefault(); close()"
+    tabindex="0"
+    role="button"
+    aria-label="Close sources panel overlay"
+  ></div>
+}

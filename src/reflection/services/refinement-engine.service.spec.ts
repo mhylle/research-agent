@@ -323,9 +323,7 @@ describe('RefinementEngineService', () => {
     });
 
     it('should handle LLM errors gracefully and return fallback result', async () => {
-      llmService.chat.mockRejectedValue(
-        new Error('LLM service unavailable'),
-      );
+      llmService.chat.mockRejectedValue(new Error('LLM service unavailable'));
 
       const result = await service.refineAnswer(
         mockOriginalAnswer,

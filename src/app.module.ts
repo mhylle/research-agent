@@ -13,6 +13,7 @@ import { HealthModule } from './health/health.module';
 import { LogsModule } from './logs/logs.module';
 import { OrchestrationModule } from './orchestration/orchestration.module';
 import { EvaluationModule } from './evaluation/evaluation.module';
+import { ChatModule } from './chat/chat.module';
 import { AppDataSource } from './data-source';
 
 @Module({
@@ -45,6 +46,7 @@ import { AppDataSource } from './data-source';
     LogsModule,
     OrchestrationModule,
     EvaluationModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,0 +1,521 @@
+// =============================================================================
+// Chat Component - Digital Hygge Style
+// Two-column layout: sidebar for conversations, main area for active chat
+// =============================================================================
+
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.chat-container {
+  display: flex;
+  position: relative;
+  height: calc(100vh - 80px); // Account for header height
+  background: $oatmeal;
+  overflow: hidden;
+
+  // =============================================================================
+  // Mobile Menu Toggle
+  // =============================================================================
+  &__mobile-toggle {
+    display: none;
+    position: fixed;
+    top: 90px;
+    left: $spacing-md;
+    z-index: 100;
+    background: $moss;
+    color: white;
+    border: none;
+    border-radius: $border-radius;
+    padding: $spacing-sm $spacing-md;
+    cursor: pointer;
+    box-shadow: $shadow-md;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $moss-light;
+      transform: translateY(-1px);
+      box-shadow: $shadow-lg;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &-icon {
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    @media (max-width: 768px) {
+      display: block;
+    }
+  }
+
+  // =============================================================================
+  // Sidebar - Conversation List
+  // =============================================================================
+  &__sidebar {
+    width: 320px;
+    min-width: 280px;
+    max-width: 400px;
+    background: $bg-secondary;
+    border-right: 1px solid $border;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    transition: transform $transition-base;
+  }
+
+  // =============================================================================
+  // Main Chat Area
+  // =============================================================================
+  &__main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: $bg-primary;
+    overflow: hidden;
+    transition: margin-right $transition-base;
+
+    // Adjust when research panel is open
+    &--panel-open {
+      margin-right: 380px;
+
+      @media (max-width: 1200px) {
+        margin-right: 320px;
+      }
+
+      @media (max-width: 768px) {
+        margin-right: 0; // Full width on mobile, panel overlays
+      }
+    }
+  }
+
+  &__active-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  &__header {
+    padding: $spacing-lg $spacing-xl;
+    border-bottom: 1px solid $border;
+    background: $bg-primary;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacing-md;
+
+    h2 {
+      margin: 0;
+      font-size: $font-size-xl;
+      color: $text-primary;
+      font-weight: 500;
+      flex: 1;
+    }
+  }
+
+  &__thread {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-lg $spacing-xl;
+  }
+
+  &__input {
+    border-top: 1px solid $border;
+    background: $bg-primary;
+    padding: $spacing-lg $spacing-xl;
+  }
+
+  // =============================================================================
+  // Connection Status
+  // =============================================================================
+  .connection-status {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius;
+    font-size: $font-size-sm;
+    white-space: nowrap;
+
+    &__indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    &__text {
+      font-weight: 500;
+    }
+
+    // Status variants
+    &--disconnected {
+      background: rgba($text-muted, 0.1);
+      color: $text-muted;
+
+      .connection-status__indicator {
+        background: $text-muted;
+        animation: none;
+      }
+    }
+
+    &--connecting {
+      background: rgba($warning, 0.1);
+      color: $warning;
+
+      .connection-status__indicator {
+        background: $warning;
+      }
+    }
+
+    &--connected {
+      background: rgba($success, 0.1);
+      color: $success;
+
+      .connection-status__indicator {
+        background: $success;
+      }
+    }
+
+    &--error {
+      background: rgba($error, 0.1);
+      color: $error;
+
+      .connection-status__indicator {
+        background: $error;
+        animation: pulse-fast 1s ease-in-out infinite;
+      }
+    }
+  }
+
+  // =============================================================================
+  // Stream Error Banner
+  // =============================================================================
+  &__stream-error {
+    background: linear-gradient(135deg, rgba($error, 0.1) 0%, rgba($warning, 0.1) 100%);
+    border-bottom: 1px solid rgba($error, 0.2);
+    padding: $spacing-md $spacing-xl;
+    animation: slideDown 0.3s ease-out;
+
+    &-content {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-sm;
+
+      p {
+        margin: 0;
+        color: $error;
+        font-size: $font-size-base;
+        font-weight: 500;
+      }
+    }
+
+    &-actions {
+      display: flex;
+      gap: $spacing-sm;
+      flex-wrap: wrap;
+
+      .btn {
+        padding: $spacing-xs $spacing-md;
+        border: none;
+        border-radius: $border-radius;
+        cursor: pointer;
+        font-size: $font-size-sm;
+        font-weight: 500;
+        transition: all $transition-fast;
+
+        &--primary {
+          background: $error;
+          color: white;
+
+          &:hover {
+            background: darken($error, 10%);
+            transform: translateY(-1px);
+            box-shadow: $shadow-sm;
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+        }
+
+        &--secondary {
+          background: transparent;
+          color: $text-secondary;
+          border: 1px solid $border;
+
+          &:hover {
+            background: $bg-secondary;
+            border-color: $text-muted;
+          }
+        }
+      }
+    }
+  }
+
+  // =============================================================================
+  // States
+  // =============================================================================
+  &__empty-state {
+    @include flex-center;
+    flex: 1;
+    padding: $spacing-xl;
+    text-align: center;
+
+    &-content {
+      max-width: 600px;
+
+      h2 {
+        font-size: $font-size-2xl;
+        color: $text-primary;
+        margin-bottom: $spacing-md;
+        font-weight: 500;
+      }
+
+      p {
+        font-size: $font-size-lg;
+        color: $text-secondary;
+        line-height: 1.6;
+      }
+    }
+  }
+
+  &__loading {
+    @include flex-center;
+    flex: 1;
+    flex-direction: column;
+    gap: $spacing-md;
+    color: $text-secondary;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid $border;
+      border-top-color: $moss;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  &__error {
+    @include flex-center;
+    flex: 1;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-xl;
+    text-align: center;
+
+    p {
+      color: $error;
+      font-size: $font-size-lg;
+    }
+
+    button {
+      padding: $spacing-sm $spacing-lg;
+      background: $moss;
+      color: white;
+      border: none;
+      border-radius: $border-radius;
+      cursor: pointer;
+      font-size: $font-size-base;
+      transition: background $transition-fast;
+
+      &:hover {
+        background: $moss-light;
+      }
+    }
+  }
+
+  // =============================================================================
+  // Animations
+  // =============================================================================
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+  }
+
+  @keyframes pulse-fast {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.3;
+      transform: scale(0.9);
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  // =============================================================================
+  // Responsive Design
+  // =============================================================================
+
+  // Tablet: Narrow sidebar, wider chat area
+  @media (min-width: $breakpoint-md) and (max-width: $breakpoint-lg) {
+    &__sidebar {
+      width: 200px;
+      min-width: 200px;
+      max-width: 200px;
+    }
+
+    &__main {
+      &--panel-open {
+        margin-right: 320px;
+      }
+    }
+
+    &__header {
+      padding: $spacing-md $spacing-lg;
+
+      h2 {
+        font-size: $font-size-lg;
+      }
+    }
+  }
+
+  // Mobile: Stack or hide sidebar with hamburger toggle
+  @media (max-width: $breakpoint-md) {
+    height: calc(100vh - 70px); // Account for smaller mobile header
+
+    &__mobile-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      min-width: 44px;
+      top: 80px;
+    }
+
+    &__sidebar {
+      width: 280px;
+      min-width: 240px;
+
+      // Hide sidebar on mobile when conversation is active
+      &.hidden-mobile {
+        transform: translateX(-100%);
+        position: absolute;
+        height: 100%;
+        z-index: 99;
+      }
+
+      &.visible-mobile {
+        transform: translateX(0);
+        position: absolute;
+        height: 100%;
+        z-index: 99;
+        box-shadow: $shadow-lg;
+      }
+    }
+
+    &__main {
+      width: 100%;
+    }
+
+    &__header {
+      padding: $spacing-md $spacing-lg;
+
+      h2 {
+        font-size: $font-size-lg;
+      }
+    }
+
+    &__thread {
+      padding: $spacing-md;
+    }
+
+    &__input {
+      padding: $spacing-md;
+    }
+
+    &__empty-state {
+      padding: $spacing-lg $spacing-md;
+
+      &-content {
+        h2 {
+          font-size: $font-size-xl;
+        }
+
+        p {
+          font-size: $font-size-base;
+        }
+      }
+    }
+  }
+
+  // Small mobile: Full-width sidebar, reduced padding
+  @media (max-width: $breakpoint-sm) {
+    height: calc(100vh - 60px); // Smaller header on small devices
+
+    &__sidebar {
+      width: 100%;
+      max-width: 100%;
+
+      &:not(.visible-mobile) {
+        transform: translateX(-100%);
+      }
+    }
+
+    &__mobile-toggle {
+      top: 70px;
+      left: $spacing-sm;
+      padding: $spacing-xs $spacing-sm;
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    &__header {
+      padding: $spacing-sm $spacing-md;
+
+      h2 {
+        font-size: $font-size-base;
+      }
+    }
+
+    &__thread {
+      padding: $spacing-sm;
+    }
+
+    &__input {
+      padding: $spacing-sm;
+    }
+
+    &__empty-state {
+      padding: $spacing-md $spacing-sm;
+
+      &-content {
+        h2 {
+          font-size: $font-size-lg;
+        }
+
+        p {
+          font-size: $font-size-sm;
+        }
+      }
+    }
+  }
+}

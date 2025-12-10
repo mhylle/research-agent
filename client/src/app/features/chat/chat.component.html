@@ -1,0 +1,125 @@
+<div class="chat-container">
+  <!-- Mobile Menu Toggle -->
+  @if (conversationId()) {
+    <button
+      class="chat-container__mobile-toggle"
+      (click)="toggleSidebar()"
+      aria-label="Toggle conversation list"
+    >
+      <span class="chat-container__mobile-toggle-icon">☰</span>
+    </button>
+  }
+
+  <!-- Sidebar - Conversation List -->
+  <aside
+    class="chat-container__sidebar"
+    [class.visible-mobile]="isSidebarVisible()"
+    [class.hidden-mobile]="!isSidebarVisible() && conversationId()"
+  >
+    <app-conversation-list
+      [userId]="userId()"
+      (conversationSelected)="onConversationSelected($event)"
+      (conversationDeleted)="onConversationDeleted($event)"
+    />
+  </aside>
+
+  <!-- Main Chat Area -->
+  <main
+    class="chat-container__main"
+    [class.chat-container__main--panel-open]="isPanelOpen()"
+  >
+    <!-- Loading State -->
+    @if (isLoading() && !currentConversation()) {
+      <div class="chat-container__loading">
+        <div class="spinner"></div>
+        <p>Loading conversation...</p>
+      </div>
+    }
+
+    <!-- Error State -->
+    @else if (error()) {
+      <div class="chat-container__error">
+        <p>{{ error() }}</p>
+        <button (click)="clearConversationError()">Dismiss</button>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @else if (showEmptyState()) {
+      <div class="chat-container__empty-state">
+        <div class="chat-container__empty-state-content">
+          <h2>Welcome to Research Agent</h2>
+          <p>Select a conversation from the sidebar or start a new one by typing a message below.</p>
+        </div>
+      </div>
+    }
+
+    <!-- Active Chat -->
+    @else if (currentConversation()) {
+      <div class="chat-container__active-chat">
+        <!-- Chat Header -->
+        <div class="chat-container__header">
+          <h2>{{ currentConversation()!.title }}</h2>
+
+          <!-- Connection Status Indicator -->
+          @if (isStreaming() || connectionStatus() === 'error') {
+            <div class="connection-status" [ngClass]="getConnectionStatusClass()">
+              <span class="connection-status__indicator"></span>
+              <span class="connection-status__text">{{ getConnectionStatusText() }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Streaming Error Banner -->
+        @if (streamError()) {
+          <div class="chat-container__stream-error">
+            <div class="chat-container__stream-error-content">
+              <p>{{ streamError() }}</p>
+              <div class="chat-container__stream-error-actions">
+                <button class="btn btn--primary" (click)="retryStream()">
+                  Retry Connection
+                </button>
+                <button class="btn btn--secondary" (click)="clearStreamError()">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Chat Thread -->
+        <div class="chat-container__thread">
+          <app-chat-thread
+            [messages]="messages()"
+            [isStreaming]="isStreaming()"
+            [streamingContent]="streamingContent()"
+            (researchRequested)="onResearchRequested($event)"
+          />
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-container__input">
+          <app-chat-input
+            [disabled]="isLoading()"
+            [isLoading]="isStreaming()"
+            (messageSent)="onMessageSent($event)"
+          />
+        </div>
+      </div>
+    }
+
+    <!-- Input for Empty State (no conversation selected) -->
+    @if (showEmptyState()) {
+      <div class="chat-container__input">
+        <app-chat-input
+          [disabled]="isLoading()"
+          [isLoading]="isStreaming()"
+          (messageSent)="onMessageSent($event)"
+        />
+      </div>
+    }
+  </main>
+
+  <!-- Research Side Panel -->
+  <app-research-side-panel />
+</div>

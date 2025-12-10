@@ -15,7 +15,11 @@ describe('CoverageAnalyzerService', () => {
     const mockLLMService = {
       chat: jest.fn(),
       getProviderName: jest.fn().mockReturnValue('ollama'),
-      getProviderInfo: jest.fn().mockReturnValue({ name: 'ollama', model: 'qwen2.5', supportedFeatures: ['chat'] }),
+      getProviderInfo: jest.fn().mockReturnValue({
+        name: 'ollama',
+        model: 'qwen2.5',
+        supportedFeatures: ['chat'],
+      }),
     };
 
     const mockEventCoordinator = {
@@ -388,9 +392,7 @@ describe('CoverageAnalyzerService', () => {
       const answer = 'Test answer';
       const sources: Source[] = [];
 
-      llmService.chat.mockRejectedValue(
-        new Error('LLM service unavailable'),
-      );
+      llmService.chat.mockRejectedValue(new Error('LLM service unavailable'));
 
       await expect(
         service.analyzeCoverage(

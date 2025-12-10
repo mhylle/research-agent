@@ -57,12 +57,13 @@ export class LLMProviderFactory {
    */
   isProviderAvailable(providerName: LLMProviderType): boolean {
     switch (providerName) {
-      case 'azure-mistral':
+      case 'azure-mistral': {
         const endpoint = this.configService.get<string>(
           'AZURE_OPENAI_ENDPOINT',
         );
         const apiKey = this.configService.get<string>('AZURE_OPENAI_API_KEY');
         return !!(endpoint && apiKey);
+      }
       case 'ollama':
         // Ollama is always available (uses defaults if not configured)
         return true;

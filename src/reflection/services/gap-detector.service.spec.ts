@@ -76,7 +76,11 @@ describe('GapDetectorService', () => {
           useValue: {
             chat: jest.fn(),
             getProviderName: jest.fn().mockReturnValue('ollama'),
-            getProviderInfo: jest.fn().mockReturnValue({ name: 'ollama', model: 'qwen2.5', supportedFeatures: ['chat'] }),
+            getProviderInfo: jest.fn().mockReturnValue({
+              name: 'ollama',
+              model: 'qwen2.5',
+              supportedFeatures: ['chat'],
+            }),
           },
         },
         {
@@ -719,9 +723,7 @@ describe('GapDetectorService', () => {
 
     describe('Error Handling', () => {
       it('should continue gap detection when LLM fails', async () => {
-        llmService.chat.mockRejectedValue(
-          new Error('LLM service unavailable'),
-        );
+        llmService.chat.mockRejectedValue(new Error('LLM service unavailable'));
 
         const weakClaim = createMockClaimConfidence({
           claimId: 'claim-weak',

@@ -45,7 +45,9 @@ export class EscalationHandlerService {
       ? undefined
       : this.config.escalationModel;
 
-    this.logger.log(`Escalating to ${this.actualModelName} due to: ${input.trigger}`);
+    this.logger.log(
+      `Escalating to ${this.actualModelName} due to: ${input.trigger}`,
+    );
 
     try {
       const prompt = this.buildPrompt(input);

@@ -472,7 +472,8 @@ describe('AzureMistralProvider', () => {
       mockCreate
         .mockRejectedValueOnce({
           status: 503,
-          message: '503 {"object":"Error","message":"Model is not available.","type":"engine_network_error","code":3803}',
+          message:
+            '503 {"object":"Error","message":"Model is not available.","type":"engine_network_error","code":3803}',
         })
         .mockResolvedValueOnce({
           id: 'resp-retry',
@@ -690,6 +691,215 @@ describe('AzureMistralProvider', () => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           model: 'Custom-Model',
+        }),
+      );
+    });
+  });
+
+  describe('chatStream', () => {
+    it('should stream tokens and set done=true on final chunk', async () => {
+      const mockStream = (async function* () {
+        yield {
+          id: 'stream-1',
+          choices: [
+            {
+              index: 0,
+              delta: { content: 'Hello' },
+              finish_reason: null,
+            },
+          ],
+        };
+        yield {
+          id: 'stream-2',
+          choices: [
+            {
+              index: 0,
+              delta: { content: ' world' },
+              finish_reason: null,
+            },
+          ],
+        };
+        yield {
+          id: 'stream-3',
+          choices: [
+            {
+              index: 0,
+              delta: { content: '!' },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: {
+            prompt_tokens: 5,
+            completion_tokens: 3,
+            total_tokens: 8,
+          },
+        };
+      })();
+
+      mockCreate.mockResolvedValue(mockStream);
+
+      const chunks = [];
+      for await (const chunk of provider.chatStream([
+        { role: 'user', content: 'Say hello' },
+      ])) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks).toHaveLength(3);
+      expect(chunks[0]).toEqual({ content: 'Hello', done: false });
+      expect(chunks[1]).toEqual({ content: ' world', done: false });
+      expect(chunks[2]).toEqual({
+        content: '!',
+        done: true,
+        usage: {
+          promptTokens: 5,
+          completionTokens: 3,
+          totalTokens: 8,
+        },
+      });
+    });
+
+    it('should accumulate and include tool calls in final chunk', async () => {
+      const mockStream = (async function* () {
+        yield {
+          id: 'stream-tc-1',
+          choices: [
+            {
+              index: 0,
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'call-123',
+                    type: 'function',
+                    function: { name: 'tavily_', arguments: '' },
+                  },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+        };
+        yield {
+          id: 'stream-tc-2',
+          choices: [
+            {
+              index: 0,
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    function: { name: 'search', arguments: '{"query": "' },
+                  },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+        };
+        yield {
+          id: 'stream-tc-3',
+          choices: [
+            {
+              index: 0,
+              delta: {
+                tool_calls: [{ index: 0, function: { arguments: 'test"}' } }],
+              },
+              finish_reason: 'tool_calls',
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        };
+      })();
+
+      mockCreate.mockResolvedValue(mockStream);
+
+      const chunks = [];
+      for await (const chunk of provider.chatStream([
+        { role: 'user', content: 'Search' },
+      ])) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks).toHaveLength(3);
+      expect(chunks[2].done).toBe(true);
+      expect(chunks[2].toolCalls).toHaveLength(1);
+      expect(chunks[2].toolCalls![0].id).toBe('call-123');
+      expect(chunks[2].toolCalls![0].function.name).toBe('tavily_search');
+      expect(chunks[2].toolCalls![0].function.arguments).toEqual({
+        query: 'test',
+      });
+    });
+
+    it('should handle empty content chunks', async () => {
+      const mockStream = (async function* () {
+        yield {
+          id: 'stream-empty',
+          choices: [
+            {
+              index: 0,
+              delta: {},
+              finish_reason: null,
+            },
+          ],
+        };
+        yield {
+          id: 'stream-final',
+          choices: [
+            {
+              index: 0,
+              delta: { content: 'Done' },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
+        };
+      })();
+
+      mockCreate.mockResolvedValue(mockStream);
+
+      const chunks = [];
+      for await (const chunk of provider.chatStream([
+        { role: 'user', content: 'Test' },
+      ])) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks).toHaveLength(2);
+      expect(chunks[0]).toEqual({ content: '', done: false });
+      expect(chunks[1].content).toBe('Done');
+      expect(chunks[1].done).toBe(true);
+    });
+
+    it('should use custom model from options', async () => {
+      const mockStream = (async function* () {
+        yield {
+          id: 'stream-model',
+          choices: [
+            {
+              index: 0,
+              delta: { content: 'Test' },
+              finish_reason: 'stop',
+            },
+          ],
+        };
+      })();
+
+      mockCreate.mockResolvedValue(mockStream);
+
+      const chunks = [];
+      for await (const chunk of provider.chatStream(
+        [{ role: 'user', content: 'Test' }],
+        undefined,
+        { model: 'Custom-Streaming-Model' },
+      )) {
+        chunks.push(chunk);
+      }
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: 'Custom-Streaming-Model',
+          stream: true,
         }),
       );
     });

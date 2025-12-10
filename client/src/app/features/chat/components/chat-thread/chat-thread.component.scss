@@ -1,0 +1,348 @@
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+
+  &__container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1rem;
+    scroll-behavior: smooth;
+
+    // Custom scrollbar styling
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+
+      &:hover {
+        background: #555;
+      }
+    }
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #666;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  &__empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  &__empty-text {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  &__empty-hint {
+    font-size: 0.875rem;
+    color: #999;
+  }
+
+  &__messages {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__message {
+    display: flex;
+    animation: fadeIn 0.3s ease-in;
+
+    &--user {
+      justify-content: flex-end;
+
+      .chat-thread__message-content {
+        background-color: #2563eb;
+        color: white;
+        border-radius: 1rem 1rem 0 1rem;
+        max-width: 70%;
+      }
+
+      .chat-thread__message-timestamp {
+        text-align: right;
+        color: rgba(255, 255, 255, 0.8);
+      }
+    }
+
+    &--assistant {
+      justify-content: flex-start;
+
+      .chat-thread__message-content {
+        background-color: #f3f4f6;
+        color: #1f2937;
+        border-radius: 1rem 1rem 1rem 0;
+        max-width: 70%;
+      }
+
+      .chat-thread__message-timestamp {
+        text-align: left;
+        color: #6b7280;
+      }
+    }
+
+    &--system {
+      justify-content: center;
+
+      .chat-thread__message-content {
+        background-color: #fef3c7;
+        color: #92400e;
+        border-radius: 0.5rem;
+        max-width: 80%;
+        text-align: center;
+        font-size: 0.875rem;
+      }
+
+      .chat-thread__message-timestamp {
+        text-align: center;
+        color: #92400e;
+        opacity: 0.8;
+      }
+    }
+  }
+
+  &__message-content {
+    padding: 0.75rem 1rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    font-size: 1rem; // Minimum 16px to prevent zoom on iOS
+    line-height: 1.5;
+  }
+
+  &__message-body {
+    // Reset default margins for rendered markdown
+    :deep(p) {
+      margin: 0 0 0.5rem 0;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    :deep(ul),
+    :deep(ol) {
+      margin: 0.5rem 0;
+      padding-left: 1.5rem;
+    }
+
+    :deep(code) {
+      background-color: rgba(0, 0, 0, 0.1);
+      padding: 0.125rem 0.25rem;
+      border-radius: 0.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875em;
+    }
+
+    :deep(pre) {
+      background-color: rgba(0, 0, 0, 0.05);
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      margin: 0.5rem 0;
+
+      code {
+        background-color: transparent;
+        padding: 0;
+      }
+    }
+
+    :deep(a) {
+      color: inherit;
+      text-decoration: underline;
+
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+  }
+
+  &__message-timestamp {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    opacity: 0.7;
+  }
+
+  &__citations {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  &__citations-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+
+  &__citations-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__typing-indicator {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+  }
+
+  &__typing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #6b7280;
+    animation: typingBounce 1.4s infinite ease-in-out;
+
+    &:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+
+    &:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typingBounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Responsive design
+@media (max-width: 1024px) {
+  .chat-thread {
+    &__message {
+      &--user,
+      &--assistant {
+        .chat-thread__message-content {
+          max-width: 80%;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .chat-thread {
+    &__container {
+      padding: 0.75rem;
+    }
+
+    &__message {
+      &--user,
+      &--assistant {
+        .chat-thread__message-content {
+          max-width: 90%;
+        }
+      }
+
+      &--system {
+        .chat-thread__message-content {
+          max-width: 95%;
+        }
+      }
+    }
+
+    &__message-content {
+      padding: 0.75rem 1rem;
+      font-size: 1rem; // Ensure readable text
+    }
+
+    &__message-body {
+      :deep(code) {
+        font-size: 0.875rem;
+        word-break: break-word;
+      }
+
+      :deep(pre) {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .chat-thread {
+    &__container {
+      padding: 0.5rem;
+    }
+
+    &__empty {
+      padding: 1.5rem 1rem;
+    }
+
+    &__empty-text {
+      font-size: 1.125rem;
+    }
+
+    &__empty-hint {
+      font-size: 0.875rem;
+    }
+
+    &__message {
+      &--user,
+      &--assistant {
+        .chat-thread__message-content {
+          max-width: 95%;
+        }
+      }
+
+      &--system {
+        .chat-thread__message-content {
+          max-width: 100%;
+        }
+      }
+    }
+
+    &__message-content {
+      padding: 0.625rem 0.875rem;
+    }
+
+    &__citations {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+  }
+}

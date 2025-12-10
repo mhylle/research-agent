@@ -9,6 +9,7 @@ import {
 } from './interfaces/llm-provider.interface';
 import { ChatMessage } from './interfaces/chat-message.interface';
 import { ChatResponse } from './interfaces/chat-response.interface';
+import { ChatStreamChunk } from './interfaces/chat-stream-chunk.interface';
 import { ToolDefinition } from '../tools/interfaces/tool-definition.interface';
 
 /**
@@ -69,6 +70,29 @@ export class LLMService {
     return this.concurrencyLimit(() =>
       this.provider.chat(messages, tools, options),
     );
+  }
+
+  /**
+   * Stream a chat completion request from the configured LLM provider.
+   *
+   * Note: Streaming requests bypass the concurrency limiter as they hold
+   * connections for extended periods and have different resource profiles.
+   *
+   * @param messages - The conversation messages
+   * @param tools - Optional tool definitions for function calling
+   * @param model - Optional model override (provider-specific)
+   * @returns Async iterable of chat stream chunks
+   */
+  async *chatStream(
+    messages: ChatMessage[],
+    tools?: ToolDefinition[],
+    model?: string,
+  ): AsyncIterable<ChatStreamChunk> {
+    const options: ChatOptions | undefined = model ? { model } : undefined;
+
+    // Streams bypass concurrency control as they maintain long-lived connections
+    // and have different resource management requirements
+    yield* this.provider.chatStream(messages, tools, options);
   }
 
   /**

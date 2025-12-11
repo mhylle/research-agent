@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E2E Test Report - Research Agent</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; background: #f5f5f5; color: #333; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; }
+    header h1 { font-size: 2em; margin-bottom: 10px; }
+    header p { opacity: 0.9; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .stat { background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .stat .number { font-size: 2.5em; font-weight: bold; }
+    .stat .label { color: #666; font-size: 0.9em; }
+    .stat.passed .number { color: #22c55e; }
+    .stat.failed .number { color: #ef4444; }
+    .stat.skipped .number { color: #f59e0b; }
+    .stat.total .number { color: #3b82f6; }
+    .suite { background: white; border-radius: 10px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .suite-header { padding: 15px 20px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .suite-header h2 { font-size: 1.2em; }
+    .suite-stats { display: flex; gap: 15px; }
+    .suite-stats span { padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+    .suite-stats .pass { background: #dcfce7; color: #166534; }
+    .suite-stats .fail { background: #fee2e2; color: #991b1b; }
+    .suite-stats .skip { background: #fef3c7; color: #92400e; }
+    .test-list { padding: 10px 0; }
+    .test { padding: 12px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 15px; }
+    .test:last-child { border-bottom: none; }
+    .test-status { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .test-status.passed { background: #dcfce7; color: #166534; }
+    .test-status.failed { background: #fee2e2; color: #991b1b; }
+    .test-status.skipped { background: #fef3c7; color: #92400e; }
+    .test-info { flex-grow: 1; }
+    .test-id { font-weight: 600; color: #3b82f6; }
+    .test-name { color: #333; }
+    .test-notes { font-size: 0.85em; color: #666; margin-top: 4px; }
+    .test-evidence { font-size: 0.8em; }
+    .test-evidence a { color: #3b82f6; text-decoration: none; }
+    .test-evidence a:hover { text-decoration: underline; }
+    .issues { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .issues h2 { margin-bottom: 15px; color: #333; }
+    .issue { padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+    .issue:last-child { margin-bottom: 0; }
+    .issue.medium { background: #fef3c7; border-left: 4px solid #f59e0b; }
+    .issue.low { background: #e0f2fe; border-left: 4px solid #0ea5e9; }
+    .issue h3 { font-size: 1em; margin-bottom: 8px; }
+    .issue p { font-size: 0.9em; color: #555; margin-bottom: 8px; }
+    .issue .recommendation { font-style: italic; color: #666; }
+    .evidence { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .evidence h2 { margin-bottom: 15px; }
+    .evidence-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+    .evidence-item { padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 0.85em; word-break: break-all; }
+    footer { text-align: center; padding: 30px; color: #666; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>E2E Test Report</h1>
+      <p>Research Agent - Chat Application Test Suite</p>
+      <p>Generated: December 10, 2025 | Duration: ~15 minutes | Browser: Chromium (Playwright MCP)</p>
+    </header>
+
+    <div class="summary">
+      <div class="stat total">
+        <div class="number">34</div>
+        <div class="label">Total Tests</div>
+      </div>
+      <div class="stat passed">
+        <div class="number">32</div>
+        <div class="label">Passed</div>
+      </div>
+      <div class="stat failed">
+        <div class="number">2</div>
+        <div class="label">Failed</div>
+      </div>
+      <div class="stat skipped">
+        <div class="number">0</div>
+        <div class="label">Skipped</div>
+      </div>
+      <div class="stat">
+        <div class="number" style="color: #22c55e;">94.1%</div>
+        <div class="label">Pass Rate</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tests -->
+    <div class="suite">
+      <div class="suite-header">
+        <h2>Navigation Tests</h2>
+        <div class="suite-stats">
+          <span class="pass">5 Passed</span>
+        </div>
+      </div>
+      <div class="test-list">
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">NAV-001</span> <span class="test-name">Application Loads Successfully</span>
+            <div class="test-evidence"><a href="../evidence/NAV-001-initial-state.png">View Screenshot</a></div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">NAV-002</span> <span class="test-name">Navigate to Chat Page</span>
+            <div class="test-evidence"><a href="../evidence/NAV-002-chat-page.png">View Screenshot</a></div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">NAV-003</span> <span class="test-name">Navigate to Logs Page</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">NAV-004</span> <span class="test-name">Navigate to Evaluations Dashboard</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">NAV-005</span> <span class="test-name">Navigate Back to Research Page</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Layout Tests -->
+    <div class="suite">
+      <div class="suite-header">
+        <h2>Chat Layout Tests</h2>
+        <div class="suite-stats">
+          <span class="pass">4 Passed</span>
+        </div>
+      </div>
+      <div class="test-list">
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">CHAT-LAYOUT-001</span> <span class="test-name">Chat Interface Structure</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">CHAT-LAYOUT-002</span> <span class="test-name">Conversation Sidebar</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">CHAT-LAYOUT-003</span> <span class="test-name">Message Thread Area</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">CHAT-LAYOUT-004</span> <span class="test-name">Chat Input Area</span>
+            <div class="test-evidence"><a href="../evidence/CHAT-LAYOUT-004-input-structure.png">View Screenshot</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Input Tests -->
+    <div class="suite">
+      <div class="suite-header">
+        <h2>Chat Input Tests</h2>
+        <div class="suite-stats">
+          <span class="pass">7 Passed</span>
+        </div>
+      </div>
+      <div class="test-list">
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">INPUT-001</span> <span class="test-name">Default Input State</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">INPUT-002</span> <span class="test-name">Typing in Message Input</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">INPUT-003</span> <span class="test-name">Research Toggle Default State</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">INPUT-004</span> <span class="test-name">Research Toggle Activation</span>
+            <div class="test-evidence"><a href="../evidence/INPUT-004-research-toggle-reset.png">View Screenshot</a></div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">INPUT-005</span> <span class="test-name">Keyboard Shortcut - Send (Ctrl+Enter)</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">INPUT-006</span> <span class="test-name">Keyboard Shortcut - Newline (Shift+Enter)</span>
+            <div class="test-notes">Verified via JavaScript evaluation: multiline text preserved</div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">INPUT-007</span> <span class="test-name">Textarea Auto-Resize</span>
+            <div class="test-notes">Height changed from 51px to 128px with 5 lines</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conversation Management Tests -->
+    <div class="suite">
+      <div class="suite-header">
+        <h2>Conversation Management Tests</h2>
+        <div class="suite-stats">
+          <span class="pass">5 Passed</span>
+        </div>
+      </div>
+      <div class="test-list">
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">CONV-001</span> <span class="test-name">Create New Conversation</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">CONV-002</span> <span class="test-name">Conversation Appears in Sidebar</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">CONV-003</span> <span class="test-name">Search Conversations</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">CONV-004</span> <span class="test-name">Select Conversation</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">CONV-005</span> <span class="test-name">Delete Conversation</span>
+            <div class="test-notes">Confirmation dialog appeared and delete succeeded</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Thread Tests -->
+    <div class="suite">
+      <div class="suite-header">
+        <h2>Chat Thread Tests</h2>
+        <div class="suite-stats">
+          <span class="pass">5 Passed</span>
+        </div>
+      </div>
+      <div class="test-list">
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">THREAD-001</span> <span class="test-name">Send Message Displays in Thread</span>
+            <div class="test-evidence"><a href="../evidence/THREAD-001-message-display.png">View Screenshot</a></div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">THREAD-002</span> <span class="test-name">Message Structure</span>
+            <div class="test-notes">User/Assistant roles with timestamps verified</div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">THREAD-003</span> <span class="test-name">Streaming Response Display</span>
+            <div class="test-notes">Tokens streamed via SSE events</div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">THREAD-004</span> <span class="test-name">Multi-turn Conversation</span>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">THREAD-005</span> <span class="test-name">Message Timestamps</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Research Integration Tests -->
+    <div class="suite">
+      <div class="suite-header">
+        <h2>Research Integration Tests</h2>
+        <div class="suite-stats">
+          <span class="pass">4 Passed</span>
+          <span class="fail">1 Failed</span>
+        </div>
+      </div>
+      <div class="test-list">
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">RESEARCH-001</span> <span class="test-name">Send Message with Research Enabled</span>
+            <div class="test-notes">Research completed with SSE research_complete event</div>
+            <div class="test-evidence"><a href="../evidence/RESEARCH-001-response.png">View Screenshot</a></div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">RESEARCH-002</span> <span class="test-name">Research Progress Indicator</span>
+            <div class="test-notes">Connected status, Assistant is typing, Sending... button states verified</div>
+            <div class="test-evidence"><a href="../evidence/RESEARCH-002-progress-indicator.png">View Screenshot</a></div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">RESEARCH-003</span> <span class="test-name">Send Message without Research</span>
+            <div class="test-notes">Simple query answered without web search</div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">RESEARCH-004</span> <span class="test-name">Research Toggle Auto-Reset</span>
+            <div class="test-notes">Toggle resets to OFF after sending message</div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status failed">&#10007;</div>
+          <div class="test-info">
+            <span class="test-id">RESEARCH-005</span> <span class="test-name">Research Panel Citations</span>
+            <div class="test-notes"><strong>FAILED:</strong> Expected dedicated research panel with citations not found in UI. Feature not implemented.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Research Suggestion Tests -->
+    <div class="suite">
+      <div class="suite-header">
+        <h2>Research Suggestion Tests</h2>
+        <div class="suite-stats">
+          <span class="pass">2 Passed</span>
+          <span class="fail">1 Failed</span>
+        </div>
+      </div>
+      <div class="test-list">
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">SUGGEST-001</span> <span class="test-name">Research Suggestion Button Display</span>
+            <div class="test-notes">"Research this message" button with "Get current info" label visible</div>
+            <div class="test-evidence"><a href="../evidence/SUGGEST-001-research-button.png">View Screenshot</a></div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status passed">&#10003;</div>
+          <div class="test-info">
+            <span class="test-id">SUGGEST-002</span> <span class="test-name">Click Research Suggestion</span>
+            <div class="test-notes">Clicking button triggered new research query with SSE stream</div>
+          </div>
+        </div>
+        <div class="test">
+          <div class="test-status failed">&#10007;</div>
+          <div class="test-info">
+            <span class="test-id">SUGGEST-003</span> <span class="test-name">Research Suggestion Visibility Logic</span>
+            <div class="test-notes"><strong>FAILED:</strong> Test not executed. Visibility logic (when button should/shouldn't appear) was not verified.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Issues Found -->
+    <div class="issues">
+      <h2>Issues Found</h2>
+      <div class="issue medium">
+        <h3>Medium: Text Duplication in Streaming Responses</h3>
+        <p>SSE token events cause partial text duplication in rendered markdown. Visible in research responses where text like "Copenhagen" appears multiple times with fragments.</p>
+        <p class="recommendation"><strong>Recommendation:</strong> Review SSE event handling in ChatStream service to prevent duplicate token rendering</p>
+      </div>
+      <div class="issue low">
+        <h3>Low: SSE Heartbeat Timeouts During Long Research</h3>
+        <p>Research queries taking >15 seconds trigger heartbeat timeouts. Auto-reconnect works but shows error in console.</p>
+        <p class="recommendation"><strong>Recommendation:</strong> Consider increasing heartbeat timeout or implementing keep-alive mechanism during research</p>
+      </div>
+    </div>
+
+    <!-- Evidence -->
+    <div class="evidence">
+      <h2>Screenshots Captured</h2>
+      <div class="evidence-list">
+        <div class="evidence-item">NAV-001-initial-state.png</div>
+        <div class="evidence-item">NAV-002-chat-page.png</div>
+        <div class="evidence-item">CHAT-LAYOUT-004-input-structure.png</div>
+        <div class="evidence-item">INPUT-004-research-toggle-reset.png</div>
+        <div class="evidence-item">THREAD-001-message-display.png</div>
+        <div class="evidence-item">RESEARCH-001-response.png</div>
+        <div class="evidence-item">RESEARCH-002-progress-indicator.png</div>
+        <div class="evidence-item">SUGGEST-001-research-button.png</div>
+        <div class="evidence-item">final-state.png</div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Generated by E2E Test Suite using Playwright MCP</p>
+      <p>Research Agent - Chat Application with Research Addon</p>
+    </footer>
+  </div>
+</body>
+</html>

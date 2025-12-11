@@ -1,0 +1,2782 @@
+# E2E Test Regime for Research Agent
+# Generated: 2025-12-10
+# Based on: docs/plans/2025-01-09-chat-with-research-addon.md
+# Application URL: http://localhost:4200
+
+metadata:
+  name: Research Agent E2E Test Suite
+  version: "1.0.0"
+  description: Comprehensive E2E tests for chat-first research application
+  base_url: http://localhost:4200
+  prerequisites:
+    - PostgreSQL running with migrations applied
+    - Backend server running on port 3000
+    - Frontend server running on port 4200
+    - Ollama or Azure Mistral LLM configured
+
+# =============================================================================
+# NAVIGATION TESTS
+# =============================================================================
+navigation:
+  description: Test application navigation and routing
+
+  scenarios:
+    - id: NAV-001
+      name: Header Navigation Links
+      description: Verify all navigation links in the header are present and functional
+      steps:
+        - action: navigate
+          url: /
+        - action: verify_elements
+          elements:
+            - selector: 'link "Research Agent"'
+              ref: e6
+              expected: visible
+              flexibility: exact
+            - selector: 'link "Research"'
+              ref: e8
+              expected: visible
+              flexibility: exact
+            - selector: 'link "Chat"'
+              ref: e9
+              expected: visible
+              flexibility: exact
+            - selector: 'link "Logs"'
+              ref: e10
+              expected: visible
+              flexibility: exact
+            - selector: 'link "Evaluations"'
+              ref: e11
+              expected: visible
+              flexibility: exact
+      success_criteria:
+        - type: elements_visible
+          flexibility: exact
+          description: All navigation links must be visible
+
+    - id: NAV-002
+      name: Navigate to Chat Page
+      description: Click Chat link and verify chat page loads
+      steps:
+        - action: navigate
+          url: /
+        - action: click
+          element: 'link "Chat"'
+          ref: e9
+        - action: verify_url
+          expected: /chat
+          flexibility: exact
+        - action: verify_elements
+          elements:
+            - selector: 'heading "Conversations"'
+              expected: visible
+            - selector: 'button "Create new chat"'
+              expected: visible
+            - selector: 'textbox "Message input"'
+              expected: visible
+      success_criteria:
+        - type: url_match
+          flexibility: exact
+        - type: elements_visible
+          flexibility: exact
+
+    - id: NAV-003
+      name: Navigate to Logs Page
+      description: Click Logs link and verify logs page loads
+      steps:
+        - action: navigate
+          url: /
+        - action: click
+          element: 'link "Logs"'
+        - action: verify_url
+          expected: /logs
+          flexibility: exact
+        - action: verify_elements
+          elements:
+            - selector: 'searchbox "Search sessions"'
+              expected: visible
+      success_criteria:
+        - type: url_match
+          flexibility: exact
+
+    - id: NAV-004
+      name: Navigate to Evaluation Dashboard
+      description: Click Evaluations link and verify dashboard loads
+      steps:
+        - action: navigate
+          url: /
+        - action: click
+          element: 'link "Evaluations"'
+        - action: verify_url
+          expected: /evaluation-dashboard
+          flexibility: exact
+      success_criteria:
+        - type: url_match
+          flexibility: exact
+
+    - id: NAV-005
+      name: Logo Returns to Home
+      description: Clicking the logo should return to the research page
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'link "Research Agent"'
+        - action: verify_url
+          expected: /
+          flexibility: exact
+      success_criteria:
+        - type: url_match
+          flexibility: exact
+
+# =============================================================================
+# CHAT LAYOUT TESTS
+# Based on: docs/brainstorms/2025-01-09-chat-with-research-addon.md
+# =============================================================================
+chat_layout:
+  description: Verify chat page layout matches design specifications
+
+  scenarios:
+    - id: CHAT-LAYOUT-001
+      name: Chat Page Initial Layout
+      description: |
+        Verify the chat page has the correct layout structure:
+        - Sidebar with conversation list on the left
+        - Main chat area in the center
+        - Research side panel (when open) on the right
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify_layout
+          checks:
+            - element: 'navigation "Conversation navigation"'
+              position: left_sidebar
+              expected: visible
+              flexibility: exact
+            - element: 'main'
+              position: center
+              expected: visible
+              flexibility: exact
+            - element: 'heading "Welcome to Research Agent"'
+              expected: visible
+              flexibility: exact
+              context: Empty state when no conversation selected
+      success_criteria:
+        - type: layout_structure
+          flexibility: ai_judgment
+          description: Layout should have sidebar on left, main area center
+
+    - id: CHAT-LAYOUT-002
+      name: Sidebar Components
+      description: |
+        Per design doc (Component 5: Chat UI):
+        - ConversationListComponent - sidebar with conversation history, search, new/delete
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify_elements
+          elements:
+            - selector: 'heading "Conversations"'
+              expected: visible
+              flexibility: exact
+              description: Sidebar header
+            - selector: 'button "Create new chat"'
+              expected: visible
+              flexibility: exact
+              description: New conversation button with + icon
+            - selector: 'searchbox "Search conversations"'
+              expected: visible
+              flexibility: exact
+              description: Search/filter input for conversations
+      success_criteria:
+        - type: all_elements_present
+          flexibility: exact
+
+    - id: CHAT-LAYOUT-003
+      name: Empty State Display
+      description: |
+        When no conversation is selected, show welcome message and empty conversation list
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify_elements
+          elements:
+            - selector: 'status with text "No conversations yet"'
+              expected: visible
+              flexibility: contains
+              description: Empty list message
+            - selector: 'text "Click "New Chat" to start your first conversation"'
+              expected: visible
+              flexibility: contains
+              description: Hint for new users
+            - selector: 'heading "Welcome to Research Agent"'
+              expected: visible
+              flexibility: exact
+              description: Main area empty state
+      success_criteria:
+        - type: empty_state_displayed
+          flexibility: exact
+
+    - id: CHAT-LAYOUT-004
+      name: Chat Input Component Structure
+      description: |
+        Per design doc (ChatInputComponent):
+        - Textarea with auto-resize
+        - Research toggle button
+        - Send button (disabled when empty)
+        - Keyboard shortcuts hint
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify_elements
+          elements:
+            - selector: 'form "Message input form"'
+              expected: visible
+              flexibility: exact
+            - selector: 'textbox "Message input"'
+              expected: visible
+              flexibility: exact
+              attributes:
+                placeholder: "Type a message..."
+            - selector: 'button with aria-label containing "research"'
+              expected: visible
+              flexibility: contains
+              description: Research toggle button
+            - selector: 'button "Send message"'
+              expected: visible
+              flexibility: exact
+              attributes:
+                disabled: true
+              description: Send button disabled when empty
+            - selector: 'note "Keyboard shortcuts"'
+              expected: visible
+              flexibility: exact
+            - selector: 'text "Ctrl+Enter to send"'
+              expected: visible
+              flexibility: contains
+            - selector: 'text "Shift+Enter for newline"'
+              expected: visible
+              flexibility: contains
+      success_criteria:
+        - type: all_elements_present
+          flexibility: exact
+
+# =============================================================================
+# CONVERSATION MANAGEMENT TESTS
+# =============================================================================
+conversation_management:
+  description: Test conversation CRUD operations
+
+  scenarios:
+    - id: CONV-001
+      name: Create New Conversation
+      description: |
+        Test creating a new conversation:
+        1. Click "New Chat" button
+        2. Verify conversation appears in list
+        3. Verify conversation is selected
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: wait_for
+          condition: conversation_list_updated
+          timeout: 5000
+        - action: verify_elements
+          elements:
+            - selector: 'conversation list item'
+              expected: at_least_one
+              flexibility: ai_judgment
+      success_criteria:
+        - type: conversation_created
+          flexibility: ai_judgment
+          description: New conversation should appear in the sidebar list
+
+    - id: CONV-002
+      name: Create Conversation via First Message
+      description: |
+        Per design: "If no conversation is selected, create one first"
+        Type a message when no conversation exists to auto-create one
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Hello, this is a test message"
+        - action: verify_button_state
+          element: 'button "Send message"'
+          expected: enabled
+          flexibility: exact
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: conversation_created_and_message_sent
+          timeout: 10000
+      success_criteria:
+        - type: conversation_created
+          flexibility: ai_judgment
+        - type: message_sent
+          flexibility: ai_judgment
+
+    - id: CONV-003
+      name: Search Conversations
+      description: Test conversation search functionality
+      preconditions:
+        - At least one conversation exists with known title
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'searchbox "Search conversations"'
+          text: "test"
+        - action: wait_for
+          condition: search_results_updated
+          timeout: 2000
+        - action: verify
+          condition: filtered_results
+          flexibility: ai_judgment
+      success_criteria:
+        - type: search_filters_results
+          flexibility: ai_judgment
+
+    - id: CONV-004
+      name: Delete Conversation
+      description: |
+        Test conversation deletion:
+        1. Find delete button on conversation item
+        2. Click delete
+        3. Verify conversation removed from list
+      preconditions:
+        - At least one conversation exists
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'conversation delete button'
+          description: Delete button with X icon on conversation item
+        - action: wait_for
+          condition: conversation_deleted
+          timeout: 5000
+        - action: verify
+          condition: conversation_removed_from_list
+          flexibility: ai_judgment
+      success_criteria:
+        - type: conversation_deleted
+          flexibility: ai_judgment
+
+    - id: CONV-005
+      name: Select Existing Conversation
+      description: |
+        Click on a conversation to load it:
+        - URL updates to /chat/:conversationId
+        - Messages load in chat thread
+        - Conversation title shown in header
+      preconditions:
+        - At least one conversation with messages exists
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'conversation list item'
+        - action: verify_url
+          expected: /chat/:id
+          flexibility: contains
+        - action: verify_elements
+          elements:
+            - selector: 'chat thread with messages'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: conversation_loaded
+          flexibility: ai_judgment
+
+# =============================================================================
+# CHAT INPUT TESTS
+# =============================================================================
+chat_input:
+  description: Test chat input functionality
+
+  scenarios:
+    - id: INPUT-001
+      name: Send Button State Management
+      description: |
+        Per design doc: "Send button (disabled when empty or loading)"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify_button_state
+          element: 'button "Send message"'
+          expected: disabled
+          flexibility: exact
+          description: Initially disabled (empty input)
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Test message"
+        - action: verify_button_state
+          element: 'button "Send message"'
+          expected: enabled
+          flexibility: exact
+          description: Enabled when text entered
+        - action: clear
+          element: 'textbox "Message input"'
+        - action: verify_button_state
+          element: 'button "Send message"'
+          expected: disabled
+          flexibility: exact
+          description: Disabled again when cleared
+      success_criteria:
+        - type: button_state_correct
+          flexibility: exact
+
+    - id: INPUT-002
+      name: Research Toggle Default State
+      description: |
+        Per design doc: "Toggle state: Resets to OFF after each message (explicit opt-in)"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify_toggle_state
+          element: 'button with aria-label containing "research"'
+          expected: off
+          flexibility: exact
+          description: Research toggle defaults to OFF
+      success_criteria:
+        - type: toggle_default_off
+          flexibility: exact
+
+    - id: INPUT-003
+      name: Research Toggle Activation
+      description: Test toggling research mode on and off
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button with aria-label "Enable research mode for web search"'
+        - action: verify_toggle_state
+          element: research_toggle
+          expected: on
+          flexibility: exact
+          description: Toggle shows active state
+        - action: verify_aria
+          element: research_toggle
+          attribute: aria-pressed
+          expected: "true"
+          flexibility: exact
+        - action: click
+          element: research_toggle
+        - action: verify_toggle_state
+          element: research_toggle
+          expected: off
+          flexibility: exact
+      success_criteria:
+        - type: toggle_functional
+          flexibility: exact
+
+    - id: INPUT-004
+      name: Research Toggle Resets After Send
+      description: |
+        Per design doc: "Toggle resets to OFF after each message sent"
+      preconditions:
+        - Conversation exists or will be created
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: research_toggle
+          description: Enable research mode
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Test message with research"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: message_sent
+          timeout: 5000
+        - action: verify_toggle_state
+          element: research_toggle
+          expected: off
+          flexibility: exact
+          description: Toggle resets to OFF after send
+      success_criteria:
+        - type: toggle_resets
+          flexibility: exact
+
+    - id: INPUT-005
+      name: Keyboard Shortcut Ctrl+Enter
+      description: |
+        Per design doc: "Ctrl+Enter to send"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Message sent via keyboard"
+        - action: press_key
+          key: Control+Enter
+        - action: wait_for
+          condition: message_sent
+          timeout: 5000
+      success_criteria:
+        - type: keyboard_shortcut_works
+          flexibility: ai_judgment
+
+    - id: INPUT-006
+      name: Keyboard Shortcut Shift+Enter for Newline
+      description: |
+        Per design doc: "Shift+Enter for newline"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Line 1"
+        - action: press_key
+          key: Shift+Enter
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Line 2"
+        - action: verify_input_value
+          element: 'textbox "Message input"'
+          expected: "Line 1\nLine 2"
+          flexibility: contains
+      success_criteria:
+        - type: multiline_input_works
+          flexibility: ai_judgment
+
+    - id: INPUT-007
+      name: Textarea Auto-resize
+      description: |
+        Per design doc: "Textarea with auto-resize"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: get_element_height
+          element: 'textbox "Message input"'
+          store_as: initial_height
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Line 1\nLine 2\nLine 3\nLine 4\nLine 5"
+        - action: get_element_height
+          element: 'textbox "Message input"'
+          store_as: expanded_height
+        - action: verify
+          condition: expanded_height > initial_height
+          flexibility: ai_judgment
+      success_criteria:
+        - type: textarea_expands
+          flexibility: ai_judgment
+
+# =============================================================================
+# CHAT THREAD TESTS
+# =============================================================================
+chat_thread:
+  description: Test chat message display and streaming
+
+  scenarios:
+    - id: THREAD-001
+      name: Message Display Structure
+      description: |
+        Per design doc (ChatThreadComponent):
+        - Display messages with role-based styling (user right, assistant left)
+        - Render markdown content
+        - Show timestamps
+      preconditions:
+        - Conversation with at least one user and assistant message
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: verify_elements
+          elements:
+            - selector: 'chat thread messages container'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'user message'
+              expected: visible
+              css_class_contains: message--user
+              flexibility: ai_judgment
+            - selector: 'assistant message'
+              expected: visible
+              css_class_contains: message--assistant
+              flexibility: ai_judgment
+            - selector: 'message timestamp'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: messages_styled_correctly
+          flexibility: ai_judgment
+
+    - id: THREAD-002
+      name: Markdown Rendering in Messages
+      description: |
+        Assistant messages should render markdown (headings, lists, code blocks, links)
+      preconditions:
+        - Conversation with markdown content in assistant response
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: verify
+          condition: markdown_rendered_to_html
+          flexibility: ai_judgment
+          description: Check that markdown elements are rendered (e.g., <h1>, <ul>, <code>)
+      success_criteria:
+        - type: markdown_rendered
+          flexibility: ai_judgment
+
+    - id: THREAD-003
+      name: Streaming Response Display
+      description: |
+        Per design doc: "Show loading indicator during LLM streaming"
+        - Tokens stream in real-time
+        - Typing indicator shown initially
+      preconditions:
+        - Ability to send message and receive streaming response
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Tell me a short joke"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: streaming_indicator_visible
+          timeout: 3000
+        - action: verify_elements
+          elements:
+            - selector: 'typing indicator dots or streaming content'
+              expected: visible
+              flexibility: ai_judgment
+        - action: wait_for
+          condition: streaming_complete
+          timeout: 60000
+        - action: verify
+          condition: assistant_message_displayed
+          flexibility: ai_judgment
+      success_criteria:
+        - type: streaming_works
+          flexibility: ai_judgment
+
+    - id: THREAD-004
+      name: Auto-scroll to New Messages
+      description: |
+        Per design doc: "Auto-scroll to bottom on new messages"
+      preconditions:
+        - Conversation with enough messages to require scrolling
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: scroll_to_top
+          element: chat_thread_container
+        - action: type
+          element: 'textbox "Message input"'
+          text: "New message to trigger scroll"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: message_sent
+          timeout: 5000
+        - action: verify
+          condition: scrolled_to_bottom
+          flexibility: ai_judgment
+      success_criteria:
+        - type: auto_scroll_works
+          flexibility: ai_judgment
+
+    - id: THREAD-005
+      name: Empty Thread State
+      description: When conversation has no messages, show empty state
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: wait_for
+          condition: new_conversation_created
+          timeout: 5000
+        - action: verify_elements
+          elements:
+            - selector: 'empty thread indicator'
+              expected: visible
+              flexibility: ai_judgment
+              description: "No messages yet" or similar
+      success_criteria:
+        - type: empty_state_shown
+          flexibility: ai_judgment
+
+# =============================================================================
+# RESEARCH INTEGRATION TESTS
+# Based on: Design doc Phase 6 - Research Integration Layer
+# =============================================================================
+research_integration:
+  description: Test research mode with chat integration
+
+  scenarios:
+    - id: RESEARCH-001
+      name: Send Message with Research Enabled
+      description: |
+        Per design doc:
+        - Research trigger: User must submit a message with research enabled
+        - Research pipeline called with contextualized query
+        - Side panel opens with research progress
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: research_toggle
+          description: Enable research mode
+        - action: verify_toggle_state
+          element: research_toggle
+          expected: on
+        - action: type
+          element: 'textbox "Message input"'
+          text: "What is the latest version of Angular?"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: research_started
+          timeout: 5000
+        - action: verify_elements
+          elements:
+            - selector: 'research side panel'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'research progress indicator'
+              expected: visible
+              flexibility: ai_judgment
+        - action: wait_for
+          condition: research_complete
+          timeout: 120000
+        - action: verify
+          condition: citations_displayed
+          flexibility: ai_judgment
+      success_criteria:
+        - type: research_executes
+          flexibility: ai_judgment
+        - type: citations_shown
+          flexibility: ai_judgment
+
+    - id: RESEARCH-002
+      name: Research Side Panel Structure
+      description: |
+        Per design doc (ResearchSidePanelComponent):
+        - Collapsible panel
+        - Sources list with title, URL, snippet
+        - Research progress indicator
+        - Close button
+      preconditions:
+        - Research completed with citations
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: open_research_panel
+        - action: verify_elements
+          elements:
+            - selector: 'heading "Sources"'
+              expected: visible
+              flexibility: exact
+            - selector: 'close button'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'source list items'
+              expected: at_least_one
+              flexibility: ai_judgment
+              contains:
+                - title
+                - url
+                - snippet
+      success_criteria:
+        - type: panel_structure_correct
+          flexibility: ai_judgment
+
+    - id: RESEARCH-003
+      name: Citation Click Opens Panel
+      description: |
+        Per design doc: "Clickable - opens side panel and highlights source"
+      preconditions:
+        - Message with citations exists
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: click
+          element: 'inline citation [1]'
+        - action: verify_elements
+          elements:
+            - selector: 'research side panel'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'highlighted citation'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: citation_click_works
+          flexibility: ai_judgment
+
+    - id: RESEARCH-004
+      name: Research Progress Stages
+      description: |
+        Per design doc: Show stages: Query Analysis -> Source Selection -> Answer Synthesis
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: research_toggle
+        - action: type
+          element: 'textbox "Message input"'
+          text: "What are the latest JavaScript frameworks?"
+        - action: click
+          element: 'button "Send message"'
+        - action: verify_sequence
+          stages:
+            - name: research_started
+              description: Research begins
+            - name: progress_visible
+              description: Progress bar or stage indicator visible
+            - name: research_complete
+              description: Research finishes, answer displays
+          flexibility: ai_judgment
+      success_criteria:
+        - type: stages_shown
+          flexibility: ai_judgment
+
+    - id: RESEARCH-005
+      name: Close Research Panel
+      description: Test closing the research side panel
+      preconditions:
+        - Research panel is open
+      steps:
+        - action: click
+          element: 'research panel close button'
+        - action: verify_elements
+          elements:
+            - selector: 'research side panel'
+              expected: not_visible
+              flexibility: exact
+      success_criteria:
+        - type: panel_closes
+          flexibility: exact
+
+# =============================================================================
+# RESEARCH SUGGESTION TESTS
+# Based on: Design doc Phase 10 - Research Suggestion System
+# =============================================================================
+research_suggestion:
+  description: Test "Research this" suggestion feature
+
+  scenarios:
+    - id: SUGGEST-001
+      name: Factual Question Shows Suggestion
+      description: |
+        Per design doc: "Factual questions show 'Research this' button"
+        - Detect who, what, when, where, how many, etc.
+      preconditions:
+        - Send a factual question without research enabled
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Who is the current CEO of Microsoft?"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: message_sent
+          timeout: 5000
+        - action: verify_elements
+          elements:
+            - selector: 'research suggestion button "Get current info"'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: suggestion_appears
+          flexibility: ai_judgment
+
+    - id: SUGGEST-002
+      name: Temporal Query Shows Suggestion
+      description: |
+        Per design doc: Detect "latest, recent, current, 2024, 2025, today"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'textbox "Message input"'
+          text: "What are the latest developments in AI?"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: response_received
+          timeout: 60000
+        - action: verify_elements
+          elements:
+            - selector: 'research suggestion button'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: temporal_detected
+          flexibility: ai_judgment
+
+    - id: SUGGEST-003
+      name: Click Research Suggestion
+      description: |
+        Per design doc: "Button click: enable research toggle, re-submit query"
+      preconditions:
+        - Message with research suggestion visible
+      steps:
+        - action: click
+          element: 'research suggestion button "Get current info"'
+        - action: wait_for
+          condition: research_started
+          timeout: 5000
+        - action: verify
+          condition: research_in_progress_or_complete
+          flexibility: ai_judgment
+      success_criteria:
+        - type: suggestion_triggers_research
+          flexibility: ai_judgment
+
+# =============================================================================
+# RESEARCH PAGE TESTS
+# =============================================================================
+research_page:
+  description: Test the original research page functionality
+
+  scenarios:
+    - id: RSRCH-001
+      name: Research Page Layout
+      description: Verify research page components
+      steps:
+        - action: navigate
+          url: /
+        - action: verify_elements
+          elements:
+            - selector: 'textbox for research query'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'button "Research"'
+              expected: visible
+              flexibility: exact
+            - selector: 'history section'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: layout_correct
+          flexibility: ai_judgment
+
+    - id: RSRCH-002
+      name: Submit Research Query
+      description: Submit a research query and verify results
+      steps:
+        - action: navigate
+          url: /
+        - action: type
+          element: 'research query input'
+          text: "What is TypeScript?"
+        - action: click
+          element: 'button "Research"'
+        - action: wait_for
+          condition: research_complete
+          timeout: 120000
+        - action: verify
+          condition: research_results_displayed
+          flexibility: ai_judgment
+      success_criteria:
+        - type: research_works
+          flexibility: ai_judgment
+
+    - id: RSRCH-003
+      name: Character Count Display
+      description: Research input shows character count
+      steps:
+        - action: navigate
+          url: /
+        - action: type
+          element: 'research query input'
+          text: "Test query"
+        - action: verify
+          condition: character_count_visible
+          flexibility: ai_judgment
+      success_criteria:
+        - type: char_count_shown
+          flexibility: ai_judgment
+
+# =============================================================================
+# LOGS PAGE TESTS
+# =============================================================================
+logs_page:
+  description: Test research logs and session viewing
+
+  scenarios:
+    - id: LOGS-001
+      name: Logs Page Layout
+      description: Verify logs page components
+      steps:
+        - action: navigate
+          url: /logs
+        - action: verify_elements
+          elements:
+            - selector: 'search box for sessions'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'session list'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: layout_correct
+          flexibility: ai_judgment
+
+    - id: LOGS-002
+      name: View Session Details
+      description: Click on a session to view details
+      preconditions:
+        - At least one research session exists
+      steps:
+        - action: navigate
+          url: /logs
+        - action: click
+          element: 'first session in list'
+        - action: verify_elements
+          elements:
+            - selector: 'timeline or graph view'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'research answer'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'sources list'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: session_details_shown
+          flexibility: ai_judgment
+
+    - id: LOGS-003
+      name: Toggle Timeline/Graph View
+      description: Switch between timeline and graph views
+      preconditions:
+        - Session detail view is open
+      steps:
+        - action: navigate
+          url: /logs/:logId
+        - action: click
+          element: 'Graph view toggle'
+        - action: verify
+          condition: graph_view_displayed
+          flexibility: ai_judgment
+        - action: click
+          element: 'Timeline view toggle'
+        - action: verify
+          condition: timeline_view_displayed
+          flexibility: ai_judgment
+      success_criteria:
+        - type: view_toggles_work
+          flexibility: ai_judgment
+
+    - id: LOGS-004
+      name: Quality Inspector Link
+      description: Navigate to quality inspector from logs
+      preconditions:
+        - Session detail view is open
+      steps:
+        - action: click
+          element: 'Quality Inspector link'
+        - action: verify_url
+          expected: /quality-inspector/:logId
+          flexibility: contains
+      success_criteria:
+        - type: navigation_works
+          flexibility: ai_judgment
+
+# =============================================================================
+# EVALUATION DASHBOARD TESTS
+# =============================================================================
+evaluation_dashboard:
+  description: Test evaluation dashboard functionality
+
+  scenarios:
+    - id: EVAL-001
+      name: Dashboard Statistics Display
+      description: Verify evaluation stats cards
+      steps:
+        - action: navigate
+          url: /evaluation-dashboard
+        - action: verify_elements
+          elements:
+            - selector: 'Total evaluations stat'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'Passed evaluations stat'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'Failed evaluations stat'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'Pass rate percentage'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: stats_displayed
+          flexibility: ai_judgment
+
+    - id: EVAL-002
+      name: Evaluation Records Table
+      description: Verify evaluation records are displayed in table
+      preconditions:
+        - At least one evaluation record exists
+      steps:
+        - action: navigate
+          url: /evaluation-dashboard
+        - action: verify_elements
+          elements:
+            - selector: 'evaluation records table'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'pagination controls'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: table_displayed
+          flexibility: ai_judgment
+
+    - id: EVAL-003
+      name: Filter Evaluations
+      description: Test filtering evaluation records
+      steps:
+        - action: navigate
+          url: /evaluation-dashboard
+        - action: click
+          element: 'filter dropdown'
+        - action: select
+          option: 'Failed only'
+        - action: verify
+          condition: filtered_results_shown
+          flexibility: ai_judgment
+      success_criteria:
+        - type: filter_works
+          flexibility: ai_judgment
+
+    - id: EVAL-004
+      name: Pagination
+      description: Test pagination of evaluation records
+      preconditions:
+        - More than one page of records exists
+      steps:
+        - action: navigate
+          url: /evaluation-dashboard
+        - action: click
+          element: 'next page button'
+        - action: verify
+          condition: next_page_loaded
+          flexibility: ai_judgment
+      success_criteria:
+        - type: pagination_works
+          flexibility: ai_judgment
+
+# =============================================================================
+# ERROR HANDLING TESTS
+# =============================================================================
+error_handling:
+  description: Test error states and recovery
+
+  scenarios:
+    - id: ERR-001
+      name: API Error Display
+      description: Verify errors are displayed to user
+      steps:
+        - action: simulate_api_error
+          endpoint: /api/conversations
+          status: 500
+        - action: navigate
+          url: /chat
+        - action: verify_elements
+          elements:
+            - selector: 'error alert'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'dismiss button'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: error_shown
+          flexibility: ai_judgment
+
+    - id: ERR-002
+      name: Dismiss Error
+      description: Test dismissing error messages
+      preconditions:
+        - Error message is displayed
+      steps:
+        - action: click
+          element: 'dismiss button'
+        - action: verify_elements
+          elements:
+            - selector: 'error alert'
+              expected: not_visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: error_dismissed
+          flexibility: ai_judgment
+
+    - id: ERR-003
+      name: Streaming Error Recovery
+      description: |
+        Per design doc: "Network disconnect: Reconnect SSE, show connection status"
+      steps:
+        - action: simulate_connection_drop
+        - action: verify
+          condition: connection_status_indicator_shown
+          flexibility: ai_judgment
+        - action: verify
+          condition: retry_button_available
+          flexibility: ai_judgment
+        - action: click
+          element: 'retry button'
+        - action: verify
+          condition: connection_restored
+          flexibility: ai_judgment
+      success_criteria:
+        - type: recovery_works
+          flexibility: ai_judgment
+
+# =============================================================================
+# ACCESSIBILITY TESTS
+# =============================================================================
+accessibility:
+  description: Test accessibility features
+
+  scenarios:
+    - id: A11Y-001
+      name: Keyboard Navigation
+      description: Test keyboard-only navigation through chat
+      steps:
+        - action: navigate
+          url: /chat
+        - action: press_key
+          key: Tab
+        - action: verify
+          condition: focus_moves_logically
+          flexibility: ai_judgment
+        - action: press_key
+          key: Tab
+          repeat: 5
+        - action: verify
+          condition: all_interactive_elements_reachable
+          flexibility: ai_judgment
+      success_criteria:
+        - type: keyboard_accessible
+          flexibility: ai_judgment
+
+    - id: A11Y-002
+      name: ARIA Labels Present
+      description: Verify ARIA labels on interactive elements
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify_aria
+          elements:
+            - selector: 'textbox "Message input"'
+              attribute: aria-label
+              expected: not_empty
+            - selector: 'button "Send message"'
+              attribute: aria-label
+              expected: not_empty
+            - selector: research_toggle
+              attribute: aria-label
+              expected: not_empty
+            - selector: research_toggle
+              attribute: aria-pressed
+              expected: exists
+      success_criteria:
+        - type: aria_present
+          flexibility: exact
+
+    - id: A11Y-003
+      name: Screen Reader Friendly
+      description: Verify screen reader landmarks and structure
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify_landmarks
+          expected:
+            - banner (header)
+            - navigation
+            - main
+            - complementary (sidebar)
+          flexibility: ai_judgment
+      success_criteria:
+        - type: landmarks_correct
+          flexibility: ai_judgment
+
+# =============================================================================
+# MOBILE RESPONSIVENESS TESTS
+# =============================================================================
+mobile:
+  description: Test mobile responsive behavior
+
+  scenarios:
+    - id: MOBILE-001
+      name: Sidebar Collapse on Mobile
+      description: |
+        Per design doc: "Responsive layout (sidebar collapsible on mobile)"
+      steps:
+        - action: resize_viewport
+          width: 375
+          height: 667
+        - action: navigate
+          url: /chat
+        - action: verify_elements
+          elements:
+            - selector: 'mobile menu toggle button'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'sidebar'
+              expected: hidden_or_collapsed
+              flexibility: ai_judgment
+      success_criteria:
+        - type: sidebar_collapses
+          flexibility: ai_judgment
+
+    - id: MOBILE-002
+      name: Toggle Sidebar on Mobile
+      description: Test mobile sidebar toggle
+      steps:
+        - action: resize_viewport
+          width: 375
+          height: 667
+        - action: navigate
+          url: /chat/:conversationId
+        - action: click
+          element: 'mobile menu toggle'
+        - action: verify_elements
+          elements:
+            - selector: 'sidebar'
+              expected: visible
+              flexibility: ai_judgment
+        - action: click
+          element: 'mobile menu toggle or overlay'
+        - action: verify_elements
+          elements:
+            - selector: 'sidebar'
+              expected: hidden
+              flexibility: ai_judgment
+      success_criteria:
+        - type: toggle_works
+          flexibility: ai_judgment
+
+    - id: MOBILE-003
+      name: Research Panel on Mobile
+      description: |
+        Per design doc: "Side panel collapses on mobile into expandable sections"
+      steps:
+        - action: resize_viewport
+          width: 375
+          height: 667
+        - action: trigger_research_panel_open
+        - action: verify
+          condition: panel_displays_appropriately_for_mobile
+          flexibility: ai_judgment
+          description: Could be bottom sheet, overlay, or collapsed state
+      success_criteria:
+        - type: mobile_panel_works
+          flexibility: ai_judgment
+
+# =============================================================================
+# COMPREHENSIVE CHAT FUNCTIONALITY TESTS
+# Extended test coverage for chat features, edge cases, and integrations
+# =============================================================================
+chat_comprehensive:
+  description: Comprehensive chat functionality testing including edge cases and advanced features
+
+  scenarios:
+    # ---------------------------------------------------------------------------
+    # MESSAGE FLOW & STATE MANAGEMENT
+    # ---------------------------------------------------------------------------
+    - id: CHAT-MSG-001
+      name: Message Send Flow Complete Cycle
+      description: |
+        Full message lifecycle:
+        1. User types message
+        2. Send button enables
+        3. Click send
+        4. User message appears immediately
+        5. Assistant placeholder appears
+        6. Streaming begins
+        7. Streaming completes
+        8. Final message displayed
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: wait_for
+          condition: conversation_created
+          timeout: 5000
+        - action: verify_button_state
+          element: 'button "Send message"'
+          expected: disabled
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Hello, tell me a quick fact about TypeScript"
+        - action: verify_button_state
+          element: 'button "Send message"'
+          expected: enabled
+        - action: click
+          element: 'button "Send message"'
+        - action: verify
+          condition: user_message_appears_immediately
+          flexibility: ai_judgment
+        - action: verify
+          condition: input_field_cleared
+          flexibility: exact
+        - action: wait_for
+          condition: assistant_message_streaming_starts
+          timeout: 10000
+        - action: wait_for
+          condition: streaming_complete
+          timeout: 120000
+        - action: verify
+          condition: assistant_message_has_content
+          flexibility: ai_judgment
+      success_criteria:
+        - type: complete_message_flow
+          flexibility: ai_judgment
+          description: Message should go through complete send->receive cycle
+
+    - id: CHAT-MSG-002
+      name: Consecutive Messages Same Conversation
+      description: Send multiple messages in quick succession
+      preconditions:
+        - Active conversation exists
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: type
+          element: 'textbox "Message input"'
+          text: "First message"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: streaming_complete
+          timeout: 60000
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Second message"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: streaming_complete
+          timeout: 60000
+        - action: verify
+          condition: message_order_preserved
+          flexibility: ai_judgment
+          description: Messages should appear in correct chronological order
+        - action: verify
+          condition: four_messages_visible
+          flexibility: ai_judgment
+          description: 2 user + 2 assistant messages
+      success_criteria:
+        - type: consecutive_messages_work
+          flexibility: ai_judgment
+
+    - id: CHAT-MSG-003
+      name: Message Persistence After Navigation
+      description: Messages should persist after navigating away and back
+      preconditions:
+        - Conversation with messages exists
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: count_messages
+          store_as: initial_count
+        - action: navigate
+          url: /logs
+        - action: wait_for
+          timeout: 1000
+        - action: navigate
+          url: /chat/:conversationId
+        - action: count_messages
+          store_as: after_nav_count
+        - action: verify
+          condition: initial_count == after_nav_count
+          flexibility: exact
+      success_criteria:
+        - type: messages_persist
+          flexibility: exact
+
+    - id: CHAT-MSG-004
+      name: Empty Message Prevention
+      description: Verify empty/whitespace messages cannot be sent
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'textbox "Message input"'
+          text: "   "
+        - action: verify_button_state
+          element: 'button "Send message"'
+          expected: disabled
+          flexibility: exact
+        - action: press_key
+          key: Control+Enter
+        - action: verify
+          condition: no_message_sent
+          flexibility: ai_judgment
+      success_criteria:
+        - type: empty_blocked
+          flexibility: exact
+
+    - id: CHAT-MSG-005
+      name: Very Long Message Handling
+      description: Handle long messages without UI breakage
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "This is a very long message that tests the application's ability to handle extended content. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. This test continues with more content to ensure the system handles lengthy inputs properly without breaking the layout or causing performance issues."
+        - action: verify
+          condition: textarea_expands_appropriately
+          flexibility: ai_judgment
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: message_sent
+          timeout: 5000
+        - action: verify
+          condition: long_message_displayed_properly
+          flexibility: ai_judgment
+      success_criteria:
+        - type: long_message_works
+          flexibility: ai_judgment
+
+    - id: CHAT-MSG-006
+      name: Special Characters in Messages
+      description: Handle special characters, emojis, and unicode
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Test with special chars: <script>alert('xss')</script> & \"quotes\" 'apostrophes' emoji: 🎉🚀 unicode: äöü 中文 العربية"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: message_displayed
+          timeout: 5000
+        - action: verify
+          condition: special_chars_escaped_properly
+          flexibility: ai_judgment
+          description: XSS should be prevented, emojis/unicode should display
+      success_criteria:
+        - type: special_chars_handled
+          flexibility: ai_judgment
+
+    - id: CHAT-MSG-007
+      name: Multiline Message Preservation
+      description: Newlines in messages should be preserved
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Line 1"
+        - action: press_key
+          key: Shift+Enter
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Line 2"
+        - action: press_key
+          key: Shift+Enter
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Line 3"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: message_displayed
+          timeout: 5000
+        - action: verify
+          condition: newlines_preserved_in_display
+          flexibility: ai_judgment
+          description: Message should show 3 separate lines
+      success_criteria:
+        - type: multiline_preserved
+          flexibility: ai_judgment
+
+    # ---------------------------------------------------------------------------
+    # CONVERSATION LIFECYCLE ADVANCED TESTS
+    # ---------------------------------------------------------------------------
+    - id: CHAT-CONV-001
+      name: Conversation Title Auto-Generation
+      description: |
+        Per code: "Title from first message: extractTitleFromMessage takes first 50 chars"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'textbox "Message input"'
+          text: "What are the main differences between React and Angular frameworks?"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: conversation_created
+          timeout: 5000
+        - action: verify
+          condition: conversation_title_contains_message_text
+          flexibility: ai_judgment
+          description: Title should derive from first message content
+      success_criteria:
+        - type: auto_title_works
+          flexibility: ai_judgment
+
+    - id: CHAT-CONV-002
+      name: Conversation URL Routing
+      description: Direct navigation to conversation via URL
+      preconditions:
+        - Conversation with ID exists
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: verify_url
+          expected: /chat/:conversationId
+          flexibility: contains
+        - action: verify
+          condition: conversation_messages_loaded
+          flexibility: ai_judgment
+        - action: verify
+          condition: conversation_selected_in_sidebar
+          flexibility: ai_judgment
+      success_criteria:
+        - type: url_routing_works
+          flexibility: ai_judgment
+
+    - id: CHAT-CONV-003
+      name: Switch Between Conversations
+      description: Switching conversations loads correct messages
+      preconditions:
+        - At least 2 conversations with distinct messages exist
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'first conversation in list'
+        - action: verify
+          condition: first_conversation_messages_displayed
+          flexibility: ai_judgment
+        - action: click
+          element: 'second conversation in list'
+        - action: verify
+          condition: second_conversation_messages_displayed
+          flexibility: ai_judgment
+          description: Messages should completely change when switching
+      success_criteria:
+        - type: conversation_switch_works
+          flexibility: ai_judgment
+
+    - id: CHAT-CONV-004
+      name: Delete Current Conversation Navigation
+      description: |
+        Per code: "If current conversation deleted, navigate to /chat and clear"
+      preconditions:
+        - Active conversation selected
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: click
+          element: 'delete button for current conversation'
+        - action: handle_confirm_dialog
+          accept: true
+        - action: wait_for
+          condition: conversation_deleted
+          timeout: 5000
+        - action: verify_url
+          expected: /chat
+          flexibility: exact
+          description: Should navigate back to /chat without ID
+        - action: verify
+          condition: empty_state_or_welcome_displayed
+          flexibility: ai_judgment
+      success_criteria:
+        - type: delete_navigation_works
+          flexibility: ai_judgment
+
+    - id: CHAT-CONV-005
+      name: Delete Non-Current Conversation
+      description: Deleting conversation that isn't selected
+      preconditions:
+        - At least 2 conversations exist
+      steps:
+        - action: navigate
+          url: /chat/:conversationId1
+        - action: click
+          element: 'delete button for second conversation (not current)'
+        - action: handle_confirm_dialog
+          accept: true
+        - action: wait_for
+          condition: conversation_deleted
+          timeout: 5000
+        - action: verify_url
+          expected: /chat/:conversationId1
+          flexibility: contains
+          description: Should remain on current conversation
+        - action: verify
+          condition: current_messages_still_displayed
+          flexibility: ai_judgment
+      success_criteria:
+        - type: non_current_delete_works
+          flexibility: ai_judgment
+
+    - id: CHAT-CONV-006
+      name: Delete Confirmation Cancel
+      description: Cancel delete should not remove conversation
+      preconditions:
+        - At least 1 conversation exists
+      steps:
+        - action: navigate
+          url: /chat
+        - action: count_conversations
+          store_as: initial_count
+        - action: click
+          element: 'delete button for first conversation'
+        - action: handle_confirm_dialog
+          accept: false
+        - action: count_conversations
+          store_as: after_cancel_count
+        - action: verify
+          condition: initial_count == after_cancel_count
+          flexibility: exact
+      success_criteria:
+        - type: cancel_preserves_conversation
+          flexibility: exact
+
+    - id: CHAT-CONV-007
+      name: Search Conversations Debounce
+      description: |
+        Per code: "Debounce search with 300ms timeout"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'searchbox "Search conversations"'
+          text: "t"
+        - action: type_quickly
+          element: 'searchbox "Search conversations"'
+          text: "est"
+          delay_between_chars: 50
+        - action: wait_for
+          timeout: 500
+        - action: verify
+          condition: single_search_request_made
+          flexibility: ai_judgment
+          description: Should debounce rapid typing
+      success_criteria:
+        - type: search_debounced
+          flexibility: ai_judgment
+
+    - id: CHAT-CONV-008
+      name: Search Clear Reloads All
+      description: |
+        Per code: "If search cleared, reload all conversations"
+      preconditions:
+        - Multiple conversations exist
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'searchbox "Search conversations"'
+          text: "specific search term"
+        - action: wait_for
+          condition: search_filtered
+          timeout: 2000
+        - action: clear
+          element: 'searchbox "Search conversations"'
+        - action: wait_for
+          timeout: 500
+        - action: verify
+          condition: all_conversations_visible
+          flexibility: ai_judgment
+      success_criteria:
+        - type: clear_reloads_all
+          flexibility: ai_judgment
+
+    - id: CHAT-CONV-009
+      name: Token Count Display
+      description: Conversations should show token count
+      preconditions:
+        - Conversation with messages exists
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify_elements
+          elements:
+            - selector: 'token count indicator on conversation'
+              expected: visible
+              flexibility: ai_judgment
+              description: Should show "X tokens" on conversation item
+      success_criteria:
+        - type: token_count_visible
+          flexibility: ai_judgment
+
+    # ---------------------------------------------------------------------------
+    # STREAMING & REAL-TIME TESTS
+    # ---------------------------------------------------------------------------
+    - id: CHAT-STREAM-001
+      name: Streaming Content Updates
+      description: Content should update progressively during streaming
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Write a paragraph about the history of computing"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: streaming_starts
+          timeout: 10000
+        - action: capture_streaming_content
+          store_as: content_snapshot_1
+        - action: wait_for
+          timeout: 2000
+        - action: capture_streaming_content
+          store_as: content_snapshot_2
+        - action: verify
+          condition: content_snapshot_2 longer than content_snapshot_1
+          flexibility: ai_judgment
+          description: Content should grow during streaming
+      success_criteria:
+        - type: progressive_streaming
+          flexibility: ai_judgment
+
+    - id: CHAT-STREAM-002
+      name: Streaming State Indicators
+      description: |
+        Per code: "connectionStatus states: disconnected, connecting, connected, error"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Hello"
+        - action: click
+          element: 'button "Send message"'
+        - action: verify
+          condition: connection_status_indicator_visible
+          flexibility: ai_judgment
+        - action: wait_for
+          condition: streaming_complete
+          timeout: 60000
+      success_criteria:
+        - type: status_indicators_work
+          flexibility: ai_judgment
+
+    - id: CHAT-STREAM-003
+      name: Input Disabled During Streaming
+      description: Input should be disabled while response is streaming
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Tell me about artificial intelligence in detail"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: streaming_starts
+          timeout: 10000
+        - action: verify
+          condition: send_button_disabled_or_input_disabled
+          flexibility: ai_judgment
+      success_criteria:
+        - type: input_disabled_during_stream
+          flexibility: ai_judgment
+
+    - id: CHAT-STREAM-004
+      name: Scroll During Streaming
+      description: |
+        Per code: "triggerScroll called when streaming starts and completes"
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+          description: Conversation with many messages
+        - action: scroll_to_top
+          element: chat_thread_container
+        - action: type
+          element: 'textbox "Message input"'
+          text: "New message to test scroll"
+        - action: click
+          element: 'button "Send message"'
+        - action: verify
+          condition: auto_scrolled_to_bottom
+          flexibility: ai_judgment
+        - action: wait_for
+          condition: streaming_starts
+          timeout: 10000
+        - action: verify
+          condition: still_at_bottom
+          flexibility: ai_judgment
+      success_criteria:
+        - type: scroll_during_stream
+          flexibility: ai_judgment
+
+    - id: CHAT-STREAM-005
+      name: Streaming Completion Updates Message
+      description: |
+        Per code: "updateMessageInConversation called when streaming completes"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "What is 2+2?"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: streaming_complete
+          timeout: 60000
+        - action: refresh_page
+        - action: navigate
+          url: /chat/:conversationId
+        - action: verify
+          condition: assistant_message_has_content
+          flexibility: ai_judgment
+          description: Message should persist after stream completion
+      success_criteria:
+        - type: stream_completion_persists
+          flexibility: ai_judgment
+
+    - id: CHAT-STREAM-006
+      name: Stream Error Handling
+      description: |
+        Per code: "streamError signal and clearStreamError method"
+      steps:
+        - action: simulate_stream_error
+        - action: verify_elements
+          elements:
+            - selector: 'stream error indicator'
+              expected: visible
+              flexibility: ai_judgment
+        - action: click
+          element: 'clear error or retry button'
+        - action: verify
+          condition: error_cleared
+          flexibility: ai_judgment
+      success_criteria:
+        - type: stream_error_handled
+          flexibility: ai_judgment
+
+    - id: CHAT-STREAM-007
+      name: Retry Stream Connection
+      description: |
+        Per code: "retryStream method available for reconnection"
+      preconditions:
+        - Stream connection in error state
+      steps:
+        - action: click
+          element: 'retry connection button'
+        - action: verify
+          condition: connection_attempt_made
+          flexibility: ai_judgment
+      success_criteria:
+        - type: retry_works
+          flexibility: ai_judgment
+
+    # ---------------------------------------------------------------------------
+    # RESEARCH MODE ADVANCED TESTS
+    # ---------------------------------------------------------------------------
+    - id: CHAT-RESEARCH-001
+      name: Research Toggle Visual Feedback
+      description: Toggle should have clear visual on/off states
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify
+          condition: research_toggle_appears_off
+          flexibility: ai_judgment
+          description: Default state visual
+        - action: click
+          element: 'button with aria-label containing "research"'
+        - action: verify
+          condition: research_toggle_appears_on
+          flexibility: ai_judgment
+          description: Active state visual (different color/icon)
+        - action: verify_aria
+          element: research_toggle
+          attribute: aria-pressed
+          expected: "true"
+      success_criteria:
+        - type: visual_feedback_correct
+          flexibility: ai_judgment
+
+    - id: CHAT-RESEARCH-002
+      name: Research Panel Opens on Research Message
+      description: |
+        Per code: "If research enabled, open side panel and start tracking"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: research_toggle
+        - action: type
+          element: 'textbox "Message input"'
+          text: "What are the latest JavaScript features in 2025?"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: research_panel_opens
+          timeout: 10000
+        - action: verify_elements
+          elements:
+            - selector: 'research side panel'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: panel_opens_on_research
+          flexibility: ai_judgment
+
+    - id: CHAT-RESEARCH-003
+      name: Research Progress Stages Display
+      description: |
+        Per code: "researchStage and researchProgress signals from service"
+      preconditions:
+        - Research message in progress
+      steps:
+        - action: verify_elements
+          elements:
+            - selector: 'research stage indicator'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'progress bar or percentage'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: progress_visible
+          flexibility: ai_judgment
+
+    - id: CHAT-RESEARCH-004
+      name: Citations Appear After Research
+      description: Research messages should include inline citations
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: research_toggle
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Who won the latest Nobel Prize in Physics?"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: streaming_complete
+          timeout: 120000
+        - action: verify_elements
+          elements:
+            - selector: 'inline citation [1] or similar'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: citations_present
+          flexibility: ai_judgment
+
+    - id: CHAT-RESEARCH-005
+      name: Citation Tooltip on Hover
+      description: |
+        Per code: InlineCitationComponent has "showTooltip signal on hover"
+      preconditions:
+        - Message with citations visible
+      steps:
+        - action: hover
+          element: 'inline citation'
+        - action: verify_elements
+          elements:
+            - selector: 'citation tooltip'
+              expected: visible
+              flexibility: ai_judgment
+              description: Should show source title/URL preview
+        - action: mouse_leave
+          element: 'inline citation'
+        - action: verify_elements
+          elements:
+            - selector: 'citation tooltip'
+              expected: not_visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: tooltip_works
+          flexibility: ai_judgment
+
+    - id: CHAT-RESEARCH-006
+      name: Citation Keyboard Interaction
+      description: |
+        Per code: "onKeyDown handles Enter and Space for citation activation"
+      preconditions:
+        - Message with citations visible
+      steps:
+        - action: focus
+          element: 'inline citation'
+        - action: press_key
+          key: Enter
+        - action: verify
+          condition: research_panel_opens_with_citation_highlighted
+          flexibility: ai_judgment
+      success_criteria:
+        - type: keyboard_citation_works
+          flexibility: ai_judgment
+
+    - id: CHAT-RESEARCH-007
+      name: Research Panel Citation Highlighting
+      description: |
+        Per code: "openWithCitations passes highlightedCitationIndex"
+      preconditions:
+        - Multiple citations in message
+      steps:
+        - action: click
+          element: 'inline citation [2]'
+        - action: verify
+          condition: second_citation_highlighted_in_panel
+          flexibility: ai_judgment
+      success_criteria:
+        - type: citation_highlight_works
+          flexibility: ai_judgment
+
+    - id: CHAT-RESEARCH-008
+      name: Research Panel External Link
+      description: |
+        Per code: "openUrl method opens in new tab with noopener,noreferrer"
+      preconditions:
+        - Research panel open with sources
+      steps:
+        - action: click
+          element: 'source URL in panel'
+        - action: verify
+          condition: new_tab_opened
+          flexibility: ai_judgment
+      success_criteria:
+        - type: external_link_works
+          flexibility: ai_judgment
+
+    # ---------------------------------------------------------------------------
+    # RESEARCH SUGGESTION ADVANCED TESTS
+    # ---------------------------------------------------------------------------
+    - id: CHAT-SUGGEST-001
+      name: Factual Question Detection Patterns
+      description: Test various factual question patterns
+      steps:
+        - action: navigate
+          url: /chat
+        - action: test_messages_for_suggestion
+          messages:
+            - text: "Who invented the telephone?"
+              expect_suggestion: true
+            - text: "What is the capital of France?"
+              expect_suggestion: true
+            - text: "When was World War 2?"
+              expect_suggestion: true
+            - text: "Where is the Eiffel Tower?"
+              expect_suggestion: true
+            - text: "How many planets are in our solar system?"
+              expect_suggestion: true
+            - text: "Hello, how are you?"
+              expect_suggestion: false
+          flexibility: ai_judgment
+      success_criteria:
+        - type: detection_accurate
+          flexibility: ai_judgment
+
+    - id: CHAT-SUGGEST-002
+      name: Temporal Query Detection
+      description: |
+        Per code: Detect "latest, recent, current, 2024, 2025, today"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: test_messages_for_suggestion
+          messages:
+            - text: "What are the latest developments?"
+              expect_suggestion: true
+            - text: "What is the current price of Bitcoin?"
+              expect_suggestion: true
+            - text: "What happened recently in tech?"
+              expect_suggestion: true
+            - text: "What is the weather today?"
+              expect_suggestion: true
+            - text: "Events in 2025"
+              expect_suggestion: true
+          flexibility: ai_judgment
+      success_criteria:
+        - type: temporal_detected
+          flexibility: ai_judgment
+
+    - id: CHAT-SUGGEST-003
+      name: Suggestion Not Shown When Research Already Enabled
+      description: |
+        Per code: "if message.role === 'user' && !message.messageOptions?.researchEnabled"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: research_toggle
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Who is the current President of the USA?"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: message_displayed
+          timeout: 5000
+        - action: verify
+          condition: no_research_suggestion_on_user_message
+          flexibility: ai_judgment
+          description: Suggestion should NOT appear since research was already enabled
+      success_criteria:
+        - type: no_duplicate_suggestion
+          flexibility: ai_judgment
+
+    - id: CHAT-SUGGEST-004
+      name: Click Suggestion Re-submits with Research
+      description: |
+        Per code: "onResearchRequested calls sendMessage with researchEnabled=true"
+      preconditions:
+        - Message with research suggestion visible
+      steps:
+        - action: click
+          element: 'research suggestion button'
+        - action: wait_for
+          condition: research_started
+          timeout: 10000
+        - action: verify
+          condition: new_research_message_sent
+          flexibility: ai_judgment
+      success_criteria:
+        - type: re_submit_works
+          flexibility: ai_judgment
+
+    - id: CHAT-SUGGEST-005
+      name: Suggestion on Assistant Recommendation
+      description: |
+        Per code: "containsResearchRecommendation checks for [Research recommended]"
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'textbox "Message input"'
+          text: "What are the stock prices today?"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: response_received
+          timeout: 60000
+        - action: verify
+          condition: assistant_may_recommend_research
+          flexibility: ai_judgment
+          description: If response contains [Research recommended], suggestion should appear
+      success_criteria:
+        - type: assistant_recommendation_detected
+          flexibility: ai_judgment
+
+    # ---------------------------------------------------------------------------
+    # MARKDOWN RENDERING TESTS
+    # ---------------------------------------------------------------------------
+    - id: CHAT-MARKDOWN-001
+      name: Code Block Rendering
+      description: Code blocks in assistant responses render properly
+      preconditions:
+        - Assistant message with code block exists
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: verify_elements
+          elements:
+            - selector: 'code block with syntax highlighting'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'pre or code element'
+              expected: visible
+              flexibility: exact
+      success_criteria:
+        - type: code_rendered
+          flexibility: ai_judgment
+
+    - id: CHAT-MARKDOWN-002
+      name: List Rendering
+      description: Markdown lists render as HTML lists
+      preconditions:
+        - Assistant message with list content
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: verify_elements
+          elements:
+            - selector: 'ul or ol element in message'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'li elements'
+              expected: multiple
+              flexibility: ai_judgment
+      success_criteria:
+        - type: lists_rendered
+          flexibility: ai_judgment
+
+    - id: CHAT-MARKDOWN-003
+      name: Link Rendering
+      description: Links render as clickable anchors
+      preconditions:
+        - Assistant message with links
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: verify_elements
+          elements:
+            - selector: 'anchor element in message'
+              expected: visible
+              flexibility: ai_judgment
+              attributes:
+                target: _blank
+                rel: contains noopener
+      success_criteria:
+        - type: links_rendered_safely
+          flexibility: ai_judgment
+
+    - id: CHAT-MARKDOWN-004
+      name: XSS Prevention in Markdown
+      description: Verify sanitization of potentially dangerous content
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Please respond with: <script>alert('xss')</script>"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: response_received
+          timeout: 60000
+        - action: verify
+          condition: no_script_tags_executed
+          flexibility: ai_judgment
+          description: Script tags should be escaped, not executed
+      success_criteria:
+        - type: xss_prevented
+          flexibility: exact
+
+    # ---------------------------------------------------------------------------
+    # TIMESTAMP FORMATTING TESTS
+    # ---------------------------------------------------------------------------
+    - id: CHAT-TIME-001
+      name: Timestamp Display Formats
+      description: |
+        Per code: formatTimestamp shows "Just now", "X minutes ago", "X hours ago", or time
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Test message"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: message_displayed
+          timeout: 5000
+        - action: verify_elements
+          elements:
+            - selector: 'message timestamp showing "Just now"'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: timestamp_format_correct
+          flexibility: ai_judgment
+
+    - id: CHAT-TIME-002
+      name: Conversation Timestamp in Sidebar
+      description: Conversation items show relative timestamps
+      preconditions:
+        - Multiple conversations of various ages
+      steps:
+        - action: navigate
+          url: /chat
+        - action: verify_elements
+          elements:
+            - selector: 'timestamp showing relative time (mins, hours, days)'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: sidebar_timestamps_correct
+          flexibility: ai_judgment
+
+    # ---------------------------------------------------------------------------
+    # ERROR STATE TESTS
+    # ---------------------------------------------------------------------------
+    - id: CHAT-ERR-001
+      name: Conversation Load Error
+      description: |
+        Per code: "error signal from conversationService displayed in UI"
+      steps:
+        - action: simulate_api_error
+          endpoint: /api/conversations/:id
+          status: 500
+        - action: navigate
+          url: /chat/:invalidId
+        - action: verify_elements
+          elements:
+            - selector: 'error message or alert'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: error_displayed
+          flexibility: ai_judgment
+
+    - id: CHAT-ERR-002
+      name: Clear Conversation Error
+      description: |
+        Per code: "clearConversationError method clears error signal"
+      preconditions:
+        - Error message displayed
+      steps:
+        - action: click
+          element: 'dismiss error button'
+        - action: verify
+          condition: error_cleared
+          flexibility: ai_judgment
+      success_criteria:
+        - type: error_clearable
+          flexibility: ai_judgment
+
+    - id: CHAT-ERR-003
+      name: Message Send Error
+      description: |
+        Per code: "Failed to send message error handling"
+      steps:
+        - action: simulate_api_error
+          endpoint: /api/chat/message
+          status: 500
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Test message"
+        - action: click
+          element: 'button "Send message"'
+        - action: verify
+          condition: error_displayed
+          flexibility: ai_judgment
+      success_criteria:
+        - type: send_error_handled
+          flexibility: ai_judgment
+
+    - id: CHAT-ERR-004
+      name: Delete Conversation Error
+      description: Error during deletion should be handled gracefully
+      steps:
+        - action: simulate_api_error
+          endpoint: /api/conversations/:id
+          method: DELETE
+          status: 500
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'delete button'
+        - action: handle_confirm_dialog
+          accept: true
+        - action: verify
+          condition: error_logged_or_displayed
+          flexibility: ai_judgment
+          description: Conversation should not disappear on error
+      success_criteria:
+        - type: delete_error_handled
+          flexibility: ai_judgment
+
+    - id: CHAT-ERR-005
+      name: Create Conversation Error
+      description: Error during creation handled
+      steps:
+        - action: simulate_api_error
+          endpoint: /api/conversations
+          method: POST
+          status: 500
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: wait_for
+          timeout: 5000
+        - action: verify
+          condition: error_handled_gracefully
+          flexibility: ai_judgment
+      success_criteria:
+        - type: create_error_handled
+          flexibility: ai_judgment
+
+    # ---------------------------------------------------------------------------
+    # MOBILE SIDEBAR TESTS
+    # ---------------------------------------------------------------------------
+    - id: CHAT-MOBILE-001
+      name: Sidebar Hide on Conversation Select (Mobile)
+      description: |
+        Per code: "Hide sidebar on mobile when conversation selected (width <= 768)"
+      steps:
+        - action: resize_viewport
+          width: 375
+          height: 667
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'mobile menu toggle'
+        - action: verify
+          condition: sidebar_visible
+          flexibility: ai_judgment
+        - action: click
+          element: 'conversation in list'
+        - action: verify
+          condition: sidebar_hidden
+          flexibility: ai_judgment
+          description: Sidebar should auto-hide on mobile after selection
+      success_criteria:
+        - type: auto_hide_on_mobile
+          flexibility: ai_judgment
+
+    - id: CHAT-MOBILE-002
+      name: Sidebar Toggle State Persistence
+      description: |
+        Per code: "isSidebarVisible signal controls visibility"
+      steps:
+        - action: resize_viewport
+          width: 375
+          height: 667
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'mobile menu toggle'
+        - action: verify
+          condition: sidebar_visible
+        - action: click
+          element: 'mobile menu toggle'
+        - action: verify
+          condition: sidebar_hidden
+      success_criteria:
+        - type: toggle_works_correctly
+          flexibility: ai_judgment
+
+    - id: CHAT-MOBILE-003
+      name: Research Panel on Mobile During Research
+      description: Research panel displays appropriately on mobile viewport
+      steps:
+        - action: resize_viewport
+          width: 375
+          height: 667
+        - action: navigate
+          url: /chat
+        - action: click
+          element: research_toggle
+        - action: type
+          element: 'textbox "Message input"'
+          text: "What is the latest news?"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: research_panel_opens
+          timeout: 10000
+        - action: verify
+          condition: panel_usable_on_mobile
+          flexibility: ai_judgment
+          description: Panel should not break layout on small screens
+      success_criteria:
+        - type: mobile_panel_usable
+          flexibility: ai_judgment
+
+    # ---------------------------------------------------------------------------
+    # EDGE CASES & BOUNDARY TESTS
+    # ---------------------------------------------------------------------------
+    - id: CHAT-EDGE-001
+      name: Empty Conversation List
+      description: Handle state when user has no conversations
+      steps:
+        - action: clear_all_conversations
+        - action: navigate
+          url: /chat
+        - action: verify_elements
+          elements:
+            - selector: 'empty state message'
+              expected: visible
+              flexibility: ai_judgment
+            - selector: 'create new chat prompt'
+              expected: visible
+              flexibility: ai_judgment
+      success_criteria:
+        - type: empty_list_handled
+          flexibility: ai_judgment
+
+    - id: CHAT-EDGE-002
+      name: Rapid Message Sending Prevention
+      description: Prevent sending while previous message is processing
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "First message"
+        - action: click
+          element: 'button "Send message"'
+        - action: type_immediately
+          element: 'textbox "Message input"'
+          text: "Second message"
+        - action: verify
+          condition: second_send_blocked_or_queued
+          flexibility: ai_judgment
+      success_criteria:
+        - type: rapid_send_handled
+          flexibility: ai_judgment
+
+    - id: CHAT-EDGE-003
+      name: Browser Back Button
+      description: Browser back navigates conversation history correctly
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'conversation 1'
+        - action: click
+          element: 'conversation 2'
+        - action: browser_back
+        - action: verify_url
+          expected: /chat/:conversation1Id
+          flexibility: contains
+      success_criteria:
+        - type: browser_history_works
+          flexibility: ai_judgment
+
+    - id: CHAT-EDGE-004
+      name: Page Refresh During Streaming
+      description: Handle refresh during active streaming
+      steps:
+        - action: navigate
+          url: /chat
+        - action: click
+          element: 'button "Create new chat"'
+        - action: type
+          element: 'textbox "Message input"'
+          text: "Tell me a long story"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: streaming_starts
+          timeout: 10000
+        - action: refresh_page
+        - action: verify
+          condition: page_recovers_gracefully
+          flexibility: ai_judgment
+          description: Should not show error, may have partial content
+      success_criteria:
+        - type: refresh_handled
+          flexibility: ai_judgment
+
+    - id: CHAT-EDGE-005
+      name: Title Truncation for Long Messages
+      description: |
+        Per code: "extractTitleFromMessage takes first 50 chars, adds ..."
+      steps:
+        - action: navigate
+          url: /chat
+        - action: type
+          element: 'textbox "Message input"'
+          text: "This is a very long first message that should be truncated when used as the conversation title"
+        - action: click
+          element: 'button "Send message"'
+        - action: wait_for
+          condition: conversation_created
+          timeout: 5000
+        - action: verify
+          condition: title_is_truncated_at_50_chars
+          flexibility: ai_judgment
+          description: Title should be ~50 chars with "..." suffix
+      success_criteria:
+        - type: title_truncated
+          flexibility: ai_judgment
+
+    - id: CHAT-EDGE-006
+      name: Invalid Conversation ID in URL
+      description: Handle navigation to non-existent conversation
+      steps:
+        - action: navigate
+          url: /chat/invalid-uuid-that-does-not-exist
+        - action: verify
+          condition: error_or_redirect_handled
+          flexibility: ai_judgment
+          description: Should show error or redirect to /chat
+      success_criteria:
+        - type: invalid_id_handled
+          flexibility: ai_judgment
+
+    - id: CHAT-EDGE-007
+      name: Concurrent Browser Tabs
+      description: Opening same conversation in multiple tabs
+      steps:
+        - action: navigate
+          url: /chat/:conversationId
+        - action: open_new_tab
+          url: /chat/:conversationId
+        - action: type_in_tab_1
+          element: 'textbox "Message input"'
+          text: "Message from tab 1"
+        - action: click_in_tab_1
+          element: 'button "Send message"'
+        - action: switch_to_tab_2
+        - action: wait_for
+          timeout: 5000
+        - action: verify
+          condition: message_visible_in_tab_2
+          flexibility: ai_judgment
+          description: Tabs should sync or handle gracefully
+      success_criteria:
+        - type: multi_tab_handled
+          flexibility: ai_judgment
+
+# =============================================================================
+# TEST EXECUTION CONFIGURATION
+# =============================================================================
+execution:
+  parallel: false  # Run tests sequentially for reliability
+  retry_failed: 2  # Retry failed tests up to 2 times
+  screenshot_on_failure: true
+  video_recording: false
+  timeout_defaults:
+    navigation: 10000
+    action: 5000
+    assertion: 3000
+    streaming: 120000
+
+  environments:
+    local:
+      base_url: http://localhost:4200
+      api_url: http://localhost:3000
+
+  browsers:
+    - chromium
+    # - firefox  # Optional
+    # - webkit   # Optional
+
+  reports:
+    output_dir: tests/e2e/reports
+    formats:
+      - html
+      - json
+    evidence_dir: tests/e2e/evidence

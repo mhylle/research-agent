@@ -1,0 +1,134 @@
+{
+  "testRun": {
+    "timestamp": "2025-12-10T12:00:00Z",
+    "duration": "~15 minutes",
+    "environment": {
+      "frontend": "http://localhost:4200",
+      "backend": "http://localhost:3000",
+      "browser": "Chromium (Playwright MCP)"
+    }
+  },
+  "summary": {
+    "total": 34,
+    "passed": 32,
+    "failed": 2,
+    "skipped": 0,
+    "passRate": "94.1%"
+  },
+  "testSuites": [
+    {
+      "name": "Navigation Tests",
+      "tests": [
+        {"id": "NAV-001", "name": "Application Loads Successfully", "status": "passed", "evidence": "tests/e2e/evidence/NAV-001-initial-state.png"},
+        {"id": "NAV-002", "name": "Navigate to Chat Page", "status": "passed", "evidence": "tests/e2e/evidence/NAV-002-chat-page.png"},
+        {"id": "NAV-003", "name": "Navigate to Logs Page", "status": "passed"},
+        {"id": "NAV-004", "name": "Navigate to Evaluations Dashboard", "status": "passed"},
+        {"id": "NAV-005", "name": "Navigate Back to Research Page", "status": "passed"}
+      ],
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "name": "Chat Layout Tests",
+      "tests": [
+        {"id": "CHAT-LAYOUT-001", "name": "Chat Interface Structure", "status": "passed"},
+        {"id": "CHAT-LAYOUT-002", "name": "Conversation Sidebar", "status": "passed"},
+        {"id": "CHAT-LAYOUT-003", "name": "Message Thread Area", "status": "passed"},
+        {"id": "CHAT-LAYOUT-004", "name": "Chat Input Area", "status": "passed", "evidence": "tests/e2e/evidence/CHAT-LAYOUT-004-input-structure.png"}
+      ],
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "name": "Chat Input Tests",
+      "tests": [
+        {"id": "INPUT-001", "name": "Default Input State", "status": "passed"},
+        {"id": "INPUT-002", "name": "Typing in Message Input", "status": "passed"},
+        {"id": "INPUT-003", "name": "Research Toggle Default State", "status": "passed"},
+        {"id": "INPUT-004", "name": "Research Toggle Activation", "status": "passed", "evidence": "tests/e2e/evidence/INPUT-004-research-toggle-reset.png"},
+        {"id": "INPUT-005", "name": "Keyboard Shortcut - Send (Ctrl+Enter)", "status": "passed"},
+        {"id": "INPUT-006", "name": "Keyboard Shortcut - Newline (Shift+Enter)", "status": "passed", "notes": "Verified via JavaScript evaluation: Line 1\\nLine 2"},
+        {"id": "INPUT-007", "name": "Textarea Auto-Resize", "status": "passed", "notes": "Height changed from 51px to 128px with 5 lines"}
+      ],
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "name": "Conversation Management Tests",
+      "tests": [
+        {"id": "CONV-001", "name": "Create New Conversation", "status": "passed"},
+        {"id": "CONV-002", "name": "Conversation Appears in Sidebar", "status": "passed"},
+        {"id": "CONV-003", "name": "Search Conversations", "status": "passed"},
+        {"id": "CONV-004", "name": "Select Conversation", "status": "passed"},
+        {"id": "CONV-005", "name": "Delete Conversation", "status": "passed", "notes": "Confirmation dialog appeared and delete succeeded"}
+      ],
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "name": "Chat Thread Tests",
+      "tests": [
+        {"id": "THREAD-001", "name": "Send Message Displays in Thread", "status": "passed", "evidence": "tests/e2e/evidence/THREAD-001-message-display.png"},
+        {"id": "THREAD-002", "name": "Message Structure", "status": "passed", "notes": "User/Assistant roles with timestamps verified"},
+        {"id": "THREAD-003", "name": "Streaming Response Display", "status": "passed", "notes": "Tokens streamed via SSE events"},
+        {"id": "THREAD-004", "name": "Multi-turn Conversation", "status": "passed"},
+        {"id": "THREAD-005", "name": "Message Timestamps", "status": "passed"}
+      ],
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "name": "Research Integration Tests",
+      "tests": [
+        {"id": "RESEARCH-001", "name": "Send Message with Research Enabled", "status": "passed", "evidence": "tests/e2e/evidence/RESEARCH-001-response.png", "notes": "Research completed with SSE research_complete event"},
+        {"id": "RESEARCH-002", "name": "Research Progress Indicator", "status": "passed", "evidence": "tests/e2e/evidence/RESEARCH-002-progress-indicator.png", "notes": "Connected status, Assistant is typing, Sending... button states verified"},
+        {"id": "RESEARCH-003", "name": "Send Message without Research", "status": "passed", "notes": "Simple query answered without web search"},
+        {"id": "RESEARCH-004", "name": "Research Toggle Auto-Reset", "status": "passed", "notes": "Toggle resets to OFF after sending message"},
+        {"id": "RESEARCH-005", "name": "Research Panel Citations", "status": "failed", "notes": "FAILED: Expected dedicated research panel with citations not found in UI. Feature not implemented."}
+      ],
+      "passed": 4,
+      "failed": 1,
+      "skipped": 0
+    },
+    {
+      "name": "Research Suggestion Tests",
+      "tests": [
+        {"id": "SUGGEST-001", "name": "Research Suggestion Button Display", "status": "passed", "evidence": "tests/e2e/evidence/SUGGEST-001-research-button.png", "notes": "Research this message button with 'Get current info' label visible"},
+        {"id": "SUGGEST-002", "name": "Click Research Suggestion", "status": "passed", "notes": "Clicking button triggered new research query with SSE stream"},
+        {"id": "SUGGEST-003", "name": "Research Suggestion Visibility Logic", "status": "failed", "notes": "FAILED: Test not executed. Visibility logic (when button should/shouldn't appear) was not verified."}
+      ],
+      "passed": 2,
+      "failed": 1,
+      "skipped": 0
+    }
+  ],
+  "issues": [
+    {
+      "severity": "medium",
+      "description": "Text duplication in streaming responses",
+      "details": "SSE token events cause partial text duplication in rendered markdown. Visible in research responses where text like 'Copenhagen' appears multiple times with fragments.",
+      "affectedTests": ["RESEARCH-001", "RESEARCH-002"],
+      "recommendation": "Review SSE event handling in ChatStream service to prevent duplicate token rendering"
+    },
+    {
+      "severity": "low",
+      "description": "SSE heartbeat timeouts during long research operations",
+      "details": "Research queries taking >15 seconds trigger heartbeat timeouts. Auto-reconnect works but shows error in console.",
+      "affectedTests": ["RESEARCH-001", "RESEARCH-002", "SUGGEST-002"],
+      "recommendation": "Consider increasing heartbeat timeout or implementing keep-alive mechanism during research"
+    }
+  ],
+  "evidence": {
+    "screenshots": [
+      "tests/e2e/evidence/NAV-001-initial-state.png",
+      "tests/e2e/evidence/NAV-002-chat-page.png",
+      "tests/e2e/evidence/CHAT-LAYOUT-004-input-structure.png",
+      "tests/e2e/evidence/INPUT-004-research-toggle-reset.png",
+      "tests/e2e/evidence/THREAD-001-message-display.png",
+      "tests/e2e/evidence/RESEARCH-001-response.png",
+      "tests/e2e/evidence/RESEARCH-002-progress-indicator.png",
+      "tests/e2e/evidence/SUGGEST-001-research-button.png",
+      "tests/e2e/evidence/final-state.png"
+    ]
+  }
+}

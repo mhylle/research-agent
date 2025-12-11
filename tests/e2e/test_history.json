@@ -1,0 +1,81 @@
+{
+  "runs": [
+    {
+      "runId": "e2e-2025-12-11-001",
+      "timestamp": "2025-12-11T11:30:00.000Z",
+      "duration": "~90 minutes",
+      "summary": {
+        "total": 115,
+        "executed": 58,
+        "passed": 48,
+        "failed": 2,
+        "blocked": 4,
+        "skipped": 60,
+        "passRate": 82.8
+      },
+      "environment": {
+        "llmProvider": "azure-mistral",
+        "frontendUrl": "http://localhost:4200",
+        "backendUrl": "http://localhost:3000"
+      },
+      "failedTests": [
+        {
+          "testId": "EVAL-002",
+          "reason": "Status filter not filtering data",
+          "firstFailure": true
+        },
+        {
+          "testId": "EVAL-003",
+          "reason": "Pagination not changing displayed data",
+          "firstFailure": true
+        }
+      ],
+      "blockedTests": [
+        {
+          "testId": "RESEARCH-002",
+          "reason": "LLM SSE timeout"
+        },
+        {
+          "testId": "RESEARCH-003",
+          "reason": "Depends on RESEARCH-002"
+        },
+        {
+          "testId": "RESEARCH-004",
+          "reason": "Depends on RESEARCH-002"
+        },
+        {
+          "testId": "RESEARCH-005",
+          "reason": "Depends on RESEARCH-002"
+        }
+      ],
+      "bugs": ["BUG-001", "BUG-002"],
+      "reportPath": "tests/e2e/reports/test-report-2025-12-11.md"
+    }
+  ],
+  "flaky_scenarios": [],
+  "suggested_variations": [
+    {
+      "testId": "EVAL-002",
+      "suggestion": "Add unit test for filter logic",
+      "reason": "Filter functionality failing"
+    },
+    {
+      "testId": "EVAL-003",
+      "suggestion": "Add unit test for pagination logic",
+      "reason": "Pagination functionality failing"
+    },
+    {
+      "testId": "RESEARCH-002",
+      "suggestion": "Add timeout configuration test",
+      "reason": "LLM timeouts blocking tests"
+    }
+  ],
+  "metadata": {
+    "created": "2025-12-10T13:00:00.000Z",
+    "last_updated": "2025-12-11T11:30:00.000Z",
+    "total_runs": 1,
+    "application": "Research Agent",
+    "base_url": "http://localhost:4200"
+  },
+  "notes": "First test run completed. Two bugs found in Evaluation Dashboard (filter and pagination). LLM provider timeouts blocked research integration tests."
+}

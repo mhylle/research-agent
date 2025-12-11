@@ -1,0 +1,92 @@
+================================================================================
+E2E TEST EXECUTION PROMPT FOR NEW CLAUDE CODE SESSION
+================================================================================
+
+Copy the text below this line and paste into a new Claude Code session:
+
+--------------------------------------------------------------------------------
+
+Please run the comprehensive E2E test suite for my Research Agent application.
+
+SETUP STEPS (run these first):
+
+1. Start PostgreSQL:
+   docker-compose up -d postgres
+
+2. Run database migrations:
+   npm run migration:run
+
+3. Start both servers:
+   npm run dev
+
+4. Wait 30 seconds for servers to fully start
+
+THEN RUN TESTS:
+
+Use the e2e-testing skill in "Run" mode to execute the test suite located at:
+tests/e2e/test_regime.yml
+
+IMPORTANT DETAILS:
+
+Application Info:
+- Base URL: http://localhost:4200
+- Backend API: http://localhost:3000
+- Working Directory: /home/mnh/projects/research-agent
+
+Test Suite:
+- 115+ test scenarios
+- 14 test categories
+- Located at: tests/e2e/test_regime.yml (2,782 lines)
+- Test history: tests/e2e/test_history.json
+- Evidence output: tests/e2e/evidence/
+- Reports output: tests/e2e/reports/
+
+Execution Requirements:
+- Run tests SEQUENTIALLY (not parallel)
+- Capture screenshots on every step
+- Capture network logs, console logs, DOM snapshots
+- Generate both human-readable (markdown) and machine-readable (JSON) reports
+- Update test_history.json after completion
+- Follow Test Status Integrity rules (only SKIP for valid environmental reasons, otherwise FAIL)
+
+Test Categories:
+1. Navigation (5 tests)
+2. Chat Layout (4 tests)
+3. Conversation Management (5 tests)
+4. Chat Input (7 tests)
+5. Chat Thread (5 tests)
+6. Research Integration (5 tests)
+7. Research Suggestions (3 tests)
+8. Research Page (3 tests)
+9. Logs Page (4 tests)
+10. Evaluation Dashboard (4 tests)
+11. Error Handling (3 tests)
+12. Accessibility (3 tests)
+13. Mobile (3 tests)
+14. Comprehensive Chat (57 tests - message flow, streaming, citations, markdown, errors, edge cases)
+
+Expected Duration: 90-120 minutes for full suite
+
+AFTER TESTS COMPLETE:
+
+Provide me with:
+1. Summary: Total passed/failed/blocked/skipped
+2. Critical failures with reproduction steps
+3. Flaky scenarios identified
+4. Regressions (if any previous runs exist)
+5. Path to generated reports
+
+--------------------------------------------------------------------------------
+
+ALTERNATIVE PROMPTS:
+
+For QUICK SMOKE TEST (10-15 min):
+"Run e2e-testing skill on tests/e2e/test_regime.yml, only execute: health-check, navigation-header, CHAT-MSG-001, CHAT-STREAM-001, RESEARCH-001"
+
+For CHAT-ONLY TESTS (45-60 min):
+"Run e2e-testing skill on tests/e2e/test_regime.yml, only execute tests from these categories: chat_layout, conversation_management, chat_input, chat_thread, chat_comprehensive"
+
+For RESEARCH-ONLY TESTS (30-40 min):
+"Run e2e-testing skill on tests/e2e/test_regime.yml, only execute tests from: research_integration, research_suggestion"
+
+================================================================================

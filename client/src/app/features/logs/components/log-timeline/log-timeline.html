@@ -19,6 +19,9 @@
   <div class="log-timeline__result" *ngIf="result">
     <div class="log-timeline__result-header">
       <h3>Research Answer</h3>
+      <button class="log-timeline__download-btn" (click)="downloadPdf()" title="Download as PDF">
+        Download PDF
+      </button>
     </div>
     <div class="log-timeline__result-content">
       <div class="log-timeline__answer markdown-content" [innerHTML]="parsedAnswerHtml"></div>

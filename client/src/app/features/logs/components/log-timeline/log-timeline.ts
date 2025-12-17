@@ -32,6 +32,10 @@ export class LogTimelineComponent {
     });
   }
 
+  downloadPdf(): void {
+    window.open(`/api/pdf/research/${this.session.logId}`, '_blank');
+  }
+
   formatDuration(ms: number): string {
     const seconds = Math.round(ms / 1000);
     if (seconds < 60) return `${seconds}s`;

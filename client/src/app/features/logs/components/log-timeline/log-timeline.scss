@@ -87,6 +87,9 @@
     padding: $spacing-md $spacing-lg;
     background: $moss-bg;
     border-radius: $border-radius-lg $border-radius-lg 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
     h3 {
       margin: 0;
@@ -94,6 +97,20 @@
       font-size: $font-size-lg;
       font-weight: $font-semibold;
       color: $moss;
+    }
+  }
+
+  &__download-btn {
+    @include button-ghost;
+    padding: $spacing-xs $spacing-md;
+    font-size: $font-size-sm;
+    color: $moss;
+    border: 1px solid $moss;
+    border-radius: $border-radius-sm;
+
+    &:hover {
+      background: $moss;
+      color: $oatmeal;
     }
   }
 

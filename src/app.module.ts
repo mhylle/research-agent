@@ -14,6 +14,7 @@ import { LogsModule } from './logs/logs.module';
 import { OrchestrationModule } from './orchestration/orchestration.module';
 import { EvaluationModule } from './evaluation/evaluation.module';
 import { ChatModule } from './chat/chat.module';
+import { PdfModule } from './pdf/pdf.module';
 import { AppDataSource } from './data-source';
 
 @Module({
@@ -47,6 +48,7 @@ import { AppDataSource } from './data-source';
     OrchestrationModule,
     EvaluationModule,
     ChatModule,
+    PdfModule,
   ],
   controllers: [AppController],
   providers: [AppService],

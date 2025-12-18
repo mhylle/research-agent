@@ -2,6 +2,11 @@ import { Component, Output, EventEmitter, Input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
+export interface QuerySubmitEvent {
+  query: string;
+  provider: 'azure' | 'local';
+}
+
 @Component({
   selector: 'app-search-input',
   standalone: true,
@@ -11,14 +16,18 @@ import { CommonModule } from '@angular/common';
 })
 export class SearchInputComponent {
   @Input() disabled = false;
-  @Output() querySubmitted = new EventEmitter<string>();
+  @Output() querySubmitted = new EventEmitter<QuerySubmitEvent>();
 
   query = '';
+  selectedProvider: 'azure' | 'local' = 'azure';
 
   onSubmit(): void {
     const trimmedQuery = this.query.trim();
     if (trimmedQuery.length >= 3) {
-      this.querySubmitted.emit(trimmedQuery);
+      this.querySubmitted.emit({
+        query: trimmedQuery,
+        provider: this.selectedProvider
+      });
     }
   }
 

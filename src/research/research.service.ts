@@ -18,19 +18,20 @@ export class ResearchService {
   async executeResearch(
     query: string,
     logId?: string,
+    provider?: string,
   ): Promise<ResearchResult> {
     // Persistence is now handled by Orchestrator before session_completed event
     // to fix race condition where client fetches before save completes
-    const result = await this.orchestrator.executeResearch(query, logId);
+    const result = await this.orchestrator.executeResearch(query, logId, provider);
     return result;
   }
 
   /**
    * Start research in background and return logId immediately for SSE connection
    */
-  startResearchInBackground(query: string, logId: string): void {
+  startResearchInBackground(query: string, logId: string, provider?: string): void {
     // Fire and forget - don't await
-    this.executeResearch(query, logId).catch((error) => {
+    this.executeResearch(query, logId, provider).catch((error) => {
       this.logger.error(
         `Background research failed for logId ${logId}: ${error}`,
       );

@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsNumber,
   IsEnum,
+  IsIn,
   Min,
   Max,
 } from 'class-validator';
@@ -25,4 +26,8 @@ export class ResearchQueryDto {
   @IsOptional()
   @IsEnum(SearchDepth)
   searchDepth?: SearchDepth = SearchDepth.COMPREHENSIVE;
+
+  @IsOptional()
+  @IsIn(['azure', 'local'])
+  provider?: 'azure' | 'local';
 }

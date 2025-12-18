@@ -10,6 +10,18 @@
       (keydown.meta.enter)="onSubmit()"
     ></textarea>
 
+    <div class="search-input__provider">
+      <label class="search-input__provider-label">Provider:</label>
+      <select
+        [(ngModel)]="selectedProvider"
+        [disabled]="disabled"
+        class="search-input__provider-select"
+      >
+        <option value="azure">Azure (Mistral)</option>
+        <option value="local">Local (llama3.3)</option>
+      </select>
+    </div>
+
     <div class="search-input__footer">
       <span class="search-input__counter" [class.search-input__counter--warning]="characterCount > 500">
         {{ characterCount }} characters

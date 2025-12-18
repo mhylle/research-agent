@@ -47,14 +47,19 @@ export class LLMService {
    * @param messages - The conversation messages
    * @param tools - Optional tool definitions for function calling
    * @param model - Optional model override (provider-specific)
+   * @param providerName - Optional provider override (e.g., 'azure', 'local')
    * @returns Chat completion response with normalized token usage
    */
   async chat(
     messages: ChatMessage[],
     tools?: ToolDefinition[],
     model?: string,
+    providerName?: string,
   ): Promise<ChatResponse> {
     const options: ChatOptions | undefined = model ? { model } : undefined;
+    const selectedProvider = providerName
+      ? this.factory.getProviderByName(providerName)
+      : this.provider;
 
     // Log queue status when calls are pending
     const pending = this.concurrencyLimit.pendingCount;
@@ -68,7 +73,7 @@ export class LLMService {
 
     // Queue call through concurrency limiter
     return this.concurrencyLimit(() =>
-      this.provider.chat(messages, tools, options),
+      selectedProvider.chat(messages, tools, options),
     );
   }
 
@@ -81,18 +86,23 @@ export class LLMService {
    * @param messages - The conversation messages
    * @param tools - Optional tool definitions for function calling
    * @param model - Optional model override (provider-specific)
+   * @param providerName - Optional provider override (e.g., 'azure', 'local')
    * @returns Async iterable of chat stream chunks
    */
   async *chatStream(
     messages: ChatMessage[],
     tools?: ToolDefinition[],
     model?: string,
+    providerName?: string,
   ): AsyncIterable<ChatStreamChunk> {
     const options: ChatOptions | undefined = model ? { model } : undefined;
+    const selectedProvider = providerName
+      ? this.factory.getProviderByName(providerName)
+      : this.provider;
 
     // Streams bypass concurrency control as they maintain long-lived connections
     // and have different resource management requirements
-    yield* this.provider.chatStream(messages, tools, options);
+    yield* selectedProvider.chatStream(messages, tools, options);
   }
 
   /**

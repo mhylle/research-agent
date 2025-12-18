@@ -93,6 +93,7 @@ export class Orchestrator {
   async executeResearch(
     query: string,
     logId?: string,
+    provider?: string,
   ): Promise<ResearchResult> {
     logId = logId || randomUUID();
     const startTime = Date.now();
@@ -124,7 +125,7 @@ export class Orchestrator {
         console.log(
           '[Orchestrator] Simple query detected, executing normal flow',
         );
-        result = await this.executeSimpleQuery(query, logId, startTime);
+        result = await this.executeSimpleQuery(query, logId, startTime, provider);
       } else {
         // Complex query - execute sub-queries according to plan
         console.log(
@@ -134,6 +135,7 @@ export class Orchestrator {
           decomposition,
           logId,
           startTime,
+          provider,
         );
       }
 
@@ -154,6 +156,7 @@ export class Orchestrator {
     query: string,
     logId: string,
     startTime: number,
+    provider?: string,
   ): Promise<ResearchResult> {
     const phaseMetrics: Array<{ phase: string; executionTime: number }> = [];
 
@@ -316,6 +319,7 @@ export class Orchestrator {
     decomposition: DecompositionResult,
     logId: string,
     startTime: number,
+    provider?: string,
   ): Promise<ResearchResult> {
     // Generate a proper UUID for planId (required by database schema)
     const planId = randomUUID();
@@ -380,6 +384,7 @@ export class Orchestrator {
       decomposition.subQueries,
       subQueryResults,
       logId,
+      provider,
     );
 
     phaseMetrics.push({
@@ -541,6 +546,7 @@ export class Orchestrator {
     subQueries: SubQuery[],
     subQueryResults: Map<string, SubQueryResult>,
     logId: string,
+    provider?: string,
   ): Promise<string> {
     await this.eventCoordinator.emit(logId, 'final_synthesis_started', {
       subQueryCount: subQueries.length,
@@ -574,17 +580,22 @@ Create a comprehensive, well-structured answer that:
 Write a thorough, professional response that fully answers the original question.`;
 
     try {
-      const response = await this.llmService.chat([
-        {
-          role: 'system',
-          content:
-            'You are an expert research synthesizer. Create comprehensive, well-structured answers that integrate multiple research findings.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ]);
+      const response = await this.llmService.chat(
+        [
+          {
+            role: 'system',
+            content:
+              'You are an expert research synthesizer. Create comprehensive, well-structured answers that integrate multiple research findings.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        undefined, // tools
+        undefined, // model
+        provider,
+      );
 
       const finalAnswer = response.message.content.trim();
 

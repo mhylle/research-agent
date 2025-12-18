@@ -2,7 +2,7 @@ import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ResearchService } from '../../core/services/research.service';
 import { AgentActivityService } from '../../core/services/agent-activity.service';
-import { SearchInputComponent } from './components/search-input/search-input';
+import { SearchInputComponent, QuerySubmitEvent } from './components/search-input/search-input';
 import { LoadingIndicatorComponent } from './components/loading-indicator/loading-indicator';
 import { ResultCardComponent } from './components/result-card/result-card';
 import { ErrorMessageComponent } from './components/error-message/error-message';
@@ -55,13 +55,13 @@ export class ResearchComponent {
     });
   }
 
-  async onQuerySubmitted(query: string): Promise<void> {
+  async onQuerySubmitted(event: QuerySubmitEvent): Promise<void> {
     // Clear previous logId before new research
     this.currentLogId.set(null);
 
     try {
       // Submit query - returns logId immediately for SSE connection
-      const logId = await this.researchService.submitQuery(query);
+      const logId = await this.researchService.submitQuery(event.query, event.provider);
 
       // Set logId immediately so AgentActivityView can connect to SSE
       if (logId) {
@@ -76,7 +76,8 @@ export class ResearchComponent {
   onRetry(): void {
     const lastQuery = this.researchService.currentQuery();
     if (lastQuery) {
-      this.onQuerySubmitted(lastQuery);
+      // Retry with default provider (azure)
+      this.onQuerySubmitted({ query: lastQuery, provider: 'azure' });
     }
   }
 

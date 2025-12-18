@@ -23,7 +23,7 @@ export class ResearchController {
     const logId = randomUUID();
 
     // Start research in background (don't block)
-    this.researchService.startResearchInBackground(dto.query, logId);
+    this.researchService.startResearchInBackground(dto.query, logId, dto.provider);
 
     // Return logId immediately for SSE connection
     return { logId };

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { OllamaService } from './ollama.service';
 import { OllamaProvider } from './providers/ollama.provider';
 import { AzureMistralProvider } from './providers/azure-mistral.provider';
+import { LocalLLMProvider } from './providers/local.provider';
 import { LLMProviderFactory } from './llm-provider.factory';
 import { LLMService } from './llm.service';
 
@@ -12,6 +13,7 @@ import { LLMService } from './llm.service';
     // New provider implementations
     OllamaProvider,
     AzureMistralProvider,
+    LocalLLMProvider,
     // Provider factory for runtime selection
     LLMProviderFactory,
     // Provider-agnostic facade

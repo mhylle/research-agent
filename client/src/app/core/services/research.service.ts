@@ -29,14 +29,14 @@ export class ResearchService {
    * Submit a query and get logId immediately for SSE connection.
    * Returns the logId so the caller can connect to SSE right away.
    */
-  async submitQuery(query: string): Promise<string | null> {
+  async submitQuery(query: string, provider?: 'azure' | 'local'): Promise<string | null> {
     this.isLoading.set(true);
     this.error.set(null);
     this.currentQuery.set(query);
     this.currentResult.set(null); // Clear previous result
 
     try {
-      const requestBody: ResearchQuery = { query };
+      const requestBody: ResearchQuery = { query, provider };
       // API now returns { logId } immediately (research runs in background)
       const response = await firstValueFrom(this.http.post<{ logId: string }>(
         `${environment.apiUrl}/research/query`,

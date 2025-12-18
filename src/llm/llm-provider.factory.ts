@@ -3,11 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { ILLMProvider } from './interfaces/llm-provider.interface';
 import { OllamaProvider } from './providers/ollama.provider';
 import { AzureMistralProvider } from './providers/azure-mistral.provider';
+import { LocalLLMProvider } from './providers/local.provider';
 
 /**
  * Supported LLM provider types.
  */
-export type LLMProviderType = 'ollama' | 'azure-mistral';
+export type LLMProviderType = 'ollama' | 'azure-mistral' | 'local';
 
 /**
  * Factory for creating LLM provider instances based on configuration.
@@ -19,6 +20,7 @@ export class LLMProviderFactory {
     private configService: ConfigService,
     private ollamaProvider: OllamaProvider,
     private azureMistralProvider: AzureMistralProvider,
+    private localProvider: LocalLLMProvider,
   ) {}
 
   /**
@@ -38,7 +40,10 @@ export class LLMProviderFactory {
   getProviderByName(providerName?: string): ILLMProvider {
     switch (providerName?.toLowerCase()) {
       case 'azure-mistral':
+      case 'azure':
         return this.azureMistralProvider;
+      case 'local':
+        return this.localProvider;
       case 'ollama':
       default:
         return this.ollamaProvider;

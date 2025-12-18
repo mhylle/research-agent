@@ -30,6 +30,11 @@ export class ChatOrchestratorService {
     conversationId: string,
     assistantMessageId: string,
   ): Promise<string> {
+    // Wait briefly for SSE connection to be established
+    // The frontend opens the SSE connection after receiving the HTTP response,
+    // so we need to give it time to connect before emitting events
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // Emit start event
     this.emitEvent(assistantMessageId, {
       type: 'start',
@@ -57,18 +62,27 @@ export class ChatOrchestratorService {
       let researchSources: { title: string; url: string }[] = [];
 
       if (lastUserMessage?.messageOptions?.researchEnabled) {
-        // Emit research start event
-        this.emitEvent(assistantMessageId, {
-          type: 'research_start',
-          messageId: assistantMessageId,
-        });
-
         try {
-          // Execute research
-          const researchResult =
-            await this.chatResearchService.executeResearchWithContext(
+          // Initialize research to get logId BEFORE execution starts
+          const { logId, contextualizedQuery } =
+            await this.chatResearchService.initializeResearch(
               conversationId,
               lastUserMessage.content,
+            );
+
+          // Emit research start event WITH logId so frontend can track progress
+          this.emitEvent(assistantMessageId, {
+            type: 'research_start',
+            messageId: assistantMessageId,
+            data: { logId },
+          });
+
+          // Execute research (progress events will flow via log.{logId} channel)
+          const researchResult =
+            await this.chatResearchService.executeResearchWithLogId(
+              conversationId,
+              logId,
+              contextualizedQuery,
               lastUserMessage.id,
             );
 
@@ -78,10 +92,11 @@ export class ChatOrchestratorService {
             url: source.url,
           }));
 
-          // Emit research complete event
+          // Emit research complete event with logId
           this.emitEvent(assistantMessageId, {
             type: 'research_complete',
             messageId: assistantMessageId,
+            data: { logId },
           });
         } catch (error) {
           this.logger.error(
@@ -91,6 +106,7 @@ export class ChatOrchestratorService {
           this.emitEvent(assistantMessageId, {
             type: 'research_complete',
             messageId: assistantMessageId,
+            error: error instanceof Error ? error.message : 'Research failed',
           });
         }
       }

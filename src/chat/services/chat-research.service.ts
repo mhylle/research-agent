@@ -25,25 +25,16 @@ export class ChatResearchService {
   ) {}
 
   /**
-   * Execute research with conversation context and link results to message
+   * Initialize research session and return logId before execution starts.
+   * This allows the caller to emit the logId for progress tracking.
    */
-  async executeResearchWithContext(
+  async initializeResearch(
     conversationId: string,
     query: string,
-    messageId: string,
-  ): Promise<ResearchResult> {
-    this.logger.debug(
-      `Executing research for conversation ${conversationId}, message ${messageId}`,
-    );
-
+  ): Promise<{ logId: string; contextualizedQuery: string }> {
     // Check if research is already running for this conversation
     const status = this.getResearchStatus(conversationId);
     if (status.isResearching) {
-      this.logger.warn(
-        `Research already running for conversation ${conversationId}, queuing query`,
-      );
-      // Add to queue (implementation can be extended later)
-      status.queuedQueries.push(query);
       throw new Error(
         'Research already in progress for this conversation. Please wait.',
       );
@@ -52,21 +43,38 @@ export class ChatResearchService {
     // Generate a new logId for this research session
     const logId = randomUUID();
 
+    // Mark research as active immediately
+    this.setResearchActive(conversationId, logId);
+
+    // Build context summary from conversation history
+    const context =
+      await this.contextService.buildContextSummary(conversationId);
+
+    // Build contextualized query
+    const contextualizedQuery = this.buildContextualQuery(context, query);
+
+    this.logger.debug(
+      `Research initialized for conversation ${conversationId}, logId: ${logId}`,
+    );
+
+    return { logId, contextualizedQuery };
+  }
+
+  /**
+   * Execute research with an existing logId (from initializeResearch).
+   * This is the actual execution phase.
+   */
+  async executeResearchWithLogId(
+    conversationId: string,
+    logId: string,
+    contextualizedQuery: string,
+    messageId: string,
+  ): Promise<ResearchResult> {
+    this.logger.debug(
+      `Executing research for conversation ${conversationId}, message ${messageId}, logId: ${logId}`,
+    );
+
     try {
-      // Mark research as active
-      this.setResearchActive(conversationId, logId);
-
-      // Build context summary from conversation history
-      const context =
-        await this.contextService.buildContextSummary(conversationId);
-
-      // Build contextualized query
-      const contextualizedQuery = this.buildContextualQuery(context, query);
-
-      this.logger.debug(
-        `Contextualized query: ${contextualizedQuery.substring(0, 100)}...`,
-      );
-
       // Execute research with contextualized query
       const result = await this.researchService.executeResearch(
         contextualizedQuery,
@@ -101,6 +109,30 @@ export class ChatResearchService {
       // Mark research as complete
       this.setResearchComplete(conversationId);
     }
+  }
+
+  /**
+   * Execute research with conversation context and link results to message
+   * @deprecated Use initializeResearch() + executeResearchWithLogId() for better progress tracking
+   */
+  async executeResearchWithContext(
+    conversationId: string,
+    query: string,
+    messageId: string,
+  ): Promise<ResearchResult> {
+    // Initialize and get logId
+    const { logId, contextualizedQuery } = await this.initializeResearch(
+      conversationId,
+      query,
+    );
+
+    // Execute with the generated logId
+    return this.executeResearchWithLogId(
+      conversationId,
+      logId,
+      contextualizedQuery,
+      messageId,
+    );
   }
 
   /**

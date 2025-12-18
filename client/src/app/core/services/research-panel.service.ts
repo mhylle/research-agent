@@ -114,6 +114,94 @@ export class ResearchPanelService {
   }
 
   /**
+   * Handle research progress forwarded from chat stream.
+   * This is used when research events come through the chat SSE instead of a separate connection.
+   * @param progressData The progress data from the chat stream research_progress event
+   */
+  handleProgressFromChat(progressData: {
+    logId?: string;
+    stage?: string;
+    progress?: number;
+    phaseName?: string;
+    toolName?: string;
+    eventType?: string;
+  }): void {
+    // Update active research log ID if provided
+    if (progressData.logId && !this.activeResearchLogId()) {
+      this.activeResearchLogId.set(progressData.logId);
+    }
+
+    // Ensure we're marked as researching
+    if (!this.isResearching()) {
+      this.isResearching.set(true);
+    }
+
+    // Update progress percentage
+    if (typeof progressData.progress === 'number') {
+      this.researchProgress.set(progressData.progress);
+    }
+
+    // Update stage display
+    if (progressData.phaseName) {
+      this.researchStage.set(`Phase: ${progressData.phaseName}`);
+    } else if (progressData.toolName) {
+      this.researchStage.set(`Running: ${progressData.toolName}`);
+    } else if (progressData.stage) {
+      this.researchStage.set(this.formatStageName(progressData.stage));
+    }
+
+    // Handle completion events
+    if (progressData.eventType === 'session_completed') {
+      this.isResearching.set(false);
+      this.researchProgress.set(100);
+      this.researchStage.set('Research complete');
+    }
+
+    // Handle failure events
+    if (progressData.eventType === 'session_failed') {
+      this.isResearching.set(false);
+      this.researchStage.set('Research failed');
+    }
+  }
+
+  /**
+   * Mark research as starting (called when research_start event is received)
+   */
+  startResearchFromChat(logId?: string): void {
+    this.disconnectResearch(); // Close any existing direct SSE connection
+    if (logId) {
+      this.activeResearchLogId.set(logId);
+    }
+    this.isResearching.set(true);
+    this.researchProgress.set(0);
+    this.researchStage.set('Initializing research...');
+    this.isOpen.set(true); // Auto-open the panel when research starts
+  }
+
+  /**
+   * Mark research as complete (called when research_complete event is received)
+   */
+  completeResearchFromChat(): void {
+    this.isResearching.set(false);
+    this.researchProgress.set(100);
+    this.researchStage.set('Research complete');
+    // Don't close panel - user may want to see the results
+  }
+
+  /**
+   * Format stage name for display
+   */
+  private formatStageName(stage: string): string {
+    const stageNames: Record<string, string> = {
+      'planning': 'Planning research...',
+      'retrieval': 'Retrieving information...',
+      'synthesis': 'Synthesizing answer...',
+      'processing': 'Processing...',
+    };
+    return stageNames[stage] || `Stage: ${stage}`;
+  }
+
+  /**
    * Disconnect research tracking
    */
   disconnectResearch(): void {

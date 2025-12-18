@@ -125,7 +125,12 @@ export class Orchestrator {
         console.log(
           '[Orchestrator] Simple query detected, executing normal flow',
         );
-        result = await this.executeSimpleQuery(query, logId, startTime, provider);
+        result = await this.executeSimpleQuery(
+          query,
+          logId,
+          startTime,
+          provider,
+        );
       } else {
         // Complex query - execute sub-queries according to plan
         console.log(

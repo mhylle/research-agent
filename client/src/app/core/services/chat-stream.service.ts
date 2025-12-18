@@ -25,6 +25,10 @@ export class ChatStreamService {
   isResearchActive = signal<boolean>(false);
   researchLogId = signal<string | null>(null);
 
+  // Research progress tracking
+  researchProgress = signal<number>(0);
+  researchStage = signal<string | null>(null);
+
   // Token usage tracking
   tokenUsage = signal<{
     promptTokens: number;
@@ -38,7 +42,7 @@ export class ChatStreamService {
   private maxReconnectAttempts = 3;
   private reconnectDelay = 1000; // ms, doubles on each retry
   private heartbeatTimeout: any = null;
-  private readonly heartbeatInterval = 30000; // 30 seconds
+  private readonly heartbeatInterval = 60000; // 60 seconds (increased for research)
 
   /**
    * Start streaming response for a message
@@ -99,6 +103,16 @@ export class ChatStreamService {
     // Handle research completion events
     this.eventSource.addEventListener('research_complete', (event: MessageEvent) => {
       this.handleResearchCompleteEvent(event);
+    });
+
+    // Handle research progress events
+    this.eventSource.addEventListener('research_progress', (event: MessageEvent) => {
+      this.handleResearchProgressEvent(event);
+    });
+
+    // Handle heartbeat events
+    this.eventSource.addEventListener('heartbeat', (event: MessageEvent) => {
+      this.handleHeartbeatEvent(event);
     });
 
     // Handle connection errors
@@ -170,9 +184,12 @@ export class ChatStreamService {
       console.log('[ChatStream] Research start event:', data);
 
       this.isResearchActive.set(true);
+      this.researchProgress.set(0);
+      this.researchStage.set('Starting research...');
+      this.resetHeartbeat(); // CRITICAL: Reset heartbeat on research_start
 
-      if (data.logId) {
-        this.researchLogId.set(data.logId);
+      if (data.data?.logId) {
+        this.researchLogId.set(data.data.logId);
       }
     } catch (err) {
       console.error('[ChatStream] Error parsing research_start event:', err);
@@ -185,9 +202,40 @@ export class ChatStreamService {
       console.log('[ChatStream] Research complete event:', data);
 
       this.isResearchActive.set(false);
+      this.researchProgress.set(100);
+      this.researchStage.set('Research complete');
+      this.resetHeartbeat(); // Reset heartbeat after research completes
     } catch (err) {
       console.error('[ChatStream] Error parsing research_complete event:', err);
     }
+  }
+
+  private handleResearchProgressEvent(event: MessageEvent): void {
+    try {
+      const data = JSON.parse(event.data);
+      console.log('[ChatStream] Research progress event:', data);
+
+      this.resetHeartbeat(); // CRITICAL: Reset heartbeat on any progress event
+
+      // Update progress state from the nested data
+      const progressData = data.data;
+      if (progressData) {
+        if (typeof progressData.progress === 'number') {
+          this.researchProgress.set(progressData.progress);
+        }
+        if (progressData.stage || progressData.phaseName || progressData.toolName) {
+          const stage = progressData.phaseName || progressData.toolName || progressData.stage || 'Processing...';
+          this.researchStage.set(stage);
+        }
+      }
+    } catch (err) {
+      console.error('[ChatStream] Error parsing research_progress event:', err);
+    }
+  }
+
+  private handleHeartbeatEvent(event: MessageEvent): void {
+    console.log('[ChatStream] Heartbeat event received');
+    this.resetHeartbeat(); // CRITICAL: Reset heartbeat to keep connection alive
   }
 
   private handleConnectionError(error?: Event): void {
@@ -302,6 +350,8 @@ export class ChatStreamService {
     this.connectionStatus.set('disconnected');
     this.isResearchActive.set(false);
     this.researchLogId.set(null);
+    this.researchProgress.set(0);
+    this.researchStage.set(null);
     this.tokenUsage.set(null);
   }
 

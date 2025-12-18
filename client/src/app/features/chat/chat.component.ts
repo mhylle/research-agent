@@ -56,6 +56,10 @@ export class ChatComponent implements OnInit {
   // Research panel state
   isPanelOpen = computed(() => this.researchPanelService.isOpen());
 
+  // Research progress from chat stream
+  researchProgress = computed(() => this.chatStreamService.researchProgress());
+  researchStage = computed(() => this.chatStreamService.researchStage());
+
   constructor() {
     // Watch for route param changes
     effect(() => {
@@ -89,6 +93,33 @@ export class ChatComponent implements OnInit {
         if (this.chatThread) {
           this.chatThread.triggerScroll();
         }
+      }
+    });
+
+    // Watch for research state changes and forward to panel service
+    effect(() => {
+      const isResearchActive = this.chatStreamService.isResearchActive();
+      const logId = this.chatStreamService.researchLogId();
+      const progress = this.chatStreamService.researchProgress();
+      const stage = this.chatStreamService.researchStage();
+
+      if (isResearchActive) {
+        // Research started - initialize panel
+        if (logId && !this.researchPanelService.activeResearchLogId()) {
+          this.researchPanelService.startResearchFromChat(logId);
+        }
+
+        // Forward progress updates to panel
+        if (progress > 0 || stage) {
+          this.researchPanelService.handleProgressFromChat({
+            logId: logId || undefined,
+            progress: progress,
+            stage: stage || undefined,
+          });
+        }
+      } else if (this.researchPanelService.isResearching()) {
+        // Research completed - finalize panel
+        this.researchPanelService.completeResearchFromChat();
       }
     });
   }
@@ -181,15 +212,9 @@ export class ChatComponent implements OnInit {
       // Start streaming the response
       this.chatStreamService.startStream(assistantMessage.id);
 
-      // If research is enabled, start tracking research progress
+      // If research is enabled, open the research panel (progress will come via chat stream)
       if (researchEnabled) {
-        // Note: The researchLogId will be set by the backend after the message is processed
-        // We'll need to poll or wait for the researchLogId to be available
-        // For now, we'll check if there's a researchLogId in the user message
-        if (userMessage.researchLogId) {
-          this.researchPanelService.startResearchTracking(userMessage.researchLogId);
-          this.researchPanelService.isOpen.set(true);
-        }
+        this.researchPanelService.isOpen.set(true);
       }
 
       // Trigger scroll when streaming starts

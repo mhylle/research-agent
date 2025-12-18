@@ -1,0 +1,93 @@
+{
+  "metadata": {
+    "application": "Research Agent - Chat with Research",
+    "base_url": "http://localhost:4200/chat",
+    "run_timestamp": "2025-12-18T12:45:00Z",
+    "duration_ms": 180000,
+    "test_type": "regression_verification",
+    "fix_under_test": "Chat + Research SSE Timeout Fix (100ms delay)"
+  },
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "blocked": 0,
+    "skipped": 0
+  },
+  "scenarios": [
+    {
+      "name": "sse_connection_establishment",
+      "result": "pass",
+      "duration_ms": 500,
+      "confidence": "high",
+      "description": "SSE connection opens successfully after POST to create message",
+      "evidence": {
+        "console_log": "[ChatStream] SSE connection opened"
+      }
+    },
+    {
+      "name": "research_start_event",
+      "result": "pass",
+      "duration_ms": 600,
+      "confidence": "high",
+      "description": "research_start event received with logId for progress tracking",
+      "evidence": {
+        "console_log": "[ChatStream] Research start event: {type: research_start, messageId: 5e438250-c43a-4293-ae51-addaef41be60, data: Object}"
+      }
+    },
+    {
+      "name": "research_progress_events",
+      "result": "pass",
+      "duration_ms": 120000,
+      "confidence": "high",
+      "description": "Multiple research progress events received via log.{logId} channel",
+      "evidence": {
+        "event_count": 300,
+        "console_log": "[ChatStream] Research progress event: {type: research_progress, ...}"
+      }
+    },
+    {
+      "name": "heartbeat_mechanism",
+      "result": "pass",
+      "duration_ms": 150000,
+      "confidence": "high",
+      "description": "Heartbeat events received every ~10 seconds during research",
+      "evidence": {
+        "event_count": 15,
+        "console_log": "[ChatStream] Heartbeat event received"
+      }
+    },
+    {
+      "name": "no_timeout_reconnection",
+      "result": "pass",
+      "duration_ms": 180000,
+      "confidence": "high",
+      "description": "No timeout or reconnection errors during 2+ minute observation",
+      "evidence": {
+        "timeout_errors": 0,
+        "reconnection_attempts": 0,
+        "connection_stable_duration_ms": 180000
+      }
+    }
+  ],
+  "fix_verification": {
+    "issue": "SSE connections timing out during research due to race condition - frontend opens SSE after HTTP response but backend emits events immediately",
+    "fix_location": "src/chat/services/chat-orchestrator.service.ts:processMessage()",
+    "fix_description": "Added 100ms delay before emitting first event to allow SSE connection to establish",
+    "verification_result": "VERIFIED_WORKING",
+    "before_fix_behavior": "Events missed, connection appeared dead, timeout at 30-60s",
+    "after_fix_behavior": "All events received, connection stable for 2+ minutes"
+  },
+  "test_query": {
+    "message": "What are the latest developments in quantum computing in December 2025?",
+    "conversation_id": "d46417b5-81c1-49f1-9115-fb3d0b7e032b",
+    "message_id": "5e438250-c43a-4293-ae51-addaef41be60",
+    "research_enabled": true
+  },
+  "history_analysis": {
+    "regressions": [],
+    "persistent_failures": [],
+    "flaky": []
+  },
+  "suggested_actions": []
+}

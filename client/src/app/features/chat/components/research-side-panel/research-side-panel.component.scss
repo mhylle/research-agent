@@ -72,18 +72,47 @@
     background: var(--surface-variant, #f9f9f9);
   }
 
+  &__progress-bar-container {
+    height: 6px;
+    background: rgba(0, 102, 204, 0.1);
+    border-radius: 3px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+
   &__progress-bar {
-    height: 4px;
-    background: linear-gradient(90deg, #4caf50, #8bc34a);
-    border-radius: 2px;
-    transition: width 0.3s ease;
-    margin-bottom: 0.5rem;
+    height: 100%;
+    background: linear-gradient(90deg, #0066cc, #0099ff);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+
+    &--complete {
+      background: linear-gradient(90deg, #4caf50, #8bc34a);
+    }
+  }
+
+  &__progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   &__progress-stage {
     font-size: 0.875rem;
     color: var(--text-secondary, #666666);
-    display: block;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__progress-percent {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #0066cc;
+    min-width: 3.5rem;
+    text-align: right;
   }
 
   // Sources container

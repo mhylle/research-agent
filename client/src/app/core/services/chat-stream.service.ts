@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -15,11 +15,16 @@ export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'er
 })
 export class ChatStreamService {
   // State signals
-  isStreaming = signal<boolean>(false);
   streamingContent = signal<string>('');
   error = signal<string | null>(null);
   currentMessageId = signal<string | null>(null);
   connectionStatus = signal<ConnectionStatus>('disconnected');
+
+  // Message-scoped streaming state (NEW)
+  streamingMessageId = signal<string | null>(null);
+  streamingType = signal<'research' | 'llm' | null>(null);
+  activeResearchMessageId = signal<string | null>(null);
+  researchQueue = signal<string[]>([]);
 
   // Research integration signals
   isResearchActive = signal<boolean>(false);
@@ -36,13 +41,19 @@ export class ChatStreamService {
     totalTokens: number;
   } | null>(null);
 
+  // Computed signals (NEW)
+  isStreaming = computed(() => this.streamingType() !== null);
+  isLLMStreaming = computed(() => this.streamingType() === 'llm');
+  isResearchStreaming = computed(() => this.streamingType() === 'research');
+  hasQueuedResearch = computed(() => this.researchQueue().length > 0);
+
   // SSE connection
   private eventSource: EventSource | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 3;
   private reconnectDelay = 1000; // ms, doubles on each retry
   private heartbeatTimeout: any = null;
-  private readonly heartbeatInterval = 60000; // 60 seconds (increased for research)
+  private readonly heartbeatInterval = 180000; // 180 seconds (3 minutes - for long research operations)
 
   /**
    * Start streaming response for a message
@@ -55,7 +66,8 @@ export class ChatStreamService {
     // Reset state
     this.streamingContent.set('');
     this.error.set(null);
-    this.isStreaming.set(true);
+    this.streamingMessageId.set(messageId);
+    this.streamingType.set(null); // Will be set based on first event
     this.currentMessageId.set(messageId);
     this.connectionStatus.set('connecting');
     this.reconnectAttempts = 0;
@@ -129,6 +141,11 @@ export class ChatStreamService {
       const content = data.content || '';
       this.streamingContent.update(current => current + content);
       this.resetHeartbeat(); // Reset heartbeat on activity
+
+      // Set streaming type if not already set
+      if (!this.streamingType()) {
+        this.streamingType.set(this.isResearchActive() ? 'research' : 'llm');
+      }
     } catch (err) {
       console.error('[ChatStream] Error parsing token event:', err);
       this.setErrorMessage('Failed to parse streaming data', 'parse_error');
@@ -145,8 +162,10 @@ export class ChatStreamService {
         this.tokenUsage.set(data.tokenUsage);
       }
 
-      // Mark streaming as complete
-      this.isStreaming.set(false);
+      // Clear message-scoped state
+      this.streamingType.set(null);
+      this.streamingMessageId.set(null);
+      this.activeResearchMessageId.set(null);
       this.connectionStatus.set('disconnected');
 
       // Disconnect after successful completion
@@ -154,7 +173,9 @@ export class ChatStreamService {
     } catch (err) {
       console.error('[ChatStream] Error parsing done event:', err);
       this.setErrorMessage('Failed to complete streaming', 'completion_error');
-      this.isStreaming.set(false);
+      this.streamingType.set(null);
+      this.streamingMessageId.set(null);
+      this.activeResearchMessageId.set(null);
       this.disconnect();
     }
   }
@@ -166,14 +187,27 @@ export class ChatStreamService {
 
       const errorMessage = data.error || data.message || 'An error occurred during streaming';
       this.setErrorMessage(errorMessage, 'server_error');
-      this.isStreaming.set(false);
+
+      // Clear message-scoped state
+      this.streamingType.set(null);
+      this.streamingMessageId.set(null);
+      this.activeResearchMessageId.set(null);
       this.connectionStatus.set('error');
+
+      // Process next queued research if any
+      this.processNextResearch();
+
       this.disconnect();
     } catch (err) {
       console.error('[ChatStream] Error parsing error event:', err);
       this.setErrorMessage('Failed to process error response', 'parse_error');
-      this.isStreaming.set(false);
+
+      // Clear message-scoped state
+      this.streamingType.set(null);
+      this.streamingMessageId.set(null);
+      this.activeResearchMessageId.set(null);
       this.connectionStatus.set('error');
+
       this.disconnect();
     }
   }
@@ -187,6 +221,10 @@ export class ChatStreamService {
       this.researchProgress.set(0);
       this.researchStage.set('Starting research...');
       this.resetHeartbeat(); // CRITICAL: Reset heartbeat on research_start
+
+      // Set message-scoped state
+      this.streamingType.set('research');
+      this.activeResearchMessageId.set(this.currentMessageId());
 
       if (data.data?.logId) {
         this.researchLogId.set(data.data.logId);
@@ -205,6 +243,17 @@ export class ChatStreamService {
       this.researchProgress.set(100);
       this.researchStage.set('Research complete');
       this.resetHeartbeat(); // Reset heartbeat after research completes
+
+      // Clear active research message
+      this.activeResearchMessageId.set(null);
+
+      // Switch to LLM streaming if tokens are still coming
+      if (this.streamingType() === 'research') {
+        this.streamingType.set('llm');
+      }
+
+      // Process next queued research
+      this.processNextResearch();
     } catch (err) {
       console.error('[ChatStream] Error parsing research_complete event:', err);
     }
@@ -267,7 +316,15 @@ export class ChatStreamService {
     } else {
       console.error('[ChatStream] Max reconnection attempts reached');
       this.setErrorMessage('Connection lost after multiple retry attempts. Please try sending the message again.', 'max_retries_exceeded');
-      this.isStreaming.set(false);
+
+      // Clear message-scoped state
+      this.streamingType.set(null);
+      this.streamingMessageId.set(null);
+      this.activeResearchMessageId.set(null);
+
+      // Process next queued research if any
+      this.processNextResearch();
+
       this.disconnect();
     }
   }
@@ -345,7 +402,9 @@ export class ChatStreamService {
     this.disconnect();
     this.streamingContent.set('');
     this.error.set(null);
-    this.isStreaming.set(false);
+    this.streamingType.set(null);
+    this.streamingMessageId.set(null);
+    this.activeResearchMessageId.set(null);
     this.currentMessageId.set(null);
     this.connectionStatus.set('disconnected');
     this.isResearchActive.set(false);
@@ -363,6 +422,35 @@ export class ChatStreamService {
     if (messageId) {
       console.log('[ChatStream] Retrying stream for message:', messageId);
       this.startStream(messageId);
+    }
+  }
+
+  /**
+   * Check if a new research request can start immediately
+   */
+  canStartResearch(): boolean {
+    return !this.isResearchActive();
+  }
+
+  /**
+   * Queue a research request to be processed later
+   */
+  queueResearch(messageId: string): void {
+    this.researchQueue.update(queue => [...queue, messageId]);
+    console.log(`[ChatStream] Research queued for message: ${messageId}. Queue length: ${this.researchQueue().length}`);
+  }
+
+  /**
+   * Process the next research in queue (called after research_complete)
+   */
+  private processNextResearch(): void {
+    const queue = this.researchQueue();
+    if (queue.length > 0) {
+      const [nextMessageId, ...rest] = queue;
+      this.researchQueue.set(rest);
+      console.log(`[ChatStream] Processing next queued research: ${nextMessageId}`);
+      // Note: The next research will start automatically when backend processes it
+      // The backend is already fire-and-forget, so this is just cleanup
     }
   }
 }

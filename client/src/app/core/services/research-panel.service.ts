@@ -141,8 +141,10 @@ export class ResearchPanelService {
       this.researchProgress.set(progressData.progress);
     }
 
-    // Update stage display
-    if (progressData.phaseName) {
+    // Update stage display with hierarchy
+    if (progressData.phaseName && progressData.toolName) {
+      this.researchStage.set(`${progressData.phaseName} → ${progressData.toolName}`);
+    } else if (progressData.phaseName) {
       this.researchStage.set(`Phase: ${progressData.phaseName}`);
     } else if (progressData.toolName) {
       this.researchStage.set(`Running: ${progressData.toolName}`);

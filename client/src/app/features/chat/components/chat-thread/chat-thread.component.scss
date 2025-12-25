@@ -119,6 +119,56 @@
         opacity: 0.8;
       }
     }
+
+    &--researching {
+      position: relative;
+
+      .chat-thread__message-content {
+        border: 2px solid #0066cc;
+        box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
+      }
+    }
+  }
+
+  &__research-badge {
+    position: absolute;
+    top: -12px;
+    right: 12px;
+    background: linear-gradient(135deg, #0066cc, #0099ff);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+    z-index: 10;
+    animation: badgeFadeIn 0.3s ease-in;
+  }
+
+  &__research-progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+  }
+
+  &__spinner {
+    width: 16px;
+    height: 16px;
+    color: white;
+  }
+
+  &__research-stage {
+    font-size: 0.65rem;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    text-align: center;
   }
 
   &__message-content {
@@ -246,6 +296,17 @@
   40% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes badgeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

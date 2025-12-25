@@ -117,6 +117,21 @@ export class ChatOrchestratorService {
         contextOptions,
       );
 
+      // Add current date context to all chat responses
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      const dateContextMessage: ChatMessage = {
+        role: 'system',
+        content: `Today's date is ${currentDate}. Provide accurate, up-to-date information based on this current date.`,
+      };
+
+      // Insert date context at the beginning
+      messages = [dateContextMessage, ...messages];
+
       // If research was performed, add research findings to context
       if (researchAnswer) {
         const sourcesText = researchSources

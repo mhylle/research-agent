@@ -49,6 +49,7 @@ export class ChatComponent implements OnInit {
 
   // Streaming state
   isStreaming = computed(() => this.chatStreamService.isStreaming());
+  isLLMStreaming = computed(() => this.chatStreamService.isLLMStreaming());
   streamingContent = computed(() => this.chatStreamService.streamingContent());
   streamError = computed(() => this.chatStreamService.error());
   connectionStatus = computed(() => this.chatStreamService.connectionStatus());
@@ -212,9 +213,17 @@ export class ChatComponent implements OnInit {
       // Start streaming the response
       this.chatStreamService.startStream(assistantMessage.id);
 
-      // If research is enabled, open the research panel (progress will come via chat stream)
+      // If research is enabled, check if we can start or need to queue
       if (researchEnabled) {
-        this.researchPanelService.isOpen.set(true);
+        if (this.chatStreamService.canStartResearch()) {
+          // Research can start immediately
+          this.researchPanelService.isOpen.set(true);
+        } else {
+          // Research is already active - queue this request
+          this.chatStreamService.queueResearch(assistantMessage.id);
+          console.log('[ChatComponent] Research queued - will start when current research completes');
+          // TODO: Show toast notification to user
+        }
       }
 
       // Trigger scroll when streaming starts

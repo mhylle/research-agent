@@ -1318,6 +1318,11 @@ When users ask about "today", "tomorrow", "this weekend", "next week", etc., int
 - "Next weekend" means the Saturday/Sunday of the following week
 - Always use specific dates in search queries (e.g., "events Aarhus December 14 2025")
 
+**CRITICAL: When creating search queries, ALWAYS use ${now.getFullYear()} as the year for current/recent events.**
+- For "latest" or "recent" queries, include "${now.getFullYear()}" in the search term
+- For past events (e.g., "COP29"), research what actually happened in ${now.getFullYear()}
+- For elections, summits, conferences - these have ALREADY occurred by December ${now.getFullYear()}
+
 ## Available Execution Tools
 ${toolList}
 
@@ -1371,8 +1376,8 @@ ${toolList}
 ## Example Flow (FOLLOW THIS PATTERN)
 1. create_plan({query: "user query", name: "Research Plan"})
 2. add_phase({name: "Initial Search", description: "Search for information"}) -> returns {phaseId: "abc"}
-3. add_step({phaseId: "abc", type: "tool_call", toolName: "tavily_search", config: {query: "latest antimatter news 2024", max_results: 5}})
-4. add_step({phaseId: "abc", type: "tool_call", toolName: "tavily_search", config: {query: "antimatter breakthrough research 2024", max_results: 5}})
+3. add_step({phaseId: "abc", type: "tool_call", toolName: "tavily_search", config: {query: "latest antimatter news 2025", max_results: 5}})
+4. add_step({phaseId: "abc", type: "tool_call", toolName: "tavily_search", config: {query: "antimatter breakthrough research December 2025", max_results: 5}})
 5. add_phase({name: "Content Fetching", description: "Fetch detailed articles"}) -> returns {phaseId: "def"}
 6. add_step({phaseId: "def", type: "tool_call", toolName: "web_fetch", config: {url: "https://example.com/article"}})
 7. **add_phase({name: "Synthesis & Answer Generation", description: "Generate final answer"}) -> returns {phaseId: "xyz"}**
@@ -1401,7 +1406,7 @@ ${enhancement.suggestions.map((s) => `- ${s}`).join('\n')}
 
 If user asks "Hvad sker der i Aarhus i dag og i morgen?" (Danish, asking about today and tomorrow):
 ❌ WRONG: {query: "events in Aarhus today and tomorrow"} - Wrong language, vague dates
-❌ WRONG: {query: "events in Aarhus 2023"} - Wrong year
+❌ WRONG: {query: "events in Aarhus 2024"} - Wrong year (current year is ${now.getFullYear()})
 ✅ CORRECT: {query: "begivenheder Aarhus ${enhancement.formattedDates[0] || 'YYYY-MM-DD'}"} - Matches language, specific date
 
 If user asks "What's happening in Copenhagen this weekend?" (English):

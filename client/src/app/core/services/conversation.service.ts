@@ -60,7 +60,7 @@ export class ConversationService {
       const params = new HttpParams()
         .set('userId', userId)
         .set('page', this.currentPage().toString())
-        .set('pageSize', this.pageSize().toString());
+        .set('limit', this.pageSize().toString());
 
       const response = await this.retryRequest(() =>
         firstValueFrom(
@@ -224,7 +224,7 @@ export class ConversationService {
         .set('userId', userId)
         .set('search', query)
         .set('page', '1')
-        .set('pageSize', this.pageSize().toString());
+        .set('limit', this.pageSize().toString());
 
       const response = await this.retryRequest(() =>
         firstValueFrom(

@@ -7,11 +7,13 @@ import {
   ElementRef,
   AfterViewChecked,
   signal,
+  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MarkdownService } from '../../../../core/services/markdown.service';
 import { ResearchPanelService } from '../../../../core/services/research-panel.service';
 import { ResearchSuggestionService } from '../../../../core/services/research-suggestion.service';
+import { ChatStreamService } from '../../../../core/services/chat-stream.service';
 import { InlineCitationComponent } from '../inline-citation/inline-citation.component';
 import { ResearchSuggestionComponent } from '../research-suggestion/research-suggestion.component';
 import { Message, Citation } from '../../../../models/conversation.model';
@@ -28,6 +30,7 @@ export class ChatThreadComponent implements AfterViewChecked {
   private markdownService = inject(MarkdownService);
   private researchPanelService = inject(ResearchPanelService);
   private researchSuggestionService = inject(ResearchSuggestionService);
+  private chatStreamService = inject(ChatStreamService);
 
   // Inputs
   messages = input.required<Message[]>();
@@ -154,4 +157,26 @@ export class ChatThreadComponent implements AfterViewChecked {
   onResearchSuggestionClick(content: string): void {
     this.researchRequested.emit(content);
   }
+
+  /**
+   * Check if a specific message is currently being researched
+   */
+  isMessageResearching(messageId: string): boolean {
+    return this.chatStreamService.activeResearchMessageId() === messageId;
+  }
+
+  /**
+   * Get research progress for a specific message
+   */
+  getResearchProgress(messageId: string): number | null {
+    if (this.isMessageResearching(messageId)) {
+      return this.chatStreamService.researchProgress();
+    }
+    return null;
+  }
+
+  /**
+   * Get current research stage
+   */
+  researchStage = computed(() => this.chatStreamService.researchStage());
 }

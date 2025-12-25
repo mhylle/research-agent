@@ -567,7 +567,15 @@ export class Orchestrator {
       .filter(Boolean)
       .join('\n\n---\n\n');
 
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
     const prompt = `You are synthesizing research findings into a comprehensive final answer.
+
+CURRENT DATE: ${currentDate}
 
 ORIGINAL QUESTION: "${originalQuery}"
 

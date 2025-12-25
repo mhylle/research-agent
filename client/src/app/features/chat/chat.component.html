@@ -101,7 +101,7 @@
         <div class="chat-container__input">
           <app-chat-input
             [disabled]="isLoading()"
-            [isLoading]="isStreaming()"
+            [isLLMStreaming]="isLLMStreaming()"
             (messageSent)="onMessageSent($event)"
           />
         </div>
@@ -113,7 +113,7 @@
       <div class="chat-container__input">
         <app-chat-input
           [disabled]="isLoading()"
-          [isLoading]="isStreaming()"
+          [isLLMStreaming]="isLLMStreaming()"
           (messageSent)="onMessageSent($event)"
         />
       </div>

@@ -16,7 +16,7 @@ export interface MessageSentEvent {
 })
 export class ChatInputComponent {
   @Input() disabled = false;
-  @Input() isLoading = false;
+  @Input() isLLMStreaming = false;
   @Output() messageSent = new EventEmitter<MessageSentEvent>();
 
   messageContent = signal('');
@@ -57,6 +57,6 @@ export class ChatInputComponent {
   }
 
   get isButtonDisabled(): boolean {
-    return !this.isValid || this.disabled || this.isLoading;
+    return !this.isValid || this.disabled || this.isLLMStreaming;
   }
 }

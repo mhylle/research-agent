@@ -21,16 +21,22 @@
 
     @if (isResearching()) {
       <div class="research-side-panel__progress" role="region" aria-label="Research progress">
-        <div
-          class="research-side-panel__progress-bar"
-          [style.width.%]="researchProgress()"
-          role="progressbar"
-          [attr.aria-valuenow]="researchProgress()"
-          [attr.aria-label]="'Research progress: ' + researchProgress() + ' percent'"
-          aria-valuemin="0"
-          aria-valuemax="100"
-        ></div>
-        <span class="research-side-panel__progress-stage" role="status" aria-live="polite">{{ researchStage() }}</span>
+        <div class="research-side-panel__progress-bar-container">
+          <div
+            class="research-side-panel__progress-bar"
+            [style.width.%]="researchProgress()"
+            [class.research-side-panel__progress-bar--complete]="researchProgress() === 100"
+            role="progressbar"
+            [attr.aria-valuenow]="researchProgress()"
+            [attr.aria-label]="'Research progress: ' + researchProgress() + ' percent'"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          ></div>
+        </div>
+        <div class="research-side-panel__progress-info">
+          <span class="research-side-panel__progress-stage" role="status" aria-live="polite">{{ researchStage() }}</span>
+          <span class="research-side-panel__progress-percent">{{ researchProgress() }}%</span>
+        </div>
       </div>
     }
 

@@ -5,14 +5,14 @@
       id="message-input"
       [(ngModel)]="messageContent"
       name="message"
-      [disabled]="disabled || isLoading"
+      [disabled]="disabled || isLLMStreaming"
       class="chat-input__textarea"
       placeholder="Type a message..."
       rows="1"
       (keydown)="onKeyDown($event)"
       (input)="autoResize($event)"
       aria-label="Message input"
-      [attr.aria-disabled]="disabled || isLoading"
+      [attr.aria-disabled]="disabled || isLLMStreaming"
     ></textarea>
 
     <div class="chat-input__actions" role="group" aria-label="Message actions">
@@ -20,7 +20,7 @@
         type="button"
         class="chat-input__research-toggle"
         [class.chat-input__research-toggle--active]="researchEnabled()"
-        [disabled]="disabled || isLoading"
+        [disabled]="disabled || isLLMStreaming"
         (click)="toggleResearch()"
         [attr.aria-label]="researchEnabled() ? 'Research mode enabled, click to disable' : 'Enable research mode for web search'"
         [attr.aria-pressed]="researchEnabled()"
@@ -36,9 +36,9 @@
         type="submit"
         class="chat-input__send"
         [disabled]="isButtonDisabled"
-        [attr.aria-label]="isLoading ? 'Sending message...' : 'Send message'"
+        [attr.aria-label]="isLLMStreaming ? 'Sending message...' : 'Send message'"
       >
-        @if (isLoading) {
+        @if (isLLMStreaming) {
           <svg class="chat-input__icon chat-input__icon--spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
             <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>

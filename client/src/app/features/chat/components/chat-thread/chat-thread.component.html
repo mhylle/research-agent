@@ -9,7 +9,31 @@
     } @else {
       <div class="chat-thread__messages" role="list" aria-label="Chat messages">
         @for (message of messages(); track trackByMessageId($index, message)) {
-          <div class="chat-thread__message chat-thread__message--{{ message.role }}" role="listitem">
+          <div
+            class="chat-thread__message chat-thread__message--{{ message.role }}"
+            [class.chat-thread__message--researching]="isMessageResearching(message.id)"
+            role="listitem"
+          >
+            <!-- Research Progress Badge -->
+            @if (isMessageResearching(message.id) && getResearchProgress(message.id) !== null) {
+              <div class="chat-thread__research-badge" role="status" aria-live="polite">
+                <div class="chat-thread__research-progress">
+                  <svg class="chat-thread__spinner" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor"
+                            stroke-width="3" fill="none" stroke-dasharray="31.4 31.4"
+                            transform="rotate(-90 12 12)">
+                      <animateTransform attributeName="transform" type="rotate"
+                                      from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+                    </circle>
+                  </svg>
+                  <span>Researching {{ getResearchProgress(message.id) }}%</span>
+                </div>
+                @if (researchStage()) {
+                  <small class="chat-thread__research-stage">{{ researchStage() }}</small>
+                }
+              </div>
+            }
+
             <div class="chat-thread__message-content">
               <div
                 class="chat-thread__message-body"

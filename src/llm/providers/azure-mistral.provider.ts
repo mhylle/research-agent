@@ -70,10 +70,27 @@ export class AzureMistralProvider implements ILLMProvider {
 
     // Initialize OpenAI client with Azure endpoint
     // Note: We disable the SDK's built-in retries to use our own retry logic
+    // For Azure AI services, extract base URL and add api-version as default query param
+    let baseURL = endpoint;
+    let defaultQuery: Record<string, string> | undefined;
+
+    if (endpoint?.includes('api-version=')) {
+      // Extract api-version from URL and set as default query param
+      const url = new URL(endpoint);
+      const apiVersion = url.searchParams.get('api-version');
+      url.searchParams.delete('api-version');
+      // Remove /chat/completions if present (SDK will add it)
+      baseURL = url.toString().replace(/\/chat\/completions\/?$/, '').replace(/\?$/, '');
+      if (apiVersion) {
+        defaultQuery = { 'api-version': apiVersion };
+      }
+    }
+
     this.client = new OpenAI({
-      baseURL: endpoint,
+      baseURL,
       apiKey: apiKey || '',
       maxRetries: 0, // Disable SDK retries, we handle retries ourselves
+      defaultQuery,
     });
 
     console.log(
